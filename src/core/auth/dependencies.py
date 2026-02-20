@@ -53,13 +53,23 @@ async def get_current_user(
 
 
 def require_permissions(*required: str):
+    def _has_permission(user_permissions: set[str], permission: str) -> bool:
+        if permission in user_permissions:
+            return True
+
+        resource, separator, _ = permission.partition(":")
+        if separator and resource in user_permissions:
+            return True
+
+        return False
+
     async def dependency(
         user: User = Depends(get_current_user),
     ):
         user_permissions = {p.name for p in user.permissions}
 
         for perm in required:
-            if perm not in user_permissions:
+            if not _has_permission(user_permissions, perm):
                 raise ForbiddenError()
 
         return True

@@ -13,13 +13,51 @@ from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
 admin_manufacturer_router = APIRouter(
-    tags=["Manufacturers Admin"]
+    tags=["Производители"]
 )
 
 
 @admin_manufacturer_router.get(
     "/audit",
     summary="Получить аудит-логи производителей",
+    description="""
+    Возвращает журнал аудита изменений производителей.
+
+    Права:
+    - Требуется permission: `manufacturer:audit`
+
+    Сценарии:
+    - Контроль изменений справочника брендов.
+    - Анализ действий пользователя по конкретному производителю.
+    """,
+    response_description="Список записей аудита производителей",
+    responses={
+        200: {
+            "description": "Логи аудита успешно получены",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "total": 1,
+                            "items": [
+                                {
+                                    "id": 810,
+                                    "manufacturer_id": 3,
+                                    "action": "update",
+                                    "old_data": {"name": "Acme Devices"},
+                                    "new_data": {"name": "Acme Devices International"},
+                                    "user_id": 42,
+                                    "created_at": "2026-02-20T10:30:00Z",
+                                }
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("manufacturer:audit"))],
 )
 async def get_audit_logs(

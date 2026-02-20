@@ -14,18 +14,13 @@ from src.catalog.category.domain.exceptions import (
     CategoryImagesOrderingMismatch,
     CategoryInvalidImage,
 )
+from src.core.api.normalizers import normalize_optional_fk
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import get_current_user, require_permissions
 from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
-category_commands_router = APIRouter(tags=["Categories"])
-
-
-def _normalize_optional_fk(value: int | None) -> int | None:
-    if value is None or value <= 0:
-        return None
-    return value
+category_commands_router = APIRouter(tags=["Категории"])
 
 
 def _is_image_bytes(data: bytes) -> bool:
@@ -84,6 +79,62 @@ async def _build_images_dto(
     "/",
     status_code=200,
     summary="Создать категорию",
+    description="""
+    Создаёт новую категорию с изображениями.
+
+    Права:
+    - Требуется permission: `category:create`
+
+    Сценарии:
+    - Инициализация новой ветки каталога.
+    - Создание категории с привязкой к производителю.
+    - Загрузка набора изображений с явным порядком отображения.
+    """,
+    response_description="Созданная категория в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Категория успешно создана",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "id": 101,
+                            "name": "Смартфоны",
+                            "description": "Смартфоны и аксессуары",
+                            "parent_id": None,
+                            "manufacturer_id": 3,
+                            "images": [
+                                {
+                                    "ordering": 0,
+                                    "image_url": "https://cdn.example.com/category/smartphones-main.jpg",
+                                }
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Некорректный файл изображения или некорректные входные данные",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "error": {
+                            "code": "category_invalid_image",
+                            "message": "Некорректный файл изображения категории",
+                            "details": {
+                                "filename": "manual.pdf",
+                                "content_type": "application/pdf",
+                            },
+                        },
+                    }
+                }
+            },
+        },
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("category:create"))],
 )
 async def create(
@@ -102,8 +153,8 @@ async def create(
         CategoryCreateDTO(
             name=name,
             description=description,
-            parent_id=_normalize_optional_fk(parent_id),
-            manufacturer_id=_normalize_optional_fk(manufacturer_id),
+            parent_id=normalize_optional_fk(parent_id),
+            manufacturer_id=normalize_optional_fk(manufacturer_id),
             images=images_dto,
         ),
         user=user,
@@ -114,6 +165,60 @@ async def create(
 @category_commands_router.put(
     "/{category_id}",
     summary="Обновить категорию",
+    description="""
+    Частично обновляет категорию по идентификатору.
+
+    Права:
+    - Требуется permission: `category:update`
+
+    Сценарии:
+    - Переименование или смена описания категории.
+    - Перепривязка к родительской категории или производителю.
+    - Полная замена набора изображений категории.
+    """,
+    response_description="Обновлённая категория в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Категория успешно обновлена",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "id": 101,
+                            "name": "Смартфоны и гаджеты",
+                            "description": "Обновлённое описание",
+                            "parent_id": None,
+                            "manufacturer_id": 3,
+                            "images": [
+                                {
+                                    "ordering": 0,
+                                    "image_url": "https://cdn.example.com/category/smartphones-updated.jpg",
+                                }
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Переданы некорректные данные (например, images без orderings)",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "error": {
+                            "code": "category_images_ordering_mismatch",
+                            "message": "Количество изображений не совпадает с количеством orderings",
+                            "details": {"images_count": 2, "orderings_count": 1},
+                        },
+                    }
+                }
+            },
+        },
+        404: {"description": "Категория не найдена"},
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("category:update"))],
 )
 async def update(
@@ -143,8 +248,8 @@ async def update(
         CategoryUpdateDTO(
             name=name,
             description=description,
-            parent_id=_normalize_optional_fk(parent_id),
-            manufacturer_id=_normalize_optional_fk(manufacturer_id),
+            parent_id=normalize_optional_fk(parent_id),
+            manufacturer_id=normalize_optional_fk(manufacturer_id),
             images=images_dto,
         ),
         user=user,
@@ -155,6 +260,43 @@ async def update(
 @category_commands_router.delete(
     "/{category_id}",
     summary="Удалить категорию",
+    description="""
+    Удаляет категорию по идентификатору.
+
+    Права:
+    - Требуется permission: `category:delete`
+
+    Сценарии:
+    - Очистка устаревших категорий.
+    - Удаление ошибочно созданной категории.
+    """,
+    response_description="Флаг успешного удаления",
+    responses={
+        200: {
+            "description": "Категория успешно удалена",
+            "content": {
+                "application/json": {
+                    "example": {"success": True, "data": {"deleted": True}}
+                }
+            },
+        },
+        404: {
+            "description": "Категория не найдена",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "error": {
+                            "code": "category_not_found",
+                            "message": "Категория не найдена",
+                            "details": {"category_id": 9999},
+                        },
+                    }
+                }
+            },
+        },
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("category:delete"))],
 )
 async def delete(

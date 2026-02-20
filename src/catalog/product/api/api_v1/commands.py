@@ -14,18 +14,13 @@ from src.catalog.product.application.dto.product import (
 )
 from src.catalog.product.composition import ProductComposition
 from src.catalog.product.domain.exceptions import ProductInvalidImage, ProductInvalidPayload
+from src.core.api.normalizers import normalize_optional_fk
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import get_current_user, require_permissions
 from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
-product_commands_router = APIRouter(tags=["Products"])
-
-
-def _normalize_optional_fk(value: int | None) -> int | None:
-    if value is None or value <= 0:
-        return None
-    return value
+product_commands_router = APIRouter(tags=["Товары"])
 
 
 def _is_image_bytes(data: bytes) -> bool:
@@ -122,6 +117,64 @@ async def _build_images_dto(
     "/",
     status_code=200,
     summary="Создать товар",
+    description="""
+    Создаёт новый товар, включая атрибуты и изображения.
+
+    Права:
+    - Требуется permission: `product:create`
+
+    Сценарии:
+    - Создание карточки товара при заведении ассортимента.
+    - Импорт товаров с пользовательскими атрибутами.
+    - Загрузка нескольких изображений с выбором главного.
+    """,
+    response_description="Созданный товар в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Товар успешно создан",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "id": 3001,
+                            "name": "Смартфон X",
+                            "description": "Флагманская модель",
+                            "price": "59990.00",
+                            "category_id": 101,
+                            "supplier_id": 210,
+                            "product_type_id": 5,
+                            "images": [
+                                {
+                                    "image_url": "https://cdn.example.com/product/smartphone-x-main.jpg",
+                                    "is_main": True,
+                                }
+                            ],
+                            "attributes": [
+                                {"name": "RAM", "value": "8 GB", "is_filterable": True}
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Некорректные данные товара (например, битый JSON атрибутов)",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "error": {
+                            "code": "product_invalid_payload",
+                            "message": "Некорректный payload товара",
+                            "details": {"reason": "invalid_json"},
+                        },
+                    }
+                }
+            },
+        },
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("product:create"))],
 )
 async def create(
@@ -146,9 +199,9 @@ async def create(
             name=name,
             description=description,
             price=price,
-            category_id=_normalize_optional_fk(category_id),
-            supplier_id=_normalize_optional_fk(supplier_id),
-            product_type_id=_normalize_optional_fk(product_type_id),
+            category_id=normalize_optional_fk(category_id),
+            supplier_id=normalize_optional_fk(supplier_id),
+            product_type_id=normalize_optional_fk(product_type_id),
             images=images_dto,
             attributes=attributes_dto,
         ),
@@ -161,6 +214,51 @@ async def create(
 @product_commands_router.put(
     "/{product_id}",
     summary="Обновить товар",
+    description="""
+    Частично обновляет товар по идентификатору.
+
+    Права:
+    - Требуется permission: `product:update`
+
+    Сценарии:
+    - Изменение цены и описания товара.
+    - Замена изображений товара.
+    - Обновление или перезапись набора атрибутов.
+    """,
+    response_description="Обновлённый товар в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Товар успешно обновлён",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "id": 3001,
+                            "name": "Смартфон X Pro",
+                            "description": "Обновлённая модель",
+                            "price": "64990.00",
+                            "category_id": 101,
+                            "supplier_id": 210,
+                            "product_type_id": 5,
+                            "images": [
+                                {
+                                    "image_url": "https://cdn.example.com/product/smartphone-x-pro-main.jpg",
+                                    "is_main": True,
+                                }
+                            ],
+                            "attributes": [
+                                {"name": "RAM", "value": "12 GB", "is_filterable": True}
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+        400: {"description": "Некорректные входные данные"},
+        404: {"description": "Товар не найден"},
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("product:update"))],
 )
 async def update(
@@ -192,9 +290,9 @@ async def update(
             name=name,
             description=description,
             price=price,
-            category_id=_normalize_optional_fk(category_id),
-            supplier_id=_normalize_optional_fk(supplier_id),
-            product_type_id=_normalize_optional_fk(product_type_id),
+            category_id=normalize_optional_fk(category_id),
+            supplier_id=normalize_optional_fk(supplier_id),
+            product_type_id=normalize_optional_fk(product_type_id),
             images=images_dto,
             attributes=attributes_dto,
         ),
@@ -207,6 +305,29 @@ async def update(
 @product_commands_router.delete(
     "/{product_id}",
     summary="Удалить товар",
+    description="""
+    Удаляет товар по идентификатору.
+
+    Права:
+    - Требуется permission: `product:delete`
+
+    Сценарии:
+    - Удаление снятого с продажи товара.
+    - Очистка тестовых или дубль-записей.
+    """,
+    response_description="Флаг успешного удаления",
+    responses={
+        200: {
+            "description": "Товар успешно удалён",
+            "content": {
+                "application/json": {
+                    "example": {"success": True, "data": {"deleted": True}}
+                }
+            },
+        },
+        404: {"description": "Товар не найден"},
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("product:delete"))],
 )
 async def delete(

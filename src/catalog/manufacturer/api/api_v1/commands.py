@@ -17,7 +17,7 @@ from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
 manufacturer_commands_router = APIRouter(
-    tags=["Manufacturers"]
+    tags=["Производители"]
 )
 
 
@@ -28,14 +28,33 @@ manufacturer_commands_router = APIRouter(
     summary="Создать производителя",
     description="""
     Создаёт нового производителя.
-    
-    - Имя должно быть уникальным
-    - Минимальная длина имени — 2 символа
+
+    Права:
+    - Требуется permission: `manufacturer:create`
+
+    Сценарии:
+    - Добавление нового бренда в справочник.
+    - Подготовка данных для привязки категорий к производителю.
     """,
-    response_description="Созданный производитель",
+    response_description="Созданный производитель в стандартной обёртке API",
     responses={
-        200: {"description": "Производитель успешно создан"},
+        200: {
+            "description": "Производитель успешно создан",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "id": 3,
+                            "name": "Acme Devices",
+                            "description": "Мировой производитель электроники",
+                        },
+                    }
+                }
+            },
+        },
         400: {"description": "Некорректные данные (имя слишком короткое)"},
+        403: {"description": "Недостаточно прав"},
         409: {"description": "Производитель уже существует"},
     },
     dependencies=[Depends(require_permissions("manufacturer:create"))],
@@ -45,14 +64,6 @@ async def create(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """
-    ### Возможные статусы:
-
-    - **201** — успешно создан
-    - **400** — имя слишком короткое
-    - **409** — производитель уже существует
-    """
-
     commands = ManufacturerComposition.build_create_command(db)
 
     dto = await commands.execute(
@@ -70,16 +81,34 @@ async def create(
     summary="Обновить производителя",
     description="""
     Обновляет существующего производителя.
-    
-    Можно изменить:
-    - имя
-    - описание
+
+    Права:
+    - Требуется permission: `manufacturer:update`
+
+    Сценарии:
+    - Переименование бренда.
+    - Обновление описания производителя.
     """,
-    response_description="Обновлённый производитель",
+    response_description="Обновлённый производитель в стандартной обёртке API",
     responses={
-        200: {"description": "Производитель успешно обновлён"},
+        200: {
+            "description": "Производитель успешно обновлён",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "id": 3,
+                            "name": "Acme Devices International",
+                            "description": "Обновлённое описание бренда",
+                        },
+                    }
+                }
+            },
+        },
         400: {"description": "Имя слишком короткое"},
         404: {"description": "Производитель не найден"},
+        403: {"description": "Недостаточно прав"},
         409: {"description": "Конфликт уникальности имени"},
     },
     dependencies=[Depends(require_permissions("manufacturer:update"))],
@@ -90,15 +119,6 @@ async def update(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """
-    ### Возможные статусы:
-
-    - **200** — успешно обновлён
-    - **400** — некорректные данные
-    - **404** — производитель не найден
-    - **409** — конфликт уникальности
-    """
-
     commands = ManufacturerComposition.build_update_command(db)
 
     dto = await commands.execute(
@@ -116,13 +136,25 @@ async def update(
     summary="Удалить производителя",
     description="""
     Удаляет производителя по ID.
-    
-    Удаление каскадное:
-    - связанные категории также будут удалены
+
+    Права:
+    - Требуется permission: `manufacturer:delete`
+
+    Сценарии:
+    - Удаление неактуального производителя.
+    - Очистка ошибочно созданной записи.
     """,
     responses={
-        200: {"description": "Производитель успешно удалён"},
+        200: {
+            "description": "Производитель успешно удалён",
+            "content": {
+                "application/json": {
+                    "example": {"success": True, "data": {"deleted": True}}
+                }
+            },
+        },
         404: {"description": "Производитель не найден"},
+        403: {"description": "Недостаточно прав"},
     },
     dependencies=[Depends(require_permissions("manufacturer:delete"))],
 )
@@ -131,13 +163,6 @@ async def delete(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """
-    ### Возможные статусы:
-
-    - **200** — успешно удалён
-    - **404** — производитель не найден
-    """
-
     commands = ManufacturerComposition.build_delete_command(db)
     await commands.execute(
         manufacturer_id,

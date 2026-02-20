@@ -9,12 +9,50 @@ from src.core.api.responses import api_response
 from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
-admin_product_router = APIRouter(tags=["Products Admin"])
+admin_product_router = APIRouter(tags=["Товары"])
 
 
 @admin_product_router.get(
     "/audit",
     summary="Получить аудит-логи товаров",
+    description="""
+    Возвращает журнал аудита действий над товарами.
+
+    Права:
+    - Требуется permission: `product:audit`
+
+    Сценарии:
+    - Анализ изменений цены и атрибутов.
+    - Поиск пользователя, выполнившего удаление или обновление товара.
+    """,
+    response_description="Список записей аудита товаров",
+    responses={
+        200: {
+            "description": "Логи аудита успешно получены",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "total": 1,
+                            "items": [
+                                {
+                                    "id": 701,
+                                    "product_id": 3001,
+                                    "action": "update",
+                                    "old_data": {"price": "59990.00"},
+                                    "new_data": {"price": "64990.00"},
+                                    "user_id": 42,
+                                    "created_at": "2026-02-20T10:25:00Z",
+                                }
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+        403: {"description": "Недостаточно прав"},
+    },
     dependencies=[Depends(require_permissions("product:audit"))],
 )
 async def get_audit_logs(
