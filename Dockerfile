@@ -72,5 +72,5 @@ COPY --chown=appuser:appuser . .
 # права на скрипты
 RUN chmod +x /code/deploy/prod/*.sh
 
-EXPOSE 8000
+EXPOSE 8001
 

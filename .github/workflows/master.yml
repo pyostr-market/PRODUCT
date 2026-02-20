@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ebana.registry.twcstorage.ru
-  IMAGE_NAME: product-user
+  IMAGE_NAME: market-product
 
 jobs:
 
