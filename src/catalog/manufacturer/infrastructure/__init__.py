@@ -1,0 +1,1 @@
+from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer

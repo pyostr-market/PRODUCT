@@ -1,0 +1,47 @@
+version: "3.8"
+
+networks:
+  MARKET_NETWORK:
+    external: true
+
+services:
+
+  web-blue:
+    image: ebana.registry.twcstorage.ru/market-product:latest
+    container_name: market-product-blue
+    command: ["/code/deploy/prod/prod_entrypoint.sh"]
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      MARKET_NETWORK:
+        aliases:
+          - web
+
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/system/health || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+
+  web-green:
+    image: ebana.registry.twcstorage.ru/market-product:latest
+    container_name: market-product-green
+    command: ["/code/deploy/prod/prod_entrypoint.sh"]
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      MARKET_NETWORK:
+        aliases:
+          - web
+
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/system/health || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
