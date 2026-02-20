@@ -1,5 +1,7 @@
 import pytest
 
+JPEG_BYTES = b"\xff\xd8\xff\xe0filter-image"
+
 
 @pytest.mark.asyncio
 async def test_filter_category_list_200(authorized_client, client):
@@ -8,16 +10,11 @@ async def test_filter_category_list_200(authorized_client, client):
     for name in names:
         r = await authorized_client.post(
             "/category/",
-            json={
+            data={
                 "name": name,
-                "images": [
-                    {
-                        "image": "filter-image",
-                        "image_name": "test.jpg",
-                        "ordering": 0,
-                    }
-                ],
+                "orderings": "0",
             },
+            files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
         )
         assert r.status_code == 200
 
@@ -33,10 +30,16 @@ async def test_filter_category_list_200(authorized_client, client):
 
 @pytest.mark.asyncio
 async def test_filter_category_by_name(authorized_client, client):
-    payload = {"images": [{"image": "i", "image_name": "test.jpg", "ordering": 0}]}
-    await authorized_client.post("/category/", json={"name": "FilterBooks", **payload})
-    await authorized_client.post("/category/", json={"name": "FilterPhones", **payload})
-    await authorized_client.post("/category/", json={"name": "Other", **payload})
+    async def create(name: str):
+        await authorized_client.post(
+            "/category/",
+            data={"name": name, "orderings": "0"},
+            files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        )
+
+    await create("FilterBooks")
+    await create("FilterPhones")
+    await create("Other")
 
     response = await client.get("/category/?name=Filter")
     assert response.status_code == 200

@@ -1,21 +1,18 @@
 import pytest
 
+JPEG_BYTES = b"\xff\xd8\xff\xe0audit-image"
+
 
 @pytest.mark.asyncio
 async def test_audit_logs_after_create(authorized_client):
     create = await authorized_client.post(
         "/category/",
-        json={
+        data={
             "name": "AuditCategory",
             "description": "Audit",
-            "images": [
-                {
-                    "image": "audit-image",
-                    "image_name": "test.jpg",
-                    "ordering": 0,
-                }
-            ],
+            "orderings": "0",
         },
+        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
     )
 
     assert create.status_code == 200
@@ -41,16 +38,11 @@ async def test_audit_logs_after_create(authorized_client):
 async def test_audit_filter_by_category_id(authorized_client):
     create = await authorized_client.post(
         "/category/",
-        json={
+        data={
             "name": "FilterAuditCategory",
-            "images": [
-                {
-                    "image": "audit-image",
-                    "image_name": "test.jpg",
-                    "ordering": 0,
-                }
-            ],
+            "orderings": "0",
         },
+        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
     )
 
     category_id = create.json()["data"]["id"]

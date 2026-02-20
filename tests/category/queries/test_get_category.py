@@ -2,27 +2,24 @@ import pytest
 
 from src.catalog.category.api.schemas.schemas import CategoryReadSchema
 
+JPEG_1 = b"\xff\xd8\xff\xe0get-image-1"
+JPEG_2 = b"\xff\xd8\xff\xe0get-image-2"
+
 
 @pytest.mark.asyncio
 async def test_get_category_200(authorized_client, client):
     create = await authorized_client.post(
         "/category/",
-        json={
-            "name": "Категория для get",
-            "description": "Описание",
-            "images": [
-                {
-                    "image": "get-image-2",
-                    "image_name": "get2.jpg",
-                    "ordering": 2,
-                },
-                {
-                    "image": "get-image-1",
-                    "image_name": "get1.jpg",
-                    "ordering": 1,
-                }
-            ],
-        },
+        data=[
+            ("name", "Категория для get"),
+            ("description", "Описание"),
+            ("orderings", "2"),
+            ("orderings", "1"),
+        ],
+        files=[
+            ("images", ("get2.jpg", JPEG_2, "image/jpeg")),
+            ("images", ("get1.jpg", JPEG_1, "image/jpeg")),
+        ],
     )
     assert create.status_code == 200
 

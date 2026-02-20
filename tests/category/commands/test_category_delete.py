@@ -1,21 +1,18 @@
 import pytest
 
+JPEG_BYTES = b"\xff\xd8\xff\xe0delete-image"
+
 
 @pytest.mark.asyncio
 async def test_delete_category_200(authorized_client, image_storage_mock):
     create = await authorized_client.post(
         "/category/",
-        json={
+        data={
             "name": "Удаляемая категория",
             "description": "Описание",
-            "images": [
-                {
-                    "image": "delete-image",
-                    "image_name": "delete.jpg",
-                    "ordering": 0,
-                }
-            ],
+            "orderings": "0",
         },
+        files=[("images", ("delete.jpg", JPEG_BYTES, "image/jpeg"))],
     )
 
     assert create.status_code == 200
