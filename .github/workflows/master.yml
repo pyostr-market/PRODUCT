@@ -206,7 +206,7 @@ jobs:
 
             echo "===== Switch network alias ====="
 
-            docker network connect --alias web $NETWORK $APP_NAME-$TARGET 2>/dev/null || true
+            docker network connect --alias web-product $NETWORK $APP_NAME-$TARGET 2>/dev/null || true
 
             if [ -n "$ACTIVE" ]; then
               docker network disconnect $NETWORK $APP_NAME-$ACTIVE 2>/dev/null || true
