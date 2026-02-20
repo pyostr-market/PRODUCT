@@ -4,8 +4,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.catalog.category.application.dto.category import CategoryImageReadDTO, CategoryReadDTO
-from src.catalog.category.models.categories import Category
+from src.catalog.category.application.dto.category import (
+    CategoryImageReadDTO,
+    CategoryReadDTO,
+)
+from src.catalog.category.infrastructure.models.categories import Category
 
 
 class CategoryReadRepository:

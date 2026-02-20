@@ -1,13 +1,22 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.manufacturer.application.commands.create_manufacturer import CreateManufacturerCommand
-from src.catalog.manufacturer.application.commands.update_manufacturer import UpdateManufacturerCommand
-from src.catalog.manufacturer.application.commands.delete_manufacturer import DeleteManufacturerCommand
-from src.catalog.manufacturer.application.queries.manufacturer_admin_queries import ManufacturerAdminQueries
+from src.catalog.manufacturer.application.commands.create_manufacturer import (
+    CreateManufacturerCommand,
+)
+from src.catalog.manufacturer.application.commands.delete_manufacturer import (
+    DeleteManufacturerCommand,
+)
+from src.catalog.manufacturer.application.commands.update_manufacturer import (
+    UpdateManufacturerCommand,
+)
+from src.catalog.manufacturer.application.queries.manufacturer_admin_queries import (
+    ManufacturerAdminQueries,
+)
 from src.catalog.manufacturer.application.queries.manufacturer_queries import (
     ManufacturerQueries,
 )
 from src.catalog.manufacturer.container import container
+
 
 class ManufacturerComposition:
 

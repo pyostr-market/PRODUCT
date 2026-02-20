@@ -1,7 +1,15 @@
-from src.catalog.suppliers.application.commands.create_supplier import CreateSupplierCommand
-from src.catalog.suppliers.application.commands.update_supplier import UpdateSupplierCommand
-from src.catalog.suppliers.application.commands.delete_supplier import DeleteSupplierCommand
-from src.catalog.suppliers.application.queries.supplier_admin_queries import SupplierAdminQueries
+from src.catalog.suppliers.application.commands.create_supplier import (
+    CreateSupplierCommand,
+)
+from src.catalog.suppliers.application.commands.delete_supplier import (
+    DeleteSupplierCommand,
+)
+from src.catalog.suppliers.application.commands.update_supplier import (
+    UpdateSupplierCommand,
+)
+from src.catalog.suppliers.application.queries.supplier_admin_queries import (
+    SupplierAdminQueries,
+)
 from src.catalog.suppliers.application.queries.supplier_queries import SupplierQueries
 from src.catalog.suppliers.container import container
 

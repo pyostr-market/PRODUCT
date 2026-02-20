@@ -1,6 +1,13 @@
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
-from src.catalog.category.application.dto.category import CategoryCreateDTO, CategoryImageReadDTO, CategoryReadDTO
-from src.catalog.category.domain.aggregates.category import CategoryAggregate, CategoryImageAggregate
+from src.catalog.category.application.dto.category import (
+    CategoryCreateDTO,
+    CategoryImageReadDTO,
+    CategoryReadDTO,
+)
+from src.catalog.category.domain.aggregates.category import (
+    CategoryAggregate,
+    CategoryImageAggregate,
+)
 from src.core.auth.schemas.user import User
 from src.core.services.images import ImageStorageService
 from src.core.services.images.storage import guess_content_type

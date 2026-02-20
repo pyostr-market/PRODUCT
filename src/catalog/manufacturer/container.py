@@ -1,21 +1,23 @@
+from src.catalog.manufacturer.domain.repository.manufacturer import (
+    ManufacturerRepository,
+)
 from src.catalog.manufacturer.infrastructure.orm.manufacturer import (
     SqlAlchemyManufacturerRepository,
 )
 from src.core.di.container import ServiceContainer
-from .application.queries.manufacturer_admin_queries import ManufacturerAdminQueries
-from .domain.repository.audit import ManufacturerAuditRepository
-from .infrastructure.orm.manufacturer_audit import SqlAlchemyManufacturerAuditRepository
 
 from ...core.db.unit_of_work import UnitOfWork
-
+from .application.commands.create_manufacturer import CreateManufacturerCommand
+from .application.commands.delete_manufacturer import DeleteManufacturerCommand
+from .application.commands.update_manufacturer import UpdateManufacturerCommand
+from .application.queries.manufacturer_admin_queries import ManufacturerAdminQueries
 from .application.queries.manufacturer_queries import ManufacturerQueries
 from .application.read_models.manufacturer_read_repository import (
     ManufacturerReadRepository,
 )
-from src.catalog.manufacturer.domain.repository.manufacturer import ManufacturerRepository
-from .application.commands.create_manufacturer import CreateManufacturerCommand
-from .application.commands.update_manufacturer import UpdateManufacturerCommand
-from .application.commands.delete_manufacturer import DeleteManufacturerCommand
+from .domain.repository.audit import ManufacturerAuditRepository
+from .infrastructure.orm.manufacturer_audit import SqlAlchemyManufacturerAuditRepository
+
 container = ServiceContainer()
 
 

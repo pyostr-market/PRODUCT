@@ -1,6 +1,8 @@
 from typing import Optional
 
-from src.catalog.category.application.read_models.category_read_repository import CategoryReadRepository
+from src.catalog.category.application.read_models.category_read_repository import (
+    CategoryReadRepository,
+)
 from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.core.services.images import ImageStorageService
 

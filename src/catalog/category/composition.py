@@ -1,7 +1,15 @@
-from src.catalog.category.application.commands.create_category import CreateCategoryCommand
-from src.catalog.category.application.commands.delete_category import DeleteCategoryCommand
-from src.catalog.category.application.commands.update_category import UpdateCategoryCommand
-from src.catalog.category.application.queries.category_admin_queries import CategoryAdminQueries
+from src.catalog.category.application.commands.create_category import (
+    CreateCategoryCommand,
+)
+from src.catalog.category.application.commands.delete_category import (
+    DeleteCategoryCommand,
+)
+from src.catalog.category.application.commands.update_category import (
+    UpdateCategoryCommand,
+)
+from src.catalog.category.application.queries.category_admin_queries import (
+    CategoryAdminQueries,
+)
 from src.catalog.category.application.queries.category_queries import CategoryQueries
 from src.catalog.category.container import container
 

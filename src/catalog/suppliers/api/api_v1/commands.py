@@ -1,11 +1,18 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.suppliers.api.schemas.schemas import SupplierCreateSchema, SupplierReadSchema, SupplierUpdateSchema
-from src.catalog.suppliers.application.dto.supplier import SupplierCreateDTO, SupplierUpdateDTO
+from src.catalog.suppliers.api.schemas.schemas import (
+    SupplierCreateSchema,
+    SupplierReadSchema,
+    SupplierUpdateSchema,
+)
+from src.catalog.suppliers.application.dto.supplier import (
+    SupplierCreateDTO,
+    SupplierUpdateDTO,
+)
 from src.catalog.suppliers.composition import SupplierComposition
 from src.core.api.responses import api_response
-from src.core.auth.dependencies import require_permissions, get_current_user
+from src.core.auth.dependencies import get_current_user, require_permissions
 from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 

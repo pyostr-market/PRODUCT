@@ -1,0 +1,219 @@
+import json
+from decimal import Decimal
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.catalog.product.api.schemas.schemas import ProductReadSchema
+from src.catalog.product.application.dto.product import (
+    ProductAttributeInputDTO,
+    ProductCreateDTO,
+    ProductImageInputDTO,
+    ProductUpdateDTO,
+)
+from src.catalog.product.composition import ProductComposition
+from src.catalog.product.domain.exceptions import ProductInvalidImage, ProductInvalidPayload
+from src.core.api.responses import api_response
+from src.core.auth.dependencies import get_current_user, require_permissions
+from src.core.auth.schemas.user import User
+from src.core.db.database import get_db
+
+product_commands_router = APIRouter(tags=["Products"])
+
+
+def _normalize_optional_fk(value: int | None) -> int | None:
+    if value is None or value <= 0:
+        return None
+    return value
+
+
+def _is_image_bytes(data: bytes) -> bool:
+    if not data:
+        return False
+
+    if data.startswith(b"\xff\xd8\xff"):
+        return True
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return True
+    if data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
+        return True
+    if data.startswith(b"BM"):
+        return True
+    if data.startswith(b"RIFF") and len(data) >= 12 and data[8:12] == b"WEBP":
+        return True
+    return False
+
+
+def _to_bool(value: str | None, default: bool = False) -> bool:
+    if value is None:
+        return default
+
+    normalized = value.strip().lower()
+    return normalized in {"1", "true", "yes", "on"}
+
+
+def _parse_attributes(attributes_json: str | None) -> list[ProductAttributeInputDTO]:
+    if not attributes_json:
+        return []
+
+    try:
+        payload = json.loads(attributes_json)
+    except json.JSONDecodeError as exc:
+        raise ProductInvalidPayload(details={"reason": "invalid_json", "error": str(exc)})
+
+    if not isinstance(payload, list):
+        raise ProductInvalidPayload(details={"reason": "attributes_must_be_list"})
+
+    mapped = []
+    for item in payload:
+        if not isinstance(item, dict):
+            raise ProductInvalidPayload(details={"reason": "attribute_item_must_be_object"})
+
+        mapped.append(
+            ProductAttributeInputDTO(
+                name=str(item.get("name", "")).strip(),
+                value=str(item.get("value", "")).strip(),
+                is_filterable=bool(item.get("is_filterable", False)),
+            )
+        )
+
+    return mapped
+
+
+async def _build_images_dto(
+    images: list[UploadFile] | None,
+    image_is_main: list[str] | None,
+) -> list[ProductImageInputDTO]:
+    if not images:
+        return []
+
+    mapped: list[ProductImageInputDTO] = []
+
+    for idx, image_file in enumerate(images):
+        payload = await image_file.read()
+
+        if image_file.content_type and not image_file.content_type.startswith("image/"):
+            raise ProductInvalidImage(
+                details={"filename": image_file.filename, "content_type": image_file.content_type}
+            )
+
+        if not _is_image_bytes(payload):
+            raise ProductInvalidImage(
+                details={"filename": image_file.filename, "reason": "unsupported_or_invalid_binary"}
+            )
+
+        is_main_value = image_is_main[idx] if image_is_main and idx < len(image_is_main) else None
+        mapped.append(
+            ProductImageInputDTO(
+                image=payload,
+                image_name=image_file.filename or "test.jpg",
+                is_main=_to_bool(is_main_value, default=(idx == 0)),
+            )
+        )
+
+    if mapped and not any(i.is_main for i in mapped):
+        mapped[0].is_main = True
+
+    return mapped
+
+
+@product_commands_router.post(
+    "/",
+    status_code=200,
+    summary="Создать товар",
+    dependencies=[Depends(require_permissions("product:create"))],
+)
+async def create(
+    name: Annotated[str, Form(...)],
+    price: Annotated[Decimal, Form(...)],
+    description: Annotated[str | None, Form()] = None,
+    category_id: Annotated[int | None, Form()] = None,
+    supplier_id: Annotated[int | None, Form()] = None,
+    product_type_id: Annotated[int | None, Form()] = None,
+    attributes_json: Annotated[str | None, Form()] = None,
+    images: Annotated[list[UploadFile] | None, File()] = None,
+    image_is_main: Annotated[list[str] | None, Form()] = None,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    images_dto = await _build_images_dto(images, image_is_main)
+    attributes_dto = _parse_attributes(attributes_json)
+
+    commands = ProductComposition.build_create_command(db)
+    dto = await commands.execute(
+        ProductCreateDTO(
+            name=name,
+            description=description,
+            price=price,
+            category_id=_normalize_optional_fk(category_id),
+            supplier_id=_normalize_optional_fk(supplier_id),
+            product_type_id=_normalize_optional_fk(product_type_id),
+            images=images_dto,
+            attributes=attributes_dto,
+        ),
+        user=user,
+    )
+
+    return api_response(ProductReadSchema.model_validate(dto))
+
+
+@product_commands_router.put(
+    "/{product_id}",
+    summary="Обновить товар",
+    dependencies=[Depends(require_permissions("product:update"))],
+)
+async def update(
+    product_id: int,
+    name: Annotated[str | None, Form()] = None,
+    price: Annotated[Decimal | None, Form()] = None,
+    description: Annotated[str | None, Form()] = None,
+    category_id: Annotated[int | None, Form()] = None,
+    supplier_id: Annotated[int | None, Form()] = None,
+    product_type_id: Annotated[int | None, Form()] = None,
+    attributes_json: Annotated[str | None, Form()] = None,
+    images: Annotated[list[UploadFile] | None, File()] = None,
+    image_is_main: Annotated[list[str] | None, Form()] = None,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    images_dto = None
+    if images is not None:
+        images_dto = await _build_images_dto(images, image_is_main)
+
+    attributes_dto = None
+    if attributes_json is not None:
+        attributes_dto = _parse_attributes(attributes_json)
+
+    commands = ProductComposition.build_update_command(db)
+    dto = await commands.execute(
+        product_id,
+        ProductUpdateDTO(
+            name=name,
+            description=description,
+            price=price,
+            category_id=_normalize_optional_fk(category_id),
+            supplier_id=_normalize_optional_fk(supplier_id),
+            product_type_id=_normalize_optional_fk(product_type_id),
+            images=images_dto,
+            attributes=attributes_dto,
+        ),
+        user=user,
+    )
+
+    return api_response(ProductReadSchema.model_validate(dto))
+
+
+@product_commands_router.delete(
+    "/{product_id}",
+    summary="Удалить товар",
+    dependencies=[Depends(require_permissions("product:delete"))],
+)
+async def delete(
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    commands = ProductComposition.build_delete_command(db)
+    await commands.execute(product_id, user=user)
+    return api_response({"deleted": True})

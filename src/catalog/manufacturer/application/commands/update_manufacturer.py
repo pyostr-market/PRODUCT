@@ -1,8 +1,8 @@
-from src.catalog.manufacturer.application.dto.manufacturer import (
-    ManufacturerUpdateDTO,
-    ManufacturerReadDTO,
-)
 from src.catalog.manufacturer.application.dto.audit import ManufacturerAuditDTO
+from src.catalog.manufacturer.application.dto.manufacturer import (
+    ManufacturerReadDTO,
+    ManufacturerUpdateDTO,
+)
 from src.catalog.manufacturer.domain.exceptions import ManufacturerNotFound
 from src.core.auth.schemas.user import User
 

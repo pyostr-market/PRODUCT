@@ -1,5 +1,9 @@
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
-from src.catalog.category.application.dto.category import CategoryImageReadDTO, CategoryReadDTO, CategoryUpdateDTO
+from src.catalog.category.application.dto.category import (
+    CategoryImageReadDTO,
+    CategoryReadDTO,
+    CategoryUpdateDTO,
+)
 from src.catalog.category.domain.aggregates.category import CategoryImageAggregate
 from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.core.auth.schemas.user import User

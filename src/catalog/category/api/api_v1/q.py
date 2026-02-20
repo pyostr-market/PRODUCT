@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.category.api.schemas.schemas import CategoryListResponse, CategoryReadSchema
+from src.catalog.category.api.schemas.schemas import (
+    CategoryListResponse,
+    CategoryReadSchema,
+)
 from src.catalog.category.composition import CategoryComposition
 from src.core.api.responses import api_response
 from src.core.db.database import get_db

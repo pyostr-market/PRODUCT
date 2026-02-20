@@ -68,3 +68,9 @@ class Product(TimestampMixin, Base):
         back_populates="product",
         cascade="all, delete-orphan",
     )
+
+    attributes = relationship(
+        "ProductAttributeValue",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )

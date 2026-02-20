@@ -4,7 +4,6 @@ import pytest
 
 from src.catalog.category.api.schemas.schemas import CategoryReadSchema
 
-
 TEST_IMAGE_PATH = "static/img/test.jpg"
 
 @pytest.mark.asyncio

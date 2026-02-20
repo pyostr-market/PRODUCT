@@ -7,7 +7,7 @@ from src.catalog.manufacturer.api.schemas.schemas import (
 )
 from src.catalog.manufacturer.composition import ManufacturerComposition
 from src.core.api.responses import api_response
-from src.core.auth.dependencies import require_permissions, get_current_user
+from src.core.auth.dependencies import get_current_user, require_permissions
 from src.core.db.database import get_db
 
 manufacturer_q_router = APIRouter(

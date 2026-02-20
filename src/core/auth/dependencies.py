@@ -1,14 +1,14 @@
 # src/core/auth/dependencies.py
 
-from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
-import jwt
 import time
 
-from src.core.auth.security import decode_token
-from src.core.auth.schemas.user import User, TokenSchema, UserPermissionSchema
-from src.core.auth.exceptions import UnauthorizedError, ForbiddenError
+import jwt
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 
+from src.core.auth.exceptions import ForbiddenError, UnauthorizedError
+from src.core.auth.schemas.user import TokenSchema, User, UserPermissionSchema
+from src.core.auth.security import decode_token
 
 # 🔐 OAuth2 схема
 oauth2_scheme = OAuth2PasswordBearer(

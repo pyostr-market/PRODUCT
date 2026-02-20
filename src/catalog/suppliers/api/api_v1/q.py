@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.suppliers.api.schemas.schemas import SupplierListResponse, SupplierReadSchema
+from src.catalog.suppliers.api.schemas.schemas import (
+    SupplierListResponse,
+    SupplierReadSchema,
+)
 from src.catalog.suppliers.composition import SupplierComposition
 from src.core.api.responses import api_response
 from src.core.db.database import get_db

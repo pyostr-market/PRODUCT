@@ -1,8 +1,8 @@
+from src.catalog.manufacturer.application.dto.audit import ManufacturerAuditDTO
 from src.catalog.manufacturer.application.dto.manufacturer import (
     ManufacturerCreateDTO,
     ManufacturerReadDTO,
 )
-from src.catalog.manufacturer.application.dto.audit import ManufacturerAuditDTO
 from src.catalog.manufacturer.domain.aggregates.manufacturer import (
     ManufacturerAggregate,
 )

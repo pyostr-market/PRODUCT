@@ -4,11 +4,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.catalog.category.domain.aggregates.category import CategoryAggregate, CategoryImageAggregate
+from src.catalog.category.domain.aggregates.category import (
+    CategoryAggregate,
+    CategoryImageAggregate,
+)
 from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.catalog.category.domain.repository.category import CategoryRepository
-from src.catalog.category.models.categories import Category
-from src.catalog.category.models.category_image import CategoryImage
+from src.catalog.category.infrastructure.models.categories import Category
+from src.catalog.category.infrastructure.models.category_image import CategoryImage
 
 
 class SqlAlchemyCategoryRepository(CategoryRepository):

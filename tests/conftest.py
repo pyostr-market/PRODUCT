@@ -1,8 +1,6 @@
 import os
 import sys
 
-
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.environ["TESTING"] = "1"
 
@@ -16,11 +14,12 @@ from sqlalchemy.ext.asyncio import (
 )
 from testcontainers.postgres import PostgresContainer
 
-from src.core.db.database import Base, get_db
-from src.mount import app
 from src.core.auth.dependencies import get_current_user
-from src.core.auth.schemas.user import User, TokenSchema, UserPermissionSchema
+from src.core.auth.schemas.user import TokenSchema, User, UserPermissionSchema
+from src.core.db.database import Base, get_db
 from src.core.services.images.storage import S3ImageStorageService
+from src.mount import app
+
 # ------------------------------
 # CONTAINER (sync)
 # ------------------------------
@@ -40,6 +39,10 @@ def authorized_user():
         'category:create',
         'category:update',
         'category:delete',
+        'product:audit',
+        'product:create',
+        'product:update',
+        'product:delete',
     ]
     permissions = []
     for ids, name  in enumerate(permissions_names):

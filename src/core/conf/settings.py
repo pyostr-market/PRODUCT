@@ -18,6 +18,7 @@ class Settings(BaseSettings):
         "src.catalog.manufacturer.api_module:ManufacturerApiModule",
         "src.catalog.suppliers.api_module:SupplierApiModule",
         "src.catalog.category.api_module:CategoryApiModule",
+        "src.catalog.product.api_module:ProductApiModule",
     ]
     # ===============================
     # POSTGRES

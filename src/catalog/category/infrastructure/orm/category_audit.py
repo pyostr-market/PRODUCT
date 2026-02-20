@@ -1,5 +1,7 @@
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
-from src.catalog.category.infrastructure.models.category_audit_logs import CategoryAuditLog
+from src.catalog.category.infrastructure.models.category_audit_logs import (
+    CategoryAuditLog,
+)
 
 
 class SqlAlchemyCategoryAuditRepository:

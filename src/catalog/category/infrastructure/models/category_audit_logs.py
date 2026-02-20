@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, String, JSON, ForeignKey
+from sqlalchemy import JSON, BigInteger, Column, ForeignKey, String
 
 from src.core.db.database import Base
 from src.core.db.mixins import TimestampMixin

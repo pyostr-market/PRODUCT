@@ -3,7 +3,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.suppliers.api.schemas.audit import SupplierAuditReadSchema, SupplierAuditListResponse
+from src.catalog.suppliers.api.schemas.audit import (
+    SupplierAuditListResponse,
+    SupplierAuditReadSchema,
+)
 from src.catalog.suppliers.composition import SupplierComposition
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import require_permissions

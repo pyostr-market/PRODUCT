@@ -3,7 +3,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.category.api.schemas.audit import CategoryAuditListResponse, CategoryAuditReadSchema
+from src.catalog.category.api.schemas.audit import (
+    CategoryAuditListResponse,
+    CategoryAuditReadSchema,
+)
 from src.catalog.category.composition import CategoryComposition
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import require_permissions

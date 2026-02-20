@@ -1,8 +1,9 @@
-from typing import Optional, Tuple, List
-from sqlalchemy import select, func
+from typing import List, Optional, Tuple
+
+from sqlalchemy import func, select
 
 from src.catalog.suppliers.infrastructure.models.supplier_audit_logs import (
-    SupplierAuditLog
+    SupplierAuditLog,
 )
 
 

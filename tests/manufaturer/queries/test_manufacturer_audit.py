@@ -1,14 +1,13 @@
 import pytest
 import pytest_asyncio
 
-
 # =========================================================
 # Fixture: пользователь с audit permission
 # =========================================================
 
 @pytest.fixture
 def audit_user():
-    from src.core.auth.schemas.user import User, TokenSchema, UserPermissionSchema
+    from src.core.auth.schemas.user import TokenSchema, User, UserPermissionSchema
 
     permissions_names = [
         "manufacturer:audit",
@@ -35,11 +34,12 @@ def audit_user():
 
 @pytest_asyncio.fixture
 async def audit_client(engine, audit_user):
-    from sqlalchemy.ext.asyncio import async_sessionmaker
     from httpx import ASGITransport, AsyncClient
-    from src.mount import app
-    from src.core.db.database import get_db
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
     from src.core.auth.dependencies import get_current_user
+    from src.core.db.database import get_db
+    from src.mount import app
 
     async_session = async_sessionmaker(
         bind=engine,

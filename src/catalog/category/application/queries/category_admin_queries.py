@@ -2,7 +2,9 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import func, select
 
-from src.catalog.category.infrastructure.models.category_audit_logs import CategoryAuditLog
+from src.catalog.category.infrastructure.models.category_audit_logs import (
+    CategoryAuditLog,
+)
 
 
 class CategoryAdminQueries:

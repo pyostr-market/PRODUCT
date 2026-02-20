@@ -1,5 +1,7 @@
 from src.catalog.suppliers.application.dto.audit import SupplierAuditDTO
-from src.catalog.suppliers.infrastructure.models.supplier_audit_logs import SupplierAuditLog
+from src.catalog.suppliers.infrastructure.models.supplier_audit_logs import (
+    SupplierAuditLog,
+)
 
 
 class SqlAlchemySupplierAuditRepository:

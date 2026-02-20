@@ -1,7 +1,9 @@
 from abc import ABC
 from typing import List, Optional
 
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 
 
 class ManufacturerRepository(ABC):

@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from src.core.api.responses import api_response
-from src.core.db.database import get_db
-from src.core.auth.dependencies import require_permissions
-from src.catalog.manufacturer.composition import ManufacturerComposition
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.catalog.manufacturer.api.schemas.audit import (
-    ManufacturerAuditReadSchema,
     ManufacturerAuditListResponse,
+    ManufacturerAuditReadSchema,
 )
+from src.catalog.manufacturer.composition import ManufacturerComposition
+from src.core.api.responses import api_response
+from src.core.auth.dependencies import require_permissions
+from src.core.db.database import get_db
 
 admin_manufacturer_router = APIRouter(
     tags=["Manufacturers Admin"]

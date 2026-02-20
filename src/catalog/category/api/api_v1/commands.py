@@ -10,7 +10,10 @@ from src.catalog.category.application.dto.category import (
     CategoryUpdateDTO,
 )
 from src.catalog.category.composition import CategoryComposition
-from src.catalog.category.domain.exceptions import CategoryImagesOrderingMismatch, CategoryInvalidImage
+from src.catalog.category.domain.exceptions import (
+    CategoryImagesOrderingMismatch,
+    CategoryInvalidImage,
+)
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import get_current_user, require_permissions
 from src.core.auth.schemas.user import User

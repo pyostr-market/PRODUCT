@@ -1,6 +1,6 @@
 import pytest
-from src.catalog.manufacturer.api.schemas.schemas import ManufacturerReadSchema
 
+from src.catalog.manufacturer.api.schemas.schemas import ManufacturerReadSchema
 
 # =========================================================
 # 200 — получение списка (доступно без авторизации)

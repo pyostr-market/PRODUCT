@@ -1,5 +1,8 @@
 from src.catalog.suppliers.application.dto.audit import SupplierAuditDTO
-from src.catalog.suppliers.application.dto.supplier import SupplierUpdateDTO, SupplierReadDTO
+from src.catalog.suppliers.application.dto.supplier import (
+    SupplierReadDTO,
+    SupplierUpdateDTO,
+)
 from src.catalog.suppliers.domain.exceptions import SupplierNotFound
 from src.core.auth.schemas.user import User
 

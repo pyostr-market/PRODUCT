@@ -5,7 +5,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
-from src.catalog.suppliers.domain.exceptions import SupplierAlreadyExists, SupplierNotFound
+from src.catalog.suppliers.domain.exceptions import (
+    SupplierAlreadyExists,
+    SupplierNotFound,
+)
 from src.catalog.suppliers.domain.repository.supplier import SupplierRepository
 from src.catalog.suppliers.infrastructure.models.supplier import Supplier
 

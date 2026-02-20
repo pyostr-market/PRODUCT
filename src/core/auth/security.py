@@ -1,9 +1,8 @@
-import jwt
-
 from typing import Any, Dict
 
-from src.core.conf.settings import get_settings
+import jwt
 
+from src.core.conf.settings import get_settings
 
 # ===============================
 # JWT ACCESS TOKEN
