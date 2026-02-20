@@ -18,12 +18,11 @@ class Category(TimestampMixin, Base):
         Index("ix_categories_parent_id", "parent_id"),
         Index("ix_categories_manufacturer_id", "manufacturer_id"),
     )
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
 
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=True)
 
-    # 🔁 рекурсивная связь (дерево)
     parent_id = Column(
         BigInteger,
         ForeignKey("categories.id", ondelete="CASCADE"),
@@ -42,7 +41,6 @@ class Category(TimestampMixin, Base):
         cascade="all, delete",
     )
 
-    # 🏭 Производитель
     manufacturer_id = Column(
         BigInteger,
         ForeignKey("manufacturers.id", ondelete="SET NULL"),
@@ -54,9 +52,15 @@ class Category(TimestampMixin, Base):
         back_populates="categories",
     )
 
-    # 📦 Товары
     products = relationship(
         "Product",
         back_populates="category",
         cascade="all, delete",
+    )
+
+    images = relationship(
+        "CategoryImage",
+        back_populates="category",
+        order_by="CategoryImage.ordering",
+        cascade="all, delete-orphan",
     )

@@ -8,6 +8,17 @@ class Settings(BaseSettings):
         from src.core.conf.bootstrap import bootstrap_env
         bootstrap_env()
         super().__init__(**values)
+
+    # ===============================
+    # MODULES
+    # ===============================
+
+    API_MODULES: list = [
+        "src.core.api.api_module:CoreApiModule",
+        "src.catalog.manufacturer.api_module:ManufacturerApiModule",
+        "src.catalog.suppliers.api_module:SupplierApiModule",
+        "src.catalog.category.api_module:CategoryApiModule",
+    ]
     # ===============================
     # POSTGRES
     # ===============================
@@ -36,11 +47,17 @@ class Settings(BaseSettings):
 
     JWT_ACCESS_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_EXPIRE_DAYS: int = 7
-    API_MODULES: list = [
-        "src.core.api.api_module:CoreApiModule",
-        "src.catalog.manufacturer.api_module:ManufacturerApiModule",
-        "src.catalog.suppliers.api_module:SupplierApiModule",
-    ]
+
+
+    # ===============================
+    # S3
+    # ===============================
+
+    BUCKET_NAME: str = '2481cb39-trade'
+    S3_ACCESS_KEY: str
+    S3_SECRET_ACCESS_KEY: str
+    S3_URL: str = 'https://s3.twcstorage.ru'
+    S3_REGION: str = 'ru-1'
 
 @lru_cache
 def get_settings() -> Settings:

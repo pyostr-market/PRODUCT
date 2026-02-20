@@ -3,6 +3,7 @@
 
 # Category
 import src.catalog.category.models
+import src.catalog.category.infrastructure.models
 
 # Manufacturer
 import src.catalog.manufacturer.infrastructure.models

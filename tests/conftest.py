@@ -20,6 +20,7 @@ from src.core.db.database import Base, get_db
 from src.mount import app
 from src.core.auth.dependencies import get_current_user
 from src.core.auth.schemas.user import User, TokenSchema, UserPermissionSchema
+from src.core.services.images.storage import S3ImageStorageService
 # ------------------------------
 # CONTAINER (sync)
 # ------------------------------
@@ -35,6 +36,10 @@ def authorized_user():
         'supplier:create',
         'supplier:update',
         'supplier:delete',
+        'category:audit',
+        'category:create',
+        'category:update',
+        'category:delete',
     ]
     permissions = []
     for ids, name  in enumerate(permissions_names):
@@ -117,6 +122,34 @@ async def authorized_client(engine, authorized_user):
         yield ac
 
     app.dependency_overrides.clear()
+
+
+class FakeImageStorage:
+    def __init__(self):
+        self.deleted_keys = []
+
+    async def upload_bytes(self, *, data: bytes, key: str, content_type: str | None = None) -> None:
+        return None
+
+    async def delete_object(self, key: str) -> None:
+        self.deleted_keys.append(key)
+
+    def build_key(self, *, folder: str, filename: str) -> str:
+        return f"{folder}/test-image-uuid.img"
+
+    def build_public_url(self, key: str) -> str:
+        return f"https://test-s3.local/{key}"
+
+
+@pytest.fixture(autouse=True)
+def image_storage_mock(monkeypatch):
+    fake_storage = FakeImageStorage()
+    monkeypatch.setattr(
+        S3ImageStorageService,
+        "from_settings",
+        classmethod(lambda cls: fake_storage),
+    )
+    return fake_storage
 @pytest_asyncio.fixture()
 async def client(engine):
 
