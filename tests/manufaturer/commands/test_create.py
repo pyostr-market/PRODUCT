@@ -4,8 +4,8 @@ from src.catalog.manufacturer.api.schemas.schemas import ManufacturerReadSchema
 
 
 @pytest.mark.asyncio
-async def test_create_manufacturer_200(client):
-    response = await client.post(
+async def test_create_manufacturer_200(authorized_client):
+    response = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Apple название",
@@ -31,18 +31,18 @@ async def test_create_manufacturer_200(client):
     assert isinstance(manufacturer.id, int)
 
 @pytest.mark.asyncio
-async def test_create_manufacturer_409_already_exists(client):
+async def test_create_manufacturer_409_already_exists(authorized_client):
     payload = {
         "name": "Samsung",
         "description": "Test description"
     }
 
     # Создаём первый раз
-    first = await client.post("/manufacturer/", json=payload)
+    first = await authorized_client.post("/manufacturer/", json=payload)
     assert first.status_code == 200
 
     # Пытаемся создать повторно
-    response = await client.post("/manufacturer/", json=payload)
+    response = await authorized_client.post("/manufacturer/", json=payload)
 
     # 1️⃣ HTTP
     assert response.status_code == 409
@@ -61,8 +61,8 @@ async def test_create_manufacturer_409_already_exists(client):
     assert isinstance(error["details"], dict)
 
 @pytest.mark.asyncio
-async def test_create_manufacturer_400_name_too_short(client):
-    response = await client.post(
+async def test_create_manufacturer_400_name_too_short(authorized_client):
+    response = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "A",  # слишком короткое

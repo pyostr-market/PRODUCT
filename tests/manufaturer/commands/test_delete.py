@@ -5,9 +5,9 @@ import pytest
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_delete_manufacturer_200(client):
+async def test_delete_manufacturer_200(authorized_client):
     # 1️⃣ Создаём производителя
-    create = await client.post(
+    create = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Delete Me",
@@ -19,7 +19,7 @@ async def test_delete_manufacturer_200(client):
     manufacturer_id = create.json()["data"]["id"]
 
     # 2️⃣ Удаляем
-    response = await client.delete(f"/manufacturer/{manufacturer_id}")
+    response = await authorized_client.delete(f"/manufacturer/{manufacturer_id}")
 
     assert response.status_code == 200
 
@@ -30,7 +30,7 @@ async def test_delete_manufacturer_200(client):
     assert body["data"]["deleted"] is True
 
     # 3️⃣ Проверяем, что объект реально удалён
-    get_response = await client.get(f"/manufacturer/{manufacturer_id}")
+    get_response = await authorized_client.get(f"/manufacturer/{manufacturer_id}")
 
     assert get_response.status_code == 404
 
@@ -44,8 +44,8 @@ async def test_delete_manufacturer_200(client):
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_delete_manufacturer_404_not_found(client):
-    response = await client.delete("/manufacturer/999999")
+async def test_delete_manufacturer_404_not_found(authorized_client):
+    response = await authorized_client.delete("/manufacturer/999999")
 
     assert response.status_code == 404
 
@@ -60,9 +60,9 @@ async def test_delete_manufacturer_404_not_found(client):
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_delete_manufacturer_second_time_404(client):
+async def test_delete_manufacturer_second_time_404(authorized_client):
     # Создаём
-    create = await client.post(
+    create = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Delete Twice",
@@ -73,11 +73,11 @@ async def test_delete_manufacturer_second_time_404(client):
     manufacturer_id = create.json()["data"]["id"]
 
     # Первый delete
-    first_delete = await client.delete(f"/manufacturer/{manufacturer_id}")
+    first_delete = await authorized_client.delete(f"/manufacturer/{manufacturer_id}")
     assert first_delete.status_code == 200
 
     # Второй delete
-    second_delete = await client.delete(f"/manufacturer/{manufacturer_id}")
+    second_delete = await authorized_client.delete(f"/manufacturer/{manufacturer_id}")
 
     assert second_delete.status_code == 404
 

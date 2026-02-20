@@ -7,9 +7,9 @@ from src.catalog.manufacturer.api.schemas.schemas import ManufacturerReadSchema
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_update_manufacturer_200_full_update(client):
+async def test_update_manufacturer_200_full_update(authorized_client):
     # Создаём производителя
-    create = await client.post(
+    create = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Old Name",
@@ -23,7 +23,7 @@ async def test_update_manufacturer_200_full_update(client):
     manufacturer_id = created["id"]
 
     # Обновляем
-    response = await client.put(
+    response = await authorized_client.put(
         f"/manufacturer/{manufacturer_id}",
         json={
             "name": "New Name",
@@ -49,8 +49,8 @@ async def test_update_manufacturer_200_full_update(client):
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_update_manufacturer_200_partial_update(client):
-    create = await client.post(
+async def test_update_manufacturer_200_partial_update(authorized_client):
+    create = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Partial Name",
@@ -60,7 +60,7 @@ async def test_update_manufacturer_200_partial_update(client):
 
     manufacturer_id = create.json()["data"]["id"]
 
-    response = await client.put(
+    response = await authorized_client.put(
         f"/manufacturer/{manufacturer_id}",
         json={
             "description": "Updated Description"
@@ -83,8 +83,8 @@ async def test_update_manufacturer_200_partial_update(client):
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_update_manufacturer_404_not_found(client):
-    response = await client.put(
+async def test_update_manufacturer_404_not_found(authorized_client):
+    response = await authorized_client.put(
         "/manufacturer/999999",
         json={
             "name": "Does not exist"
@@ -103,8 +103,8 @@ async def test_update_manufacturer_404_not_found(client):
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_update_manufacturer_400_name_too_short(client):
-    create = await client.post(
+async def test_update_manufacturer_400_name_too_short(authorized_client):
+    create = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Valid Name",
@@ -114,7 +114,7 @@ async def test_update_manufacturer_400_name_too_short(client):
 
     manufacturer_id = create.json()["data"]["id"]
 
-    response = await client.put(
+    response = await authorized_client.put(
         f"/manufacturer/{manufacturer_id}",
         json={
             "name": "A"  # слишком короткое
@@ -133,9 +133,9 @@ async def test_update_manufacturer_400_name_too_short(client):
 # =========================================================
 
 @pytest.mark.asyncio
-async def test_update_manufacturer_409_conflict(client):
+async def test_update_manufacturer_409_conflict(authorized_client):
     # Создаём двух производителей
-    first = await client.post(
+    first = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Brand A",
@@ -143,7 +143,7 @@ async def test_update_manufacturer_409_conflict(client):
         }
     )
 
-    second = await client.post(
+    second = await authorized_client.post(
         "/manufacturer/",
         json={
             "name": "Brand B",
@@ -155,7 +155,7 @@ async def test_update_manufacturer_409_conflict(client):
     second_id = second.json()["data"]["id"]
 
     # Пытаемся переименовать второго в имя первого
-    response = await client.put(
+    response = await authorized_client.put(
         f"/manufacturer/{second_id}",
         json={
             "name": "Brand A"

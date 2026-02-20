@@ -31,7 +31,7 @@ class ManufacturerNotFound(BaseServiceError):
 class ManufacturerNameTooShort(BaseServiceError):
     def __init__(
             self,
-            msg: str = 'Имя слишком длинное',
+            msg: str = 'Имя слишком короткое',
             code: str = 'manufacturer_name_too_short',
             status_code: int = 400,
     ):

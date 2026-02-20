@@ -20,3 +20,4 @@ app = create_app()
 @app.exception_handler(BaseServiceError)
 async def service_error_handler(request: Request, exc: BaseServiceError):
     return api_response(exc)
+

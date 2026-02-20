@@ -1,0 +1,2 @@
+from .manufacturer import Manufacturer
+from .manufacturer_audit_logs import ManufacturerAuditLog

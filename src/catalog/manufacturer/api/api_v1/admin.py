@@ -1,0 +1,54 @@
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
+
+from src.core.api.responses import api_response
+from src.core.db.database import get_db
+from src.core.auth.dependencies import require_permissions
+from src.catalog.manufacturer.composition import ManufacturerComposition
+from src.catalog.manufacturer.api.schemas.audit import (
+    ManufacturerAuditReadSchema,
+    ManufacturerAuditListResponse,
+)
+
+admin_manufacturer_router = APIRouter(
+    tags=["Manufacturers Admin"]
+)
+
+
+@admin_manufacturer_router.get(
+    "/audit",
+    summary="Получить аудит-логи производителей",
+    dependencies=[Depends(require_permissions("manufacturer:audit"))],
+)
+async def get_audit_logs(
+    manufacturer_id: Optional[int] = Query(None),
+    user_id: Optional[int] = Query(None),
+    action: Optional[str] = Query(None),
+    limit: int = Query(20, le=100),
+    offset: int = Query(0),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Доступно только администраторам.
+    """
+
+    queries = ManufacturerComposition.build_admin_queries(db)
+
+    items, total = await queries.filter_logs(
+        manufacturer_id=manufacturer_id,
+        user_id=user_id,
+        action=action,
+        limit=limit,
+        offset=offset,
+    )
+
+    return api_response(
+        ManufacturerAuditListResponse(
+            total=total,
+            items=[
+                ManufacturerAuditReadSchema.model_validate(i)
+                for i in items
+            ]
+        )
+    )

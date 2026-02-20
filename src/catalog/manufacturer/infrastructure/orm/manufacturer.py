@@ -11,7 +11,7 @@ from src.catalog.manufacturer.domain.exceptions import (
     ManufacturerAlreadyExists,
     ManufacturerNotFound,
 )
-from src.catalog.manufacturer.domain.repository import ManufacturerRepository
+from src.catalog.manufacturer.domain.repository.manufacturer import ManufacturerRepository
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
 
 

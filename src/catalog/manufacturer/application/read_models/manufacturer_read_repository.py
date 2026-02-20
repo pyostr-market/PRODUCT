@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.manufacturer.application.dto import ManufacturerReadDTO
+from src.catalog.manufacturer.application.dto.manufacturer import ManufacturerReadDTO
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
 
 

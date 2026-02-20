@@ -19,6 +19,9 @@ dependencies = [
     "psycopg2-binary (>=2.9.11,<3.0.0)",
     "httpx (>=0.28.1,<0.29.0)",
     "gunicorn (>=25.1.0,<26.0.0)",
+    "bcrypt (>=5.0.0,<6.0.0)",
+    "pyjwt (>=2.11.0,<3.0.0)",
+    "cryptography (>=46.0.5,<47.0.0)",
 ]
 
 [tool.poetry.group.dev.dependencies]

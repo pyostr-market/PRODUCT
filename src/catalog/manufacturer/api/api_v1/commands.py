@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.manufacturer.api.schemas.schemas import (
@@ -6,12 +6,14 @@ from src.catalog.manufacturer.api.schemas.schemas import (
     ManufacturerReadSchema,
     ManufacturerUpdateSchema,
 )
-from src.catalog.manufacturer.application.dto import (
+from src.catalog.manufacturer.application.dto.manufacturer import (
     ManufacturerCreateDTO,
     ManufacturerUpdateDTO,
 )
 from src.catalog.manufacturer.composition import ManufacturerComposition
 from src.core.api.responses import api_response
+from src.core.auth.dependencies import require_permissions, get_current_user
+from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
 manufacturer_commands_router = APIRouter(
@@ -36,10 +38,12 @@ manufacturer_commands_router = APIRouter(
         400: {"description": "Некорректные данные (имя слишком короткое)"},
         409: {"description": "Производитель уже существует"},
     },
+    dependencies=[Depends(require_permissions("manufacturer:create"))],
 )
 async def create(
     payload: ManufacturerCreateSchema,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """
     ### Возможные статусы:
@@ -49,10 +53,11 @@ async def create(
     - **409** — производитель уже существует
     """
 
-    commands = ManufacturerComposition.build_commands(db)
+    commands = ManufacturerComposition.build_create_command(db)
 
-    dto = await commands.create(
-        ManufacturerCreateDTO(**payload.model_dump())
+    dto = await commands.execute(
+        ManufacturerCreateDTO(**payload.model_dump()),
+        user=user,
     )
 
     return api_response(
@@ -77,11 +82,13 @@ async def create(
         404: {"description": "Производитель не найден"},
         409: {"description": "Конфликт уникальности имени"},
     },
+    dependencies=[Depends(require_permissions("manufacturer:update"))],
 )
 async def update(
     manufacturer_id: int,
     payload: ManufacturerUpdateSchema,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """
     ### Возможные статусы:
@@ -92,11 +99,12 @@ async def update(
     - **409** — конфликт уникальности
     """
 
-    commands = ManufacturerComposition.build_commands(db)
+    commands = ManufacturerComposition.build_update_command(db)
 
-    dto = await commands.update(
+    dto = await commands.execute(
         manufacturer_id,
-        ManufacturerUpdateDTO(**payload.model_dump())
+        ManufacturerUpdateDTO(**payload.model_dump()),
+        user=user,
     )
 
     return api_response(
@@ -116,10 +124,12 @@ async def update(
         200: {"description": "Производитель успешно удалён"},
         404: {"description": "Производитель не найден"},
     },
+    dependencies=[Depends(require_permissions("manufacturer:delete"))],
 )
 async def delete(
     manufacturer_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """
     ### Возможные статусы:
@@ -128,7 +138,10 @@ async def delete(
     - **404** — производитель не найден
     """
 
-    commands = ManufacturerComposition.build_commands(db)
-    await commands.delete(manufacturer_id)
+    commands = ManufacturerComposition.build_delete_command(db)
+    await commands.execute(
+        manufacturer_id,
+        user=user,
+    )
 
     return api_response({"deleted": True})
