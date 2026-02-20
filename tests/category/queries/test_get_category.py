@@ -10,12 +10,11 @@ JPEG_2 = b"\xff\xd8\xff\xe0get-image-2"
 async def test_get_category_200(authorized_client, client):
     create = await authorized_client.post(
         "/category/",
-        data=[
-            ("name", "Категория для get"),
-            ("description", "Описание"),
-            ("orderings", "2"),
-            ("orderings", "1"),
-        ],
+        data={
+            "name": "Категория для get",
+            "description": "Описание",
+            "orderings": ["2", "1"],
+        },
         files=[
             ("images", ("get2.jpg", JPEG_2, "image/jpeg")),
             ("images", ("get1.jpg", JPEG_1, "image/jpeg")),
