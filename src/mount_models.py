@@ -11,4 +11,4 @@ import src.catalog.manufacturer.infrastructure.models
 import src.catalog.product.models
 
 # Supplier
-import src.catalog.suppliers.models
+import src.catalog.suppliers.infrastructure.models

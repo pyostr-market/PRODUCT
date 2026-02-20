@@ -1,0 +1,51 @@
+from typing import Optional, Tuple, List
+from sqlalchemy import select, func
+
+from src.catalog.suppliers.infrastructure.models.supplier_audit_logs import (
+    SupplierAuditLog
+)
+
+
+class SupplierAdminQueries:
+
+    def __init__(self, db):
+        self.db = db
+
+    async def filter_logs(
+        self,
+        supplier_id: Optional[int],
+        user_id: Optional[int],
+        action: Optional[str],
+        limit: int,
+        offset: int,
+    ) -> Tuple[List[SupplierAuditLog], int]:
+
+        stmt = select(SupplierAuditLog)
+        count_stmt = select(func.count()).select_from(SupplierAuditLog)
+
+        if supplier_id:
+            stmt = stmt.where(
+                SupplierAuditLog.supplier_id == supplier_id
+            )
+            count_stmt = count_stmt.where(
+                SupplierAuditLog.supplier_id == supplier_id
+            )
+
+        if user_id:
+            stmt = stmt.where(SupplierAuditLog.user_id == user_id)
+            count_stmt = count_stmt.where(SupplierAuditLog.user_id == user_id)
+
+        if action:
+            stmt = stmt.where(SupplierAuditLog.action == action)
+            count_stmt = count_stmt.where(SupplierAuditLog.action == action)
+
+        stmt = stmt.order_by(SupplierAuditLog.created_at.desc())
+        stmt = stmt.limit(limit).offset(offset)
+
+        result = await self.db.execute(stmt)
+        count_result = await self.db.execute(count_stmt)
+
+        items = result.scalars().all()
+        total = count_result.scalar() or 0
+
+        return items, total

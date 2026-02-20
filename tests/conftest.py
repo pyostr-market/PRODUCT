@@ -31,6 +31,10 @@ def authorized_user():
         'manufacturer:create',
         'manufacturer:update',
         'manufacturer:delete',
+        'supplier:audit',
+        'supplier:create',
+        'supplier:update',
+        'supplier:delete',
     ]
     permissions = []
     for ids, name  in enumerate(permissions_names):
