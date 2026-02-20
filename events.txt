@@ -1,0 +1,180 @@
+Redis Pub/Sub Events
+====================
+
+Channel
+- `catalog.events`
+
+Base Event Schema
+- All events use one envelope and are published as JSON.
+
+{
+  "event_id": "uuid",
+  "version": 1,
+  "type": "crud | field_update | relation",
+  "method": "create | update | delete | price_update | stock_update | publish | unpublish | hide | block",
+  "app": "products | categories | manufacturers | suppliers | device_types | images",
+  "entity": "product | category | manufacturer | supplier | product_type | product_images | category_images",
+  "entity_id": 101,
+  "emitted_at": "2026-02-20T12:00:00+00:00",
+  "data": {}
+}
+
+Products
+- Create
+{
+  "type": "crud",
+  "method": "create",
+  "app": "products",
+  "entity": "product",
+  "entity_id": 101,
+  "data": {
+    "product_id": 101,
+    "fields": {
+      "name": "Product 1",
+      "description": "...",
+      "price": "100.00",
+      "category_id": 10,
+      "supplier_id": 20,
+      "product_type_id": 5
+    }
+  }
+}
+
+- Update
+{
+  "type": "crud",
+  "method": "update",
+  "app": "products",
+  "entity": "product",
+  "entity_id": 101,
+  "data": {
+    "product_id": 101,
+    "fields": {
+      "price": "120.00",
+      "name": "Product 1 updated"
+    }
+  }
+}
+
+- Delete
+{
+  "type": "crud",
+  "method": "delete",
+  "app": "products",
+  "entity": "product",
+  "entity_id": 101,
+  "data": { "product_id": 101 }
+}
+
+- Price changed
+{
+  "type": "field_update",
+  "method": "price_update",
+  "app": "products",
+  "entity": "product",
+  "entity_id": 101,
+  "data": {
+    "product_id": 101,
+    "price": { "old": "100.00", "new": "120.00" }
+  }
+}
+
+- Stock changed (protocol-ready)
+{
+  "type": "field_update",
+  "method": "stock_update",
+  "app": "products",
+  "entity": "product",
+  "entity_id": 101,
+  "data": {
+    "product_id": 101,
+    "stock": { "old": 12, "new": 7 }
+  }
+}
+
+- Hidden / blocked / publish state (protocol-ready)
+{
+  "type": "field_update",
+  "method": "hide | block | publish | unpublish",
+  "app": "products",
+  "entity": "product",
+  "entity_id": 101,
+  "data": {
+    "product_id": 101,
+    "status": { "old": "published", "new": "hidden" }
+  }
+}
+
+Categories
+- Create / Update / Delete use same pattern:
+  - app: `categories`
+  - entity: `category`
+  - data: `{ "category_id": <id>, "fields": {...} }` for create/update
+  - data: `{ "category_id": <id> }` for delete
+
+Manufacturers
+- Create / Update / Delete use same pattern:
+  - app: `manufacturers`
+  - entity: `manufacturer`
+  - data: `{ "manufacturer_id": <id>, "fields": {...} }` for create/update
+  - data: `{ "manufacturer_id": <id> }` for delete
+
+Suppliers
+- Create / Update / Delete use same pattern:
+  - app: `suppliers`
+  - entity: `supplier`
+  - data: `{ "supplier_id": <id>, "fields": {...} }` for create/update
+  - data: `{ "supplier_id": <id> }` for delete
+
+Device Types
+- Product type reassignment on product update
+{
+  "type": "field_update",
+  "method": "update",
+  "app": "device_types",
+  "entity": "product_type",
+  "entity_id": 101,
+  "data": {
+    "product_id": 101,
+    "product_type_id": { "old": 2, "new": 5 }
+  }
+}
+
+Images
+- Product images create/update/delete
+{
+  "type": "crud | field_update",
+  "method": "create | update | delete",
+  "app": "images",
+  "entity": "product_images",
+  "entity_id": 101,
+  "data": {
+    "product_id": 101,
+    "images": [
+      { "image_key": "products/uuid.jpg", "is_main": true }
+    ]
+  }
+}
+
+- Category images create/update/delete
+{
+  "type": "crud | field_update",
+  "method": "create | update | delete",
+  "app": "images",
+  "entity": "category_images",
+  "entity_id": 11,
+  "data": {
+    "category_id": 11,
+    "images": [
+      { "image_key": "categories/uuid.jpg", "ordering": 0 }
+    ]
+  }
+}
+
+Notes
+- Current backend implementation already emits CRUD + field updates for:
+  - products (including `price_update`, product image changes, product_type reassignment)
+  - categories (including category image changes)
+  - manufacturers
+  - suppliers
+- `stock_update`, `hide`, `block`, `publish`, `unpublish` are included in protocol and should be emitted when corresponding fields/endpoints are added.

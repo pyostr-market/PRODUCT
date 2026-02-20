@@ -24,6 +24,7 @@ from src.catalog.category.infrastructure.orm.category_audit import (
 )
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
+from src.core.events import AsyncEventBus, get_event_bus
 from src.core.services.images import ImageStorageService, S3ImageStorageService
 
 container = ServiceContainer()
@@ -36,6 +37,11 @@ container.register(
 container.register(
     UnitOfWork,
     lambda scope, db: UnitOfWork(db),
+)
+
+container.register(
+    AsyncEventBus,
+    lambda scope, db: get_event_bus(),
 )
 
 container.register(
@@ -63,6 +69,7 @@ container.register(
         audit_repository=scope.resolve(CategoryAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 
@@ -73,6 +80,7 @@ container.register(
         audit_repository=scope.resolve(CategoryAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 
@@ -83,6 +91,7 @@ container.register(
         audit_repository=scope.resolve(CategoryAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 

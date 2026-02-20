@@ -24,6 +24,7 @@ from src.catalog.suppliers.infrastructure.orm.supplier_audit import (
 )
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
+from src.core.events import AsyncEventBus, get_event_bus
 
 container = ServiceContainer()
 
@@ -35,6 +36,11 @@ container.register(
 container.register(
     UnitOfWork,
     lambda scope, db: UnitOfWork(db),
+)
+
+container.register(
+    AsyncEventBus,
+    lambda scope, db: get_event_bus(),
 )
 
 container.register(
@@ -53,6 +59,7 @@ container.register(
         repository=scope.resolve(SupplierRepository, db=db),
         audit_repository=scope.resolve(SupplierAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 
@@ -62,6 +69,7 @@ container.register(
         repository=scope.resolve(SupplierRepository, db=db),
         audit_repository=scope.resolve(SupplierAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 
@@ -71,6 +79,7 @@ container.register(
         repository=scope.resolve(SupplierRepository, db=db),
         audit_repository=scope.resolve(SupplierAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 

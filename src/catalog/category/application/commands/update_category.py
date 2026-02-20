@@ -7,17 +7,26 @@ from src.catalog.category.application.dto.category import (
 from src.catalog.category.domain.aggregates.category import CategoryImageAggregate
 from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.core.auth.schemas.user import User
+from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
 from src.core.services.images.storage import guess_content_type
 
 
 class UpdateCategoryCommand:
 
-    def __init__(self, repository, audit_repository, uow, image_storage: ImageStorageService):
+    def __init__(
+        self,
+        repository,
+        audit_repository,
+        uow,
+        image_storage: ImageStorageService,
+        event_bus: AsyncEventBus,
+    ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
+        self.event_bus = event_bus
 
     async def execute(
         self,
@@ -120,5 +129,40 @@ class UpdateCategoryCommand:
             for key in old_image_keys:
                 if key not in new_keys_set:
                     await self.image_storage.delete_object(key)
+
+        changed_fields = {
+            key: value
+            for key, value in new_data.items()
+            if old_data.get(key) != value
+        }
+        if changed_fields:
+            events = [
+                build_event(
+                    event_type="crud",
+                    method="update",
+                    app="categories",
+                    entity="category",
+                    entity_id=result.id,
+                    data={
+                        "category_id": result.id,
+                        "fields": changed_fields,
+                    },
+                )
+            ]
+            if "images" in changed_fields:
+                events.append(
+                    build_event(
+                        event_type="field_update",
+                        method="update",
+                        app="images",
+                        entity="category_images",
+                        entity_id=result.id,
+                        data={
+                            "category_id": result.id,
+                            "images": changed_fields["images"],
+                        },
+                    )
+                )
+            self.event_bus.publish_many_nowait(events)
 
         return result

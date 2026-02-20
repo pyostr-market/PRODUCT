@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Optional
 
 from pydantic_settings import BaseSettings
 
@@ -37,6 +38,13 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str
     REDIS_PORT: int
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_DB: int = 0
+    REDIS_EVENTS_CHANNEL: str = "catalog.events"
+    REDIS_USER_EVENTS_CHANNEL: str = "product.events"
+    REDIS_PUBSUB_ENABLED: bool = True
+    REDIS_CONNECT_TIMEOUT_SECONDS: float = 0.2
+    REDIS_SOCKET_TIMEOUT_SECONDS: float = 0.2
 
     # ===============================
     # JWT

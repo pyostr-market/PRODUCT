@@ -9,17 +9,26 @@ from src.catalog.category.domain.aggregates.category import (
     CategoryImageAggregate,
 )
 from src.core.auth.schemas.user import User
+from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
 from src.core.services.images.storage import guess_content_type
 
 
 class CreateCategoryCommand:
 
-    def __init__(self, repository, audit_repository, uow, image_storage: ImageStorageService):
+    def __init__(
+        self,
+        repository,
+        audit_repository,
+        uow,
+        image_storage: ImageStorageService,
+        event_bus: AsyncEventBus,
+    ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
+        self.event_bus = event_bus
 
     async def execute(
         self,
@@ -67,7 +76,7 @@ class CreateCategoryCommand:
                     )
                 )
 
-                return CategoryReadDTO(
+                result = CategoryReadDTO(
                     id=aggregate.id,
                     name=aggregate.name,
                     description=aggregate.description,
@@ -86,3 +95,39 @@ class CreateCategoryCommand:
             for key in uploaded_keys:
                 await self.image_storage.delete_object(key)
             raise
+
+        self.event_bus.publish_many_nowait(
+            [
+                build_event(
+                    event_type="crud",
+                    method="create",
+                    app="categories",
+                    entity="category",
+                    entity_id=result.id,
+                    data={
+                        "category_id": result.id,
+                        "fields": {
+                            "name": result.name,
+                            "description": result.description,
+                            "parent_id": result.parent_id,
+                            "manufacturer_id": result.manufacturer_id,
+                        },
+                    },
+                ),
+                build_event(
+                    event_type="crud",
+                    method="create",
+                    app="images",
+                    entity="category_images",
+                    entity_id=result.id,
+                    data={
+                        "category_id": result.id,
+                        "images": [
+                            {"image_key": image.image_key, "ordering": image.ordering}
+                            for image in result.images
+                        ],
+                    },
+                ),
+            ]
+        )
+        return result

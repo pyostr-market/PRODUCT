@@ -10,17 +10,26 @@ from src.catalog.product.domain.aggregates.product import (
 )
 from src.catalog.product.domain.exceptions import ProductNotFound
 from src.core.auth.schemas.user import User
+from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
 from src.core.services.images.storage import guess_content_type
 
 
 class UpdateProductCommand:
 
-    def __init__(self, repository, audit_repository, uow, image_storage: ImageStorageService):
+    def __init__(
+        self,
+        repository,
+        audit_repository,
+        uow,
+        image_storage: ImageStorageService,
+        event_bus: AsyncEventBus,
+    ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
+        self.event_bus = event_bus
 
     async def execute(self, product_id: int, dto, user: User) -> ProductReadDTO:
         old_image_keys: list[str] = []
@@ -163,5 +172,74 @@ class UpdateProductCommand:
             for key in old_image_keys:
                 if key not in new_keys_set:
                     await self.image_storage.delete_object(key)
+
+        changed_fields = {
+            key: value
+            for key, value in new_data.items()
+            if old_data.get(key) != value
+        }
+        if changed_fields:
+            events = [
+                build_event(
+                    event_type="crud",
+                    method="update",
+                    app="products",
+                    entity="product",
+                    entity_id=result.id,
+                    data={
+                        "product_id": result.id,
+                        "fields": changed_fields,
+                    },
+                )
+            ]
+            if "price" in changed_fields:
+                events.append(
+                    build_event(
+                        event_type="field_update",
+                        method="price_update",
+                        app="products",
+                        entity="product",
+                        entity_id=result.id,
+                        data={
+                            "product_id": result.id,
+                            "price": {
+                                "old": old_data.get("price"),
+                                "new": changed_fields["price"],
+                            },
+                        },
+                    )
+                )
+            if "product_type_id" in changed_fields:
+                events.append(
+                    build_event(
+                        event_type="field_update",
+                        method="update",
+                        app="device_types",
+                        entity="product_type",
+                        entity_id=result.id,
+                        data={
+                            "product_id": result.id,
+                            "product_type_id": {
+                                "old": old_data.get("product_type_id"),
+                                "new": changed_fields["product_type_id"],
+                            },
+                        },
+                    )
+                )
+            if "images" in changed_fields:
+                events.append(
+                    build_event(
+                        event_type="field_update",
+                        method="update",
+                        app="images",
+                        entity="product_images",
+                        entity_id=result.id,
+                        data={
+                            "product_id": result.id,
+                            "images": changed_fields["images"],
+                        },
+                    )
+                )
+            self.event_bus.publish_many_nowait(events)
 
         return result

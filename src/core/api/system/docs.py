@@ -43,7 +43,7 @@ async def custom_swagger_ui():
                     element.dispatchEvent(new Event("change", { bubbles: true }));
                 };
 
-                setNativeValue(username, "+79991234567");
+                setNativeValue(username, "9995309522");
                 setNativeValue(password, "string");
 
             }, 300);

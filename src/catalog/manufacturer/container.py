@@ -5,6 +5,7 @@ from src.catalog.manufacturer.infrastructure.orm.manufacturer import (
     SqlAlchemyManufacturerRepository,
 )
 from src.core.di.container import ServiceContainer
+from src.core.events import AsyncEventBus, get_event_bus
 
 from ...core.db.unit_of_work import UnitOfWork
 from .application.commands.create_manufacturer import CreateManufacturerCommand
@@ -34,6 +35,11 @@ container.register(
     UnitOfWork,
     lambda scope, db: UnitOfWork(db)
 )
+
+container.register(
+    AsyncEventBus,
+    lambda scope, db: get_event_bus(),
+)
 # ----------------------------
 # CQRS registration
 # ----------------------------
@@ -56,6 +62,7 @@ container.register(
         repository=scope.resolve(ManufacturerRepository, db=db),
         audit_repository=scope.resolve(ManufacturerAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     )
 )
 
@@ -65,6 +72,7 @@ container.register(
         repository=scope.resolve(ManufacturerRepository, db=db),
         audit_repository=scope.resolve(ManufacturerAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     )
 )
 
@@ -74,6 +82,7 @@ container.register(
         repository=scope.resolve(ManufacturerRepository, db=db),
         audit_repository=scope.resolve(ManufacturerAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     )
 )
 
