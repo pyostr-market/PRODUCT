@@ -96,6 +96,7 @@ class CreateProductCommand:
                         old_data=None,
                         new_data=new_data,
                         user_id=user.id,
+                        fio=user.fio,
                     )
                 )
 

@@ -17,6 +17,7 @@ class ProductAuditLog(TimestampMixin, Base):
     old_data = Column(JSON, nullable=True)
     new_data = Column(JSON, nullable=True)
     user_id = Column(BigInteger, nullable=False)
+    fio = Column(String(255), nullable=True)
 
 
 class ProductTypeAuditLog(TimestampMixin, Base):
@@ -32,6 +33,7 @@ class ProductTypeAuditLog(TimestampMixin, Base):
     old_data = Column(JSON, nullable=True)
     new_data = Column(JSON, nullable=True)
     user_id = Column(BigInteger, nullable=False)
+    fio = Column(String(255), nullable=True)
 
 
 class ProductAttributeAuditLog(TimestampMixin, Base):
@@ -47,3 +49,4 @@ class ProductAttributeAuditLog(TimestampMixin, Base):
     old_data = Column(JSON, nullable=True)
     new_data = Column(JSON, nullable=True)
     user_id = Column(BigInteger, nullable=False)
+    fio = Column(String(255), nullable=True)

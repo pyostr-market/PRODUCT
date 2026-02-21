@@ -42,6 +42,7 @@ class CreateSupplierCommand:
                         "phone": aggregate.phone,
                     },
                     user_id=user.id,
+                    fio=user.fio,
                 )
             )
 

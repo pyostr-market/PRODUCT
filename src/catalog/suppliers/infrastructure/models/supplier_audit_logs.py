@@ -21,3 +21,4 @@ class SupplierAuditLog(TimestampMixin, Base):
     new_data = Column(JSON, nullable=True)
 
     user_id = Column(BigInteger, nullable=False)
+    fio = Column(String(255), nullable=True)

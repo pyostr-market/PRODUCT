@@ -62,6 +62,7 @@ class DeleteProductCommand:
                     old_data=old_data,
                     new_data=None,
                     user_id=user.id,
+                    fio=user.fio,
                 )
             )
 

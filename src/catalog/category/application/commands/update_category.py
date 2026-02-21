@@ -101,6 +101,7 @@ class UpdateCategoryCommand:
                             old_data=old_data,
                             new_data=new_data,
                             user_id=user.id,
+                            fio=user.fio,
                         )
                     )
 

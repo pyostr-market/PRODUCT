@@ -18,6 +18,7 @@ class SqlAlchemyProductAuditRepository:
             old_data=dto.old_data,
             new_data=dto.new_data,
             user_id=dto.user_id,
+            fio=dto.fio,
         )
         self.db.add(model)
         await self.db.flush()
@@ -29,6 +30,7 @@ class SqlAlchemyProductAuditRepository:
             old_data=dto.old_data,
             new_data=dto.new_data,
             user_id=dto.user_id,
+            fio=dto.fio,
         )
         self.db.add(model)
         await self.db.flush()
@@ -40,6 +42,7 @@ class SqlAlchemyProductAuditRepository:
             old_data=dto.old_data,
             new_data=dto.new_data,
             user_id=dto.user_id,
+            fio=dto.fio,
         )
         self.db.add(model)
         await self.db.flush()

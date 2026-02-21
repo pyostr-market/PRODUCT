@@ -19,3 +19,4 @@ class CategoryAuditLog(TimestampMixin, Base):
     old_data = Column(JSON, nullable=True)
     new_data = Column(JSON, nullable=True)
     user_id = Column(BigInteger, nullable=False)
+    fio = Column(String(255), nullable=True)

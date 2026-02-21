@@ -9,6 +9,7 @@ class ProductAuditDTO:
     old_data: Optional[Dict[str, Any]]
     new_data: Optional[Dict[str, Any]]
     user_id: int
+    fio: Optional[str] = None
 
 
 @dataclass
@@ -18,6 +19,7 @@ class ProductTypeAuditDTO:
     old_data: Optional[Dict[str, Any]]
     new_data: Optional[Dict[str, Any]]
     user_id: int
+    fio: Optional[str] = None
 
 
 @dataclass
@@ -27,3 +29,4 @@ class ProductAttributeAuditDTO:
     old_data: Optional[Dict[str, Any]]
     new_data: Optional[Dict[str, Any]]
     user_id: int
+    fio: Optional[str] = None

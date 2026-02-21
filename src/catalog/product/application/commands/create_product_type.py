@@ -40,6 +40,7 @@ class CreateProductTypeCommand:
                         "parent_id": aggregate.parent_id,
                     },
                     user_id=user.id,
+                    fio=user.fio,
                 )
             )
 

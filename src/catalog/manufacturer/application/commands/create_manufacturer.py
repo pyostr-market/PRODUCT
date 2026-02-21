@@ -42,6 +42,7 @@ class CreateManufacturerCommand:
                         "description": aggregate.description,
                     },
                     user_id=user.id,
+                    fio=user.fio,
                 )
             )
 

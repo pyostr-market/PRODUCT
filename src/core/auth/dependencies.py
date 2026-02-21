@@ -31,6 +31,7 @@ async def get_current_user(
     iat = payload.get("iat")
     sub = payload.get("sub")
     permissions = payload.get("permissions", [])
+    fio = payload.get("fio")
 
     if not sub:
         raise UnauthorizedError("Некорректный токен")
@@ -44,11 +45,13 @@ async def get_current_user(
             exp=exp,
             iat=iat,
             type=payload.get("type"),
+            fio=fio,
         ),
         permissions=[
             UserPermissionSchema(id=p["id"], name=p["name"])
             for p in permissions
         ],
+        fio=fio,
     )
 
 

@@ -39,6 +39,7 @@ class CreateProductAttributeCommand:
                         "is_filterable": aggregate.is_filterable,
                     },
                     user_id=user.id,
+                    fio=user.fio,
                 )
             )
 

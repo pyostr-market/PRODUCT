@@ -73,6 +73,7 @@ class CreateCategoryCommand:
                             ],
                         },
                         user_id=user.id,
+                        fio=user.fio,
                     )
                 )
 
