@@ -9,7 +9,9 @@ from src.catalog.suppliers.composition import SupplierComposition
 from src.core.api.responses import api_response
 from src.core.db.database import get_db
 
-supplier_q_router = APIRouter(tags=["Поставщики"])
+supplier_q_router = APIRouter(
+    tags=["Поставщики"],
+)
 
 
 @supplier_q_router.get(
@@ -56,7 +58,7 @@ async def get_by_id(
 
 
 @supplier_q_router.get(
-    "/",
+    "",
     summary="Получить список поставщиков",
     description="""
     Возвращает список поставщиков с фильтром по имени и пагинацией.

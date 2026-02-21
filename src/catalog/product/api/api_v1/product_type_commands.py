@@ -17,13 +17,13 @@ from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
 product_type_commands_router = APIRouter(
-    tags=["Типы продуктов"]
+    tags=["Типы продуктов"],
 )
 
 
 # CREATE
 @product_type_commands_router.post(
-    "/type/",
+    "/type",
     status_code=200,
     summary="Создать тип продукта",
     description="""

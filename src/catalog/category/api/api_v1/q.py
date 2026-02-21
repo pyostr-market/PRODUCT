@@ -9,7 +9,9 @@ from src.catalog.category.composition import CategoryComposition
 from src.core.api.responses import api_response
 from src.core.db.database import get_db
 
-category_q_router = APIRouter(tags=["Категории"])
+category_q_router = APIRouter(
+    tags=["Категории"],
+)
 
 
 @category_q_router.get(
@@ -63,7 +65,7 @@ async def get_by_id(
 
 
 @category_q_router.get(
-    "/",
+    "",
     summary="Получить список категорий",
     description="""
     Возвращает список категорий с пагинацией и фильтрацией по имени.

@@ -1,11 +1,11 @@
 import pytest
 import pytest_asyncio
 
+from src.core.auth.schemas.user import TokenSchema, User, UserPermissionSchema
+
 
 @pytest.fixture
 def audit_user():
-    from src.core.auth.schemas.user import TokenSchema, User, UserPermissionSchema
-
     permissions_names = [
         "supplier:audit",
         "supplier:create",
@@ -20,11 +20,7 @@ def audit_user():
 
     return User(
         id=99,
-        token_data=TokenSchema(
-            exp=9999999999,
-            iat=0,
-            type="access",
-        ),
+        token_data=TokenSchema(exp=9999999999, iat=0, type="access"),
         permissions=permissions,
     )
 
@@ -38,10 +34,7 @@ async def audit_client(engine, audit_user):
     from src.core.db.database import get_db
     from src.mount import app
 
-    async_session = async_sessionmaker(
-        bind=engine,
-        expire_on_commit=False,
-    )
+    async_session = async_sessionmaker(bind=engine, expire_on_commit=False)
 
     async def override_get_db():
         async with async_session() as session:
@@ -55,32 +48,28 @@ async def audit_client(engine, audit_user):
 
     transport = ASGITransport(app=app)
 
-    async with AsyncClient(
-        transport=transport,
-        base_url="http://test",
-    ) as ac:
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
 
 
-@pytest_asyncio.fixture
+@pytest.mark.asyncio
 async def test_audit_logs_after_create(audit_client):
+    """200 — audit логи после создания поставщика"""
     create = await audit_client.post(
-        "/supplier/",
+        "/supplier",
         json={
-            "name": "AuditBrand",
+            "name": "AuditSupplier",
             "contact_email": "audit@test.com",
             "phone": "+15558000",
-        },
+        }
     )
-
     assert create.status_code == 200
 
     supplier_id = create.json()["data"]["id"]
 
     response = await audit_client.get("/supplier/admin/audit")
-
     assert response.status_code == 200
 
     body = response.json()
@@ -90,61 +79,108 @@ async def test_audit_logs_after_create(audit_client):
     assert data["total"] >= 1
 
     log = data["items"][0]
-
     assert log["supplier_id"] == supplier_id
     assert log["action"] == "create"
-    assert log["new_data"]["name"] == "AuditBrand"
+    assert log["new_data"]["name"] == "AuditSupplier"
     assert log["old_data"] is None
 
 
-@pytest_asyncio.fixture
+@pytest.mark.asyncio
 async def test_audit_filter_by_supplier_id(audit_client):
-    create = await audit_client.post(
-        "/supplier/",
-        json={"name": "FilterAuditBrand"},
-    )
-
+    """Фильтр audit-логов по supplier_id"""
+    create = await audit_client.post("/supplier", json={"name": "FilterAuditSupplier"})
     supplier_id = create.json()["data"]["id"]
 
-    response = await audit_client.get(
-        f"/supplier/admin/audit?supplier_id={supplier_id}",
-    )
-
+    response = await audit_client.get(f"/supplier/admin/audit?supplier_id={supplier_id}")
     assert response.status_code == 200
 
     body = response.json()
     data = body["data"]
-
     assert data["total"] >= 1
 
     for item in data["items"]:
         assert item["supplier_id"] == supplier_id
 
 
-@pytest_asyncio.fixture
+@pytest.mark.asyncio
 async def test_audit_filter_by_action(audit_client):
-    await audit_client.post(
-        "/supplier/",
-        json={"name": "ActionBrand"},
-    )
+    """Фильтр audit-логов по action"""
+    await audit_client.post("/supplier", json={"name": "ActionSupplier"})
 
-    response = await audit_client.get(
-        "/supplier/admin/audit?action=create",
-    )
-
+    response = await audit_client.get("/supplier/admin/audit?action=create")
     assert response.status_code == 200
 
     body = response.json()
     data = body["data"]
-
     assert data["total"] >= 1
 
     for item in data["items"]:
         assert item["action"] == "create"
 
 
-@pytest_asyncio.fixture
-async def test_audit_403_without_permission(authorized_client):
-    response = await authorized_client.get("/supplier/admin/audit")
+@pytest.mark.asyncio
+async def test_audit_filter_by_user_id(audit_client, audit_user):
+    """Фильтр audit-логов по user_id"""
+    await audit_client.post("/supplier", json={"name": "UserFilterSupplier"})
 
-    assert response.status_code == 403
+    response = await audit_client.get(f"/supplier/admin/audit?user_id={audit_user.id}")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+    assert data["total"] >= 1
+
+    for item in data["items"]:
+        assert item["user_id"] == audit_user.id
+
+
+@pytest.mark.asyncio
+async def test_audit_pagination(audit_client):
+    """Пагинация audit-логов"""
+    for i in range(5):
+        await audit_client.post("/supplier", json={"name": f"PaginatedSupplier{i}"})
+
+    response = await audit_client.get("/supplier/admin/audit?limit=2")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+    assert len(data["items"]) == 2
+
+    response2 = await audit_client.get("/supplier/admin/audit?limit=2&offset=2")
+    assert response2.status_code == 200
+
+    data2 = response2.json()["data"]
+    assert len(data2["items"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_audit_403_without_permission():
+    """403 — нет permission supplier:audit"""
+    from httpx import ASGITransport, AsyncClient
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from src.core.auth.dependencies import get_current_user
+    from src.core.db.database import get_db
+    from src.mount import app
+    from src.core.auth.schemas.user import TokenSchema, User
+
+    # Пользователь без supplier:audit
+    user = User(
+        id=100,
+        token_data=TokenSchema(exp=9999999999, iat=0, type="access"),
+        permissions=[],
+    )
+
+    async def override_get_current_user():
+        return user
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        response = await ac.get("/supplier/admin/audit")
+        assert response.status_code == 403
+
+    app.dependency_overrides.clear()

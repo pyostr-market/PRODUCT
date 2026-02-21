@@ -36,7 +36,7 @@
   - Path: `manufacturer_id: int` (обяз.)
 - Успешный ответ (`200 OK`): `{ "success": true, "data": ManufacturerReadSchema }`
 
-### 4) GET `/manufacturer/`
+### 4) GET `/manufacturer`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
@@ -46,7 +46,7 @@
     - `offset: int = 0`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ManufacturerReadSchema[] } }`
 
-### 5) POST `/manufacturer/`
+### 5) POST `/manufacturer`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `manufacturer:create`
 - Параметры:
@@ -96,7 +96,7 @@
   - Path: `supplier_id: int` (обяз.)
 - Успешный ответ (`200 OK`): `{ "success": true, "data": SupplierReadSchema }`
 
-### 10) GET `/supplier/`
+### 10) GET `/supplier`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
@@ -106,7 +106,7 @@
     - `offset: int = 0`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": SupplierReadSchema[] } }`
 
-### 11) POST `/supplier/`
+### 11) POST `/supplier`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `supplier:create`
 - Параметры:
@@ -158,7 +158,7 @@
   - Path: `category_id: int` (обяз.)
 - Успешный ответ (`200 OK`): `{ "success": true, "data": CategoryReadSchema }`
 
-### 16) GET `/category/`
+### 16) GET `/category`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
@@ -168,7 +168,7 @@
     - `offset: int = 0`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": CategoryReadSchema[] } }`
 
-### 17) POST `/category/`
+### 17) POST `/category`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `category:create`
 - Параметры:
@@ -236,7 +236,7 @@
   - Path: `product_id: int` (обяз.)
 - Успешный ответ (`200 OK`): `{ "success": true, "data": ProductReadSchema }`
 
-### 23) GET `/product/`
+### 23) GET `/product`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
@@ -248,7 +248,7 @@
     - `offset: int = 0`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductReadSchema[] } }`
 
-### 24) POST `/product/`
+### 24) POST `/product`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `product:create`
 - Параметры:
@@ -312,7 +312,7 @@
   - Path: `product_type_id: int` (обяз.)
 - Успешный ответ (`200 OK`): `{ "success": true, "data": ProductTypeReadSchema }`
 
-### 29) GET `/product/type/`
+### 29) GET `/product/type`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
@@ -322,7 +322,7 @@
     - `offset: int = 0`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductTypeReadSchema[] } }`
 
-### 30) POST `/product/type/`
+### 30) POST `/product/type`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `product_type:create`
 - Параметры:
@@ -365,7 +365,14 @@
 
 ## Атрибуты продуктов
 
-### 34) POST `/product/attribute/`
+### 34) GET `/product/attribute/{attribute_id}`
+- Метод: `GET` (не реализован)
+- Доступ: Н/Д
+- Параметры:
+  - Path: `attribute_id: int` (обяз.)
+- Примечание: эндпоинт не реализован
+
+### 35) POST `/product/attribute`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `product_attribute:create`
 - Параметры:
@@ -375,7 +382,7 @@
     - `is_filterable: bool = false`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": ProductAttributeReadSchema }`
 
-### 35) PUT `/product/attribute/{attribute_id}`
+### 36) PUT `/product/attribute/{attribute_id}`
 - Метод: `PUT`
 - Доступ: `Требуемое право` = `product_attribute:update`
 - Параметры:
@@ -386,7 +393,7 @@
     - `is_filterable: bool | null`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": ProductAttributeReadSchema }`
 
-### 36) DELETE `/product/attribute/{attribute_id}`
+### 37) DELETE `/product/attribute/{attribute_id}`
 - Метод: `DELETE`
 - Доступ: `Требуемое право` = `product_attribute:delete`
 - Параметры:
@@ -400,13 +407,13 @@
 
 ### Фильтрация по атрибутам
 
-Метод `GET /product/` поддерживает фильтрацию по атрибутам через query-параметр `attributes`.
+Метод `GET /product` поддерживает фильтрацию по атрибутам через query-параметр `attributes`.
 
 Формат: JSON-объект, где ключи — имена атрибутов, значения — искомые значения.
 
 Пример запроса:
 ```
-GET /product/?attributes={"RAM": "8 GB", "Color": "Black"}
+GET /product?attributes={"RAM": "8 GB", "Color": "Black"}
 ```
 
 Пример ответа:

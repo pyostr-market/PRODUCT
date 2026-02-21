@@ -10,7 +10,7 @@ JPEG_BYTES = b"\xff\xd8\xff\xe0product-image"
 @pytest.mark.asyncio
 async def test_create_product_200(authorized_client):
     response = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": "iPhone 15 Pro 256 Гб Красный",
             "description": "Смартфон",
@@ -42,7 +42,7 @@ async def test_create_product_200(authorized_client):
 @pytest.mark.asyncio
 async def test_create_product_400_name_too_short(authorized_client):
     response = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": "A",
             "price": "999.99",
@@ -58,7 +58,7 @@ async def test_create_product_400_name_too_short(authorized_client):
 @pytest.mark.asyncio
 async def test_create_product_400_invalid_image(authorized_client):
     response = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": "Некорректный товар",
             "price": "10.00",

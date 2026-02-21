@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 
 system_router = APIRouter(
-    tags=['Система']
+    tags=['Система'],
 )
 
 @system_router.get(

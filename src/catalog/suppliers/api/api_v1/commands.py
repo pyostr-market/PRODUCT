@@ -16,11 +16,13 @@ from src.core.auth.dependencies import get_current_user, require_permissions
 from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
-supplier_commands_router = APIRouter(tags=["Поставщики"])
+supplier_commands_router = APIRouter(
+    tags=["Поставщики"],
+)
 
 
 @supplier_commands_router.post(
-    "/",
+    "",
     status_code=200,
     summary="Создать поставщика",
     description="""

@@ -6,7 +6,7 @@ from src.catalog.suppliers.api.schemas.schemas import SupplierReadSchema
 @pytest.mark.asyncio
 async def test_create_supplier_200(authorized_client):
     response = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Apple поставщик",
             "contact_email": "apple@test.com",
@@ -37,10 +37,10 @@ async def test_create_supplier_409_already_exists(authorized_client):
         "phone": "+15550002",
     }
 
-    first = await authorized_client.post("/supplier/", json=payload)
+    first = await authorized_client.post("/supplier", json=payload)
     assert first.status_code == 200
 
-    response = await authorized_client.post("/supplier/", json=payload)
+    response = await authorized_client.post("/supplier", json=payload)
 
     assert response.status_code == 409
 
@@ -58,7 +58,7 @@ async def test_create_supplier_409_already_exists(authorized_client):
 @pytest.mark.asyncio
 async def test_create_supplier_400_name_too_short(authorized_client):
     response = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "A",
             "contact_email": "short@test.com",

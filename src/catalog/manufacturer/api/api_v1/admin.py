@@ -13,7 +13,7 @@ from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
 admin_manufacturer_router = APIRouter(
-    tags=["Производители"]
+    tags=["Производители"],
 )
 
 

@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_delete_product_200(authorized_client):
     create = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": "Удаляемый товар",
             "price": "300.00",

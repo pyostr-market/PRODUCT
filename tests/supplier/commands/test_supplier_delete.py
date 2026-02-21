@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_delete_supplier_200(authorized_client):
     create = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Delete Me",
             "contact_email": "delete@test.com",
@@ -47,7 +47,7 @@ async def test_delete_supplier_404_not_found(authorized_client):
 @pytest.mark.asyncio
 async def test_delete_supplier_second_time_404(authorized_client):
     create = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Delete Twice",
             "contact_email": "twice@test.com",

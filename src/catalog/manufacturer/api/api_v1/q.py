@@ -10,7 +10,7 @@ from src.core.api.responses import api_response
 from src.core.db.database import get_db
 
 manufacturer_q_router = APIRouter(
-    tags=["Производители"]
+    tags=["Производители"],
 )
 
 
@@ -66,9 +66,9 @@ async def get_by_id(
         ManufacturerReadSchema.model_validate(dto)
     )
 
-# FILTER + PAGINATION
+# GET BY ID
 @manufacturer_q_router.get(
-    "/",
+    "",
     summary="Получить список производителей",
     description="""
     Возвращает список производителей с возможностью:

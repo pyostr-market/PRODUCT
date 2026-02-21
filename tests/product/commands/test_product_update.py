@@ -11,7 +11,7 @@ JPEG_BYTES_NEW = b"\xff\xd8\xff\xe0product-new"
 @pytest.mark.asyncio
 async def test_update_product_200_full_update(authorized_client):
     create = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": "Старый товар",
             "description": "Старое описание",

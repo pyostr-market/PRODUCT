@@ -10,7 +10,7 @@ from src.catalog.manufacturer.api.schemas.schemas import ManufacturerReadSchema
 async def test_get_manufacturer_200(authorized_client, client):
     # 1️⃣ Создаём (нужна авторизация)
     create = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Get Test",
             "description": "Get Description"

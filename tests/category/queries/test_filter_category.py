@@ -9,7 +9,7 @@ async def test_filter_category_list_200(authorized_client, client):
 
     for name in names:
         r = await authorized_client.post(
-            "/category/",
+            "/category",
             data={
                 "name": name,
                 "orderings": "0",
@@ -18,7 +18,7 @@ async def test_filter_category_list_200(authorized_client, client):
         )
         assert r.status_code == 200
 
-    response = await client.get("/category/")
+    response = await client.get("/category")
     assert response.status_code == 200
 
     body = response.json()
@@ -32,7 +32,7 @@ async def test_filter_category_list_200(authorized_client, client):
 async def test_filter_category_by_name(authorized_client, client):
     async def create(name: str):
         await authorized_client.post(
-            "/category/",
+            "/category",
             data={"name": name, "orderings": "0"},
             files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
         )
@@ -41,7 +41,7 @@ async def test_filter_category_by_name(authorized_client, client):
     await create("FilterPhones")
     await create("Other")
 
-    response = await client.get("/category/?name=Filter")
+    response = await client.get("/category?name=Filter")
     assert response.status_code == 200
 
     body = response.json()

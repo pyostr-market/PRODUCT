@@ -17,13 +17,13 @@ from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
 manufacturer_commands_router = APIRouter(
-    tags=["Производители"]
+    tags=["Производители"],
 )
 
 
 # CREATE
 @manufacturer_commands_router.post(
-    "/",
+    "",
     status_code=200,
     summary="Создать производителя",
     description="""

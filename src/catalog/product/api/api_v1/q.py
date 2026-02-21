@@ -7,7 +7,9 @@ from src.catalog.product.composition import ProductComposition
 from src.core.api.responses import api_response
 from src.core.db.database import get_db
 
-product_q_router = APIRouter(tags=["Товары"])
+product_q_router = APIRouter(
+    tags=["Товары"],
+)
 
 
 @product_q_router.get(
@@ -124,7 +126,7 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @product_q_router.get(
-    "/",
+    "",
     summary="Получить список товаров",
     description="""
     Возвращает список товаров с фильтрацией и пагинацией.
@@ -227,7 +229,9 @@ async def filter_products(
 
 # ==================== ProductType ====================
 
-product_type_q_router = APIRouter(tags=["Типы продуктов"])
+product_type_q_router = APIRouter(
+    tags=["Типы продуктов"],
+)
 
 
 @product_type_q_router.get(
@@ -276,7 +280,7 @@ async def get_product_type_by_id(
 
 
 @product_type_q_router.get(
-    "/type/",
+    "/type",
     summary="Получить список типов продуктов",
     description="""
     Возвращает список типов продуктов с возможностью:

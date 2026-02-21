@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_product_audit_logs_200(authorized_client):
     create = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": "Audit Product",
             "price": "10.00",

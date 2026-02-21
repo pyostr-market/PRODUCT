@@ -1,4 +1,5 @@
-from typing import List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -30,10 +31,10 @@ class ProductTypeAuditReadSchema(BaseModel):
     id: int
     product_type_id: int
     action: str
-    old_data: Optional[dict]
-    new_data: Optional[dict]
+    old_data: Optional[Dict[str, Any]]
+    new_data: Optional[Dict[str, Any]]
     user_id: int
-    created_at: str
+    created_at: datetime
 
 
 class ProductTypeAuditListResponse(BaseModel):

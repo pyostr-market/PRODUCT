@@ -8,7 +8,7 @@ import pytest
 async def test_delete_manufacturer_200(authorized_client):
     # 1️⃣ Создаём производителя
     create = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Delete Me",
             "description": "To be deleted"
@@ -63,7 +63,7 @@ async def test_delete_manufacturer_404_not_found(authorized_client):
 async def test_delete_manufacturer_second_time_404(authorized_client):
     # Создаём
     create = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Delete Twice",
             "description": "Test"

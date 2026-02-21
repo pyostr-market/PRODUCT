@@ -6,7 +6,7 @@ from src.catalog.suppliers.api.schemas.schemas import SupplierReadSchema
 @pytest.mark.asyncio
 async def test_update_supplier_200_full_update(authorized_client):
     create = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Old Name",
             "contact_email": "old@test.com",
@@ -44,7 +44,7 @@ async def test_update_supplier_200_full_update(authorized_client):
 @pytest.mark.asyncio
 async def test_update_supplier_200_partial_update(authorized_client):
     create = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Partial Name",
             "contact_email": "partial@test.com",
@@ -92,7 +92,7 @@ async def test_update_supplier_404_not_found(authorized_client):
 @pytest.mark.asyncio
 async def test_update_supplier_400_name_too_short(authorized_client):
     create = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Valid Name",
             "contact_email": "valid@test.com",
@@ -119,7 +119,7 @@ async def test_update_supplier_400_name_too_short(authorized_client):
 @pytest.mark.asyncio
 async def test_update_supplier_409_conflict(authorized_client):
     first = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Brand A",
             "contact_email": "a@test.com",
@@ -128,7 +128,7 @@ async def test_update_supplier_409_conflict(authorized_client):
     )
 
     second = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Brand B",
             "contact_email": "b@test.com",

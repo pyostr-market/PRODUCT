@@ -13,10 +13,11 @@ class ProductApiModule:
     mount_paths = ["/product"]
 
     def mount(self, app: FastAPI) -> None:
-        app.include_router(product_q_router, prefix="/product")
+        # Сначала специфичные маршруты (type, attribute), потом общие ({product_id})
         app.include_router(product_type_q_router, prefix="/product")
-        app.include_router(product_commands_router, prefix="/product")
         app.include_router(product_type_commands_router, prefix="/product")
         app.include_router(product_attribute_commands_router, prefix="/product")
+        app.include_router(product_q_router, prefix="/product")
+        app.include_router(product_commands_router, prefix="/product")
         app.include_router(admin_product_router, prefix="/product/admin")
         app.include_router(admin_product_type_router, prefix="/product/admin")

@@ -6,7 +6,7 @@ from src.catalog.suppliers.api.schemas.schemas import SupplierReadSchema
 @pytest.mark.asyncio
 async def test_get_supplier_200(authorized_client, client):
     create = await authorized_client.post(
-        "/supplier/",
+        "/supplier",
         json={
             "name": "Get Test",
             "contact_email": "get@test.com",

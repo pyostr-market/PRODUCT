@@ -20,7 +20,9 @@ from src.core.auth.dependencies import get_current_user, require_permissions
 from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
-category_commands_router = APIRouter(tags=["Категории"])
+category_commands_router = APIRouter(
+    tags=["Категории"],
+)
 
 
 def _is_image_bytes(data: bytes) -> bool:
@@ -76,7 +78,7 @@ async def _build_images_dto(
 
 
 @category_commands_router.post(
-    "/",
+    "",
     status_code=200,
     summary="Создать категорию",
     description="""

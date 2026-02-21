@@ -10,7 +10,7 @@ from src.catalog.manufacturer.api.schemas.schemas import ManufacturerReadSchema
 async def test_update_manufacturer_200_full_update(authorized_client):
     # Создаём производителя
     create = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Old Name",
             "description": "Old Description"
@@ -51,7 +51,7 @@ async def test_update_manufacturer_200_full_update(authorized_client):
 @pytest.mark.asyncio
 async def test_update_manufacturer_200_partial_update(authorized_client):
     create = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Partial Name",
             "description": "Old Description"
@@ -105,7 +105,7 @@ async def test_update_manufacturer_404_not_found(authorized_client):
 @pytest.mark.asyncio
 async def test_update_manufacturer_400_name_too_short(authorized_client):
     create = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Valid Name",
             "description": "Desc"
@@ -136,7 +136,7 @@ async def test_update_manufacturer_400_name_too_short(authorized_client):
 async def test_update_manufacturer_409_conflict(authorized_client):
     # Создаём двух производителей
     first = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Brand A",
             "description": "Desc A"
@@ -144,7 +144,7 @@ async def test_update_manufacturer_409_conflict(authorized_client):
     )
 
     second = await authorized_client.post(
-        "/manufacturer/",
+        "/manufacturer",
         json={
             "name": "Brand B",
             "description": "Desc B"

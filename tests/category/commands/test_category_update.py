@@ -11,7 +11,7 @@ async def test_update_category_200_full_update(authorized_client):
         old_image = f.read()
 
     create = await authorized_client.post(
-        "/category/",
+        "/category",
         data={
             "name": "Старая категория",
             "description": "Старое описание",

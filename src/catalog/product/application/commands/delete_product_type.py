@@ -29,8 +29,7 @@ class DeleteProductTypeCommand:
                 "parent_id": aggregate.parent_id,
             }
 
-            await self.repository.delete(product_type_id)
-
+            # Сначала записываем audit лог (до удаления)
             await self.audit_repository.log_product_type(
                 ProductTypeAuditDTO(
                     product_type_id=product_type_id,
@@ -40,6 +39,9 @@ class DeleteProductTypeCommand:
                     user_id=user.id,
                 )
             )
+
+            # Потом удаляем
+            await self.repository.delete(product_type_id)
 
         self.event_bus.publish_nowait(
             build_event(

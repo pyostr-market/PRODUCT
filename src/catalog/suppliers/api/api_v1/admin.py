@@ -12,7 +12,9 @@ from src.core.api.responses import api_response
 from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
-admin_supplier_router = APIRouter(tags=["Поставщики"])
+admin_supplier_router = APIRouter(
+    tags=["Поставщики"],
+)
 
 
 @admin_supplier_router.get(

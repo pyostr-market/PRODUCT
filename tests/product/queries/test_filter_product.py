@@ -7,7 +7,7 @@ async def test_filter_product_list_200(authorized_client, client):
 
     for name in names:
         r = await authorized_client.post(
-            "/product/",
+            "/product",
             data={
                 "name": name,
                 "price": "100.00",
@@ -15,7 +15,7 @@ async def test_filter_product_list_200(authorized_client, client):
         )
         assert r.status_code == 200
 
-    response = await client.get("/product/")
+    response = await client.get("/product")
     assert response.status_code == 200
 
     body = response.json()
@@ -27,11 +27,11 @@ async def test_filter_product_list_200(authorized_client, client):
 
 @pytest.mark.asyncio
 async def test_filter_product_by_name(authorized_client, client):
-    await authorized_client.post("/product/", data={"name": "Filter iPhone", "price": "1.00"})
-    await authorized_client.post("/product/", data={"name": "Filter Samsung", "price": "1.00"})
-    await authorized_client.post("/product/", data={"name": "Other Item", "price": "1.00"})
+    await authorized_client.post("/product", data={"name": "Filter iPhone", "price": "1.00"})
+    await authorized_client.post("/product", data={"name": "Filter Samsung", "price": "1.00"})
+    await authorized_client.post("/product", data={"name": "Other Item", "price": "1.00"})
 
-    response = await client.get("/product/?name=Filter")
+    response = await client.get("/product?name=Filter")
 
     assert response.status_code == 200
 

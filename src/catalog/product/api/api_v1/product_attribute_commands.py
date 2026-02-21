@@ -14,13 +14,13 @@ from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
 product_attribute_commands_router = APIRouter(
-    tags=["Атрибуты продуктов"]
+    tags=["Атрибуты продуктов"],
 )
 
 
 # CREATE
 @product_attribute_commands_router.post(
-    "/attribute/",
+    "/attribute",
     status_code=200,
     summary="Создать атрибут продукта",
     description="""

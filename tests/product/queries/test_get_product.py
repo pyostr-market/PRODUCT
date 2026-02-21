@@ -6,7 +6,7 @@ from src.catalog.product.api.schemas.schemas import ProductReadSchema
 @pytest.mark.asyncio
 async def test_get_product_200(authorized_client, client):
     create = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": "Товар для получения",
             "price": "777.77",

@@ -9,7 +9,7 @@ JPEG_2 = b"\xff\xd8\xff\xe0get-image-2"
 @pytest.mark.asyncio
 async def test_get_category_200(authorized_client, client):
     create = await authorized_client.post(
-        "/category/",
+        "/category",
         data={
             "name": "Категория для get",
             "description": "Описание",

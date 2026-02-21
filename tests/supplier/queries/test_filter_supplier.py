@@ -9,12 +9,12 @@ async def test_filter_supplier_list_200(authorized_client, client):
 
     for name in names:
         r = await authorized_client.post(
-            "/supplier/",
+            "/supplier",
             json={"name": name},
         )
         assert r.status_code == 200
 
-    response = await client.get("/supplier/")
+    response = await client.get("/supplier")
     assert response.status_code == 200
 
     body = response.json()
@@ -30,11 +30,11 @@ async def test_filter_supplier_list_200(authorized_client, client):
 
 @pytest.mark.asyncio
 async def test_filter_supplier_by_name(authorized_client, client):
-    await authorized_client.post("/supplier/", json={"name": "FilterApple"})
-    await authorized_client.post("/supplier/", json={"name": "FilterSamsung"})
-    await authorized_client.post("/supplier/", json={"name": "OtherBrand"})
+    await authorized_client.post("/supplier", json={"name": "FilterApple"})
+    await authorized_client.post("/supplier", json={"name": "FilterSamsung"})
+    await authorized_client.post("/supplier", json={"name": "OtherBrand"})
 
-    response = await client.get("/supplier/?name=Filter")
+    response = await client.get("/supplier?name=Filter")
     assert response.status_code == 200
 
     body = response.json()
@@ -53,11 +53,11 @@ async def test_filter_supplier_by_name(authorized_client, client):
 async def test_filter_supplier_limit(authorized_client, client):
     for i in range(5):
         await authorized_client.post(
-            "/supplier/",
+            "/supplier",
             json={"name": f"LimitTest{i}"},
         )
 
-    response = await client.get("/supplier/?limit=2")
+    response = await client.get("/supplier?limit=2")
     assert response.status_code == 200
 
     body = response.json()
@@ -70,11 +70,11 @@ async def test_filter_supplier_limit(authorized_client, client):
 async def test_filter_supplier_offset(authorized_client, client):
     for i in range(5):
         await authorized_client.post(
-            "/supplier/",
+            "/supplier",
             json={"name": f"OffsetTest{i}"},
         )
 
-    response = await client.get("/supplier/?limit=2&offset=2")
+    response = await client.get("/supplier?limit=2&offset=2")
     assert response.status_code == 200
 
     body = response.json()
@@ -85,7 +85,7 @@ async def test_filter_supplier_offset(authorized_client, client):
 
 @pytest.mark.asyncio
 async def test_filter_supplier_empty(client):
-    response = await client.get("/supplier/?name=NoSuchBrand")
+    response = await client.get("/supplier?name=NoSuchBrand")
 
     assert response.status_code == 200
 

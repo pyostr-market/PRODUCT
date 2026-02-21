@@ -7,7 +7,7 @@ JPEG_BYTES = b"\xff\xd8\xff\xe0category-image"
 
 async def _create_category(authorized_client, name: str) -> int:
     response = await authorized_client.post(
-        "/category/",
+        "/category",
         data={
             "name": name,
             "orderings": "0",
@@ -27,7 +27,7 @@ async def _create_product(
     color: str,
 ) -> int:
     response = await authorized_client.post(
-        "/product/",
+        "/product",
         data={
             "name": name,
             "price": "1000.00",

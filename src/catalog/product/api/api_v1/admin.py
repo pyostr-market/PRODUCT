@@ -10,7 +10,9 @@ from src.core.api.responses import api_response
 from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
-admin_product_router = APIRouter(tags=["Товары"])
+admin_product_router = APIRouter(
+    tags=["Товары"],
+)
 
 
 @admin_product_router.get(
@@ -83,7 +85,9 @@ async def get_audit_logs(
 
 # ==================== ProductType Admin ====================
 
-admin_product_type_router = APIRouter(tags=["Типы продуктов"])
+admin_product_type_router = APIRouter(
+    tags=["Типы продуктов"],
+)
 
 
 @admin_product_type_router.get(

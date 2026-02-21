@@ -5,7 +5,7 @@ from starlette.responses import HTMLResponse
 from src.core.api.fastapi_conf import app_server
 
 docs_router = APIRouter(
-    tags=['Система']
+    tags=['Система'],
 )
 
 @docs_router.get("/docs", include_in_schema=False)

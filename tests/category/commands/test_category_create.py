@@ -12,7 +12,7 @@ async def test_create_category_200(authorized_client):
         image_bytes = f.read()
 
     response = await authorized_client.post(
-        "/category/",
+        "/category",
         data={
             "name": "Электроника",
             "description": "Категория электроники",
@@ -36,7 +36,7 @@ async def test_create_category_400_name_too_short(authorized_client):
     with open(TEST_IMAGE_PATH, "rb") as f:
         image_bytes = f.read()
     response = await authorized_client.post(
-        "/category/",
+        "/category",
         data={
             "name": "A",
             "orderings": "0",
@@ -53,7 +53,7 @@ async def test_create_category_400_name_too_short(authorized_client):
 @pytest.mark.asyncio
 async def test_create_category_400_invalid_image(authorized_client):
     response = await authorized_client.post(
-        "/category/",
+        "/category",
         data={"name": "Категория", "orderings": "0"},
         files=[("images", ("test.jpg", b"1", "image/jpeg"))],
     )
