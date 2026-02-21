@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.catalog.product.api.schemas.product_type import ProductTypeListResponse, ProductTypeReadSchema
 from src.catalog.product.api.schemas.schemas import ProductListResponse, ProductReadSchema
 from src.catalog.product.composition import ProductComposition
 from src.core.api.responses import api_response
@@ -134,6 +135,14 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
     Сценарии:
     - Каталог товаров на витрине.
     - Выборка товаров по категории или типу.
+    - Фильтрация по атрибутам (например, RAM=8GB, Color=Black).
+
+    Поддерживается:
+    - фильтрации по имени (частичное совпадение)
+    - фильтрации по category_id
+    - фильтрации по product_type_id
+    - фильтрации по атрибутам (query параметр `attributes` в формате JSON)
+    - пагинации (limit, offset)
     """,
     response_description="Список товаров в стандартной обёртке API",
     responses={
@@ -180,10 +189,24 @@ async def filter_products(
     name: str | None = Query(None),
     category_id: int | None = Query(None),
     product_type_id: int | None = Query(None),
+    attributes: str | None = Query(
+        None,
+        description="JSON-объект с атрибутами для фильтрации, например: {\"RAM\": \"8 GB\", \"Color\": \"Black\"}"
+    ),
     limit: int = Query(10, le=100),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db),
 ):
+    import json
+    
+    attributes_dict = None
+    if attributes:
+        try:
+            attributes_dict = json.loads(attributes)
+        except json.JSONDecodeError:
+            from src.catalog.product.domain.exceptions import ProductInvalidPayload
+            raise ProductInvalidPayload(details={"reason": "invalid_attributes_json"})
+    
     queries = ProductComposition.build_queries(db)
     items, total = await queries.filter(
         name=name,
@@ -191,11 +214,138 @@ async def filter_products(
         product_type_id=product_type_id,
         limit=limit,
         offset=offset,
+        attributes=attributes_dict,
     )
 
     return api_response(
         ProductListResponse(
             total=total,
             items=[ProductReadSchema.model_validate(item) for item in items],
+        )
+    )
+
+
+# ==================== ProductType ====================
+
+product_type_q_router = APIRouter(tags=["Типы продуктов"])
+
+
+@product_type_q_router.get(
+    "/type/{product_type_id}",
+    summary="Получить тип продукта по ID",
+    description="""
+    Возвращает тип продукта по его идентификатору.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+
+    Сценарии:
+    - Загрузка данных типа продукта в фильтре каталога.
+    - Проверка корректности привязки товаров к типу.
+    """,
+    response_description="Данные типа продукта в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Тип продукта найден",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "id": 5,
+                            "name": "Смартфоны",
+                            "parent_id": None,
+                        },
+                    }
+                }
+            },
+        },
+        404: {"description": "Тип продукта не найден"},
+    },
+)
+async def get_product_type_by_id(
+    product_type_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    queries = ProductComposition.build_product_type_queries(db)
+    dto = await queries.get_by_id(product_type_id)
+
+    return api_response(
+        ProductTypeReadSchema.model_validate(dto)
+    )
+
+
+@product_type_q_router.get(
+    "/type/",
+    summary="Получить список типов продуктов",
+    description="""
+    Возвращает список типов продуктов с возможностью:
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+
+    Сценарии:
+    - Построение справочника типов продуктов в UI.
+    - Поиск типа продукта по подстроке имени.
+
+    Поддерживается:
+    - фильтрации по имени (частичное совпадение)
+    - пагинации (limit, offset)
+    """,
+    response_description="Список типов продуктов в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Список успешно получен",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "total": 2,
+                            "items": [
+                                {
+                                    "id": 5,
+                                    "name": "Смартфоны",
+                                    "parent_id": None,
+                                },
+                                {
+                                    "id": 6,
+                                    "name": "Планшеты",
+                                    "parent_id": 5,
+                                },
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+    },
+)
+async def filter_product_types(
+    name: str | None = Query(
+        None,
+        description="Фильтр по имени (частичное совпадение)"
+    ),
+    limit: int = Query(
+        10,
+        le=100,
+        description="Количество записей (макс. 100)"
+    ),
+    offset: int = Query(
+        0,
+        description="Смещение"
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = ProductComposition.build_product_type_queries(db)
+    items, total = await queries.filter(name, limit, offset)
+
+    return api_response(
+        ProductTypeListResponse(
+            total=total,
+            items=[
+                ProductTypeReadSchema.model_validate(i)
+                for i in items
+            ],
         )
     )

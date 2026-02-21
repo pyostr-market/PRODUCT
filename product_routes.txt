@@ -303,6 +303,132 @@
     - `offset: int = 0`
 - Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductAuditReadSchema[] } }`
 
+## Типы продуктов
+
+### 28) GET `/product/type/{product_type_id}`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Path: `product_type_id: int` (обяз.)
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductTypeReadSchema }`
+
+### 29) GET `/product/type/`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Query:
+    - `name: str | null`
+    - `limit: int = 10` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductTypeReadSchema[] } }`
+
+### 30) POST `/product/type/`
+- Метод: `POST`
+- Доступ: `Требуемое право` = `product_type:create`
+- Параметры:
+  - Body (JSON):
+    - `name: str` (обяз.)
+    - `parent_id: int | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductTypeReadSchema }`
+
+### 31) PUT `/product/type/{product_type_id}`
+- Метод: `PUT`
+- Доступ: `Требуемое право` = `product_type:update`
+- Параметры:
+  - Path: `product_type_id: int` (обяз.)
+  - Body (JSON):
+    - `name: str | null`
+    - `parent_id: int | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductTypeReadSchema }`
+
+### 32) DELETE `/product/type/{product_type_id}`
+- Метод: `DELETE`
+- Доступ: `Требуемое право` = `product_type:delete`
+- Параметры:
+  - Path: `product_type_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+### 33) GET `/product/admin/type/audit`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `product_type:audit`
+- Параметры:
+  - Query:
+    - `product_type_id: int | null`
+    - `user_id: int | null`
+    - `action: str | null`
+    - `limit: int = 20` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductTypeAuditReadSchema[] } }`
+
+## Атрибуты продуктов
+
+### 34) POST `/product/attribute/`
+- Метод: `POST`
+- Доступ: `Требуемое право` = `product_attribute:create`
+- Параметры:
+  - Body (JSON):
+    - `name: str` (обяз.)
+    - `value: str` (обяз.)
+    - `is_filterable: bool = false`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductAttributeReadSchema }`
+
+### 35) PUT `/product/attribute/{attribute_id}`
+- Метод: `PUT`
+- Доступ: `Требуемое право` = `product_attribute:update`
+- Параметры:
+  - Path: `attribute_id: int` (обяз.)
+  - Body (JSON):
+    - `name: str | null`
+    - `value: str | null`
+    - `is_filterable: bool | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductAttributeReadSchema }`
+
+### 36) DELETE `/product/attribute/{attribute_id}`
+- Метод: `DELETE`
+- Доступ: `Требуемое право` = `product_attribute:delete`
+- Параметры:
+  - Path: `attribute_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+## Примечание по фильтрации товаров
+
+### Фильтрация по атрибутам
+
+Метод `GET /product/` поддерживает фильтрацию по атрибутам через query-параметр `attributes`.
+
+Формат: JSON-объект, где ключи — имена атрибутов, значения — искомые значения.
+
+Пример запроса:
+```
+GET /product/?attributes={"RAM": "8 GB", "Color": "Black"}
+```
+
+Пример ответа:
+```json
+{
+  "success": true,
+  "data": {
+    "total": 2,
+    "items": [
+      {
+        "id": 3001,
+        "name": "Смартфон X",
+        "attributes": [
+          {"id": 10, "name": "RAM", "value": "8 GB", "is_filterable": true},
+          {"id": 11, "name": "Color", "value": "Black", "is_filterable": true}
+        ]
+      }
+    ]
+  }
+}
+```
+
 ## Примечание по авторизации
 - В этом сервисе нет собственных роутов `/auth/*`.
 - Защищённые роуты ожидают Bearer JWT в `Authorization` и при необходимости проверяют permission через `require_permissions(...)`.

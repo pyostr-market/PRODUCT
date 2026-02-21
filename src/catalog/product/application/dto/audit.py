@@ -9,3 +9,21 @@ class ProductAuditDTO:
     old_data: Optional[Dict[str, Any]]
     new_data: Optional[Dict[str, Any]]
     user_id: int
+
+
+@dataclass
+class ProductTypeAuditDTO:
+    product_type_id: int
+    action: str
+    old_data: Optional[Dict[str, Any]]
+    new_data: Optional[Dict[str, Any]]
+    user_id: int
+
+
+@dataclass
+class ProductAttributeAuditDTO:
+    product_attribute_id: int
+    action: str
+    old_data: Optional[Dict[str, Any]]
+    new_data: Optional[Dict[str, Any]]
+    user_id: int

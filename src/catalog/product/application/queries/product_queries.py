@@ -39,6 +39,7 @@ class ProductQueries:
         product_type_id: Optional[int],
         limit: int,
         offset: int,
+        attributes: Optional[dict[str, str]] = None,
     ):
         items, total = await self.read_repository.filter(
             name=name,
@@ -46,6 +47,7 @@ class ProductQueries:
             product_type_id=product_type_id,
             limit=limit,
             offset=offset,
+            attributes=attributes,
         )
         return [self._attach_image_url(item) for item in items], total
 

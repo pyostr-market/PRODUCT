@@ -10,6 +10,7 @@ from src.catalog.product.application.dto.product import (
     ProductReadDTO,
 )
 from src.catalog.product.infrastructure.models.product import Product
+from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
 from src.catalog.product.infrastructure.models.product_attribute_value import ProductAttributeValue
 
 
@@ -36,6 +37,7 @@ class ProductReadRepository:
             ],
             attributes=[
                 ProductAttributeReadDTO(
+                    id=attribute_value.attribute.id,
                     name=attribute_value.attribute.name,
                     value=attribute_value.value,
                     is_filterable=attribute_value.attribute.is_filterable,
@@ -86,6 +88,7 @@ class ProductReadRepository:
         product_type_id: Optional[int],
         limit: int,
         offset: int,
+        attributes: Optional[dict[str, str]] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
         stmt = (
             select(Product)
@@ -107,6 +110,27 @@ class ProductReadRepository:
         if product_type_id is not None:
             stmt = stmt.where(Product.product_type_id == product_type_id)
             count_stmt = count_stmt.where(Product.product_type_id == product_type_id)
+
+        # Фильтрация по атрибутам
+        if attributes:
+            for attr_name, attr_value in attributes.items():
+                attr_alias = selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute)
+                stmt = stmt.where(
+                    Product.attributes.any(
+                        ProductAttributeValue.attribute.has(
+                            ProductAttribute.name == attr_name
+                        ),
+                        ProductAttributeValue.value == attr_value,
+                    )
+                )
+                count_stmt = count_stmt.where(
+                    Product.attributes.any(
+                        ProductAttributeValue.attribute.has(
+                            ProductAttribute.name == attr_name
+                        ),
+                        ProductAttributeValue.value == attr_value,
+                    )
+                )
 
         stmt = stmt.order_by(Product.id).limit(limit).offset(offset)
 

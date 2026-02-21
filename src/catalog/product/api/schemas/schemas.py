@@ -20,9 +20,27 @@ class ProductAttributeSchema(BaseModel):
 class ProductAttributeReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: Optional[int] = None
     name: str
     value: str
     is_filterable: bool
+
+
+class ProductAttributeCreateSchema(BaseModel):
+    name: str
+    value: str
+    is_filterable: bool = False
+
+
+class ProductAttributeUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    value: Optional[str] = None
+    is_filterable: Optional[bool] = None
+
+
+class ProductAttributeListResponse(BaseModel):
+    total: int
+    items: List[ProductAttributeReadSchema]
 
 
 class ProductCreateSchema(BaseModel):

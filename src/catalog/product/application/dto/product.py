@@ -29,6 +29,21 @@ class ProductAttributeReadDTO:
     name: str
     value: str
     is_filterable: bool
+    id: Optional[int] = None
+
+
+@dataclass
+class ProductAttributeCreateDTO:
+    name: str
+    value: str
+    is_filterable: bool = False
+
+
+@dataclass
+class ProductAttributeUpdateDTO:
+    name: Optional[str] = None
+    value: Optional[str] = None
+    is_filterable: Optional[bool] = None
 
 
 @dataclass

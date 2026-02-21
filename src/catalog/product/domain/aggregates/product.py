@@ -11,11 +11,46 @@ class ProductImageAggregate:
     is_main: bool = False
 
 
-@dataclass
 class ProductAttributeAggregate:
-    name: str
-    value: str
-    is_filterable: bool = False
+
+    def __init__(
+        self,
+        name: str,
+        value: str = "",
+        is_filterable: bool = False,
+        attribute_id: Optional[int] = None,
+    ):
+        self._id = attribute_id
+        self._name = name
+        self._value = value
+        self._is_filterable = is_filterable
+
+    @property
+    def id(self) -> Optional[int]:
+        return self._id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+    @property
+    def is_filterable(self) -> bool:
+        return self._is_filterable
+
+    def _set_id(self, attribute_id: int):
+        self._id = attribute_id
+
+    def update(self, name: Optional[str], value: Optional[str], is_filterable: Optional[bool]):
+        if name is not None:
+            self._name = name
+        if value is not None:
+            self._value = value
+        if is_filterable is not None:
+            self._is_filterable = is_filterable
 
 
 class ProductAggregate:
