@@ -34,7 +34,17 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Path: `manufacturer_id: int` (обяз.)
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ManufacturerReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null
+  }
+}
+```
 
 ### 4) GET `/manufacturer`
 - Метод: `GET`
@@ -44,7 +54,22 @@
     - `name: str | null`
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ManufacturerReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "name": str,
+        "description": str | null
+      }
+    ]
+  }
+}
+```
 
 ### 5) POST `/manufacturer`
 - Метод: `POST`
@@ -53,7 +78,17 @@
   - Body (JSON):
     - `name: str` (обяз.)
     - `description: str | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ManufacturerReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null
+  }
+}
+```
 
 ### 6) PUT `/manufacturer/{manufacturer_id}`
 - Метод: `PUT`
@@ -63,7 +98,17 @@
   - Body (JSON):
     - `name: str | null`
     - `description: str | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ManufacturerReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null
+  }
+}
+```
 
 ### 7) DELETE `/manufacturer/{manufacturer_id}`
 - Метод: `DELETE`
@@ -85,7 +130,26 @@
     - `action: str | null`
     - `limit: int = 20` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ManufacturerAuditReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "manufacturer_id": int,
+        "action": str,
+        "old_data": { "key": "value" } | null,
+        "new_data": { "key": "value" } | null,
+        "user_id": int,
+        "created_at": "2025-01-01T00:00:00"
+      }
+    ]
+  }
+}
+```
 
 ## Поставщики
 
@@ -94,7 +158,18 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Path: `supplier_id: int` (обяз.)
-- Успешный ответ (`200 OK`): `{ "success": true, "data": SupplierReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "contact_email": str | null,
+    "phone": str | null
+  }
+}
+```
 
 ### 10) GET `/supplier`
 - Метод: `GET`
@@ -104,7 +179,23 @@
     - `name: str | null`
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": SupplierReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "name": str,
+        "contact_email": str | null,
+        "phone": str | null
+      }
+    ]
+  }
+}
+```
 
 ### 11) POST `/supplier`
 - Метод: `POST`
@@ -114,7 +205,18 @@
     - `name: str` (обяз.)
     - `contact_email: str | null`
     - `phone: str | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": SupplierReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "contact_email": str | null,
+    "phone": str | null
+  }
+}
+```
 
 ### 12) PUT `/supplier/{supplier_id}`
 - Метод: `PUT`
@@ -125,7 +227,18 @@
     - `name: str | null`
     - `contact_email: str | null`
     - `phone: str | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": SupplierReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "contact_email": str | null,
+    "phone": str | null
+  }
+}
+```
 
 ### 13) DELETE `/supplier/{supplier_id}`
 - Метод: `DELETE`
@@ -147,7 +260,26 @@
     - `action: str | null`
     - `limit: int = 20` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": SupplierAuditReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "supplier_id": int,
+        "action": str,
+        "old_data": { "key": "value" } | null,
+        "new_data": { "key": "value" } | null,
+        "user_id": int,
+        "created_at": "2025-01-01T00:00:00"
+      }
+    ]
+  }
+}
+```
 
 ## Категории
 
@@ -156,7 +288,25 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Path: `category_id: int` (обяз.)
-- Успешный ответ (`200 OK`): `{ "success": true, "data": CategoryReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null,
+    "parent_id": int | null,
+    "manufacturer_id": int | null,
+    "images": [
+      {
+        "ordering": int,
+        "image_url": str
+      }
+    ]
+  }
+}
+```
 
 ### 16) GET `/category`
 - Метод: `GET`
@@ -166,7 +316,30 @@
     - `name: str | null`
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": CategoryReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "name": str,
+        "description": str | null,
+        "parent_id": int | null,
+        "manufacturer_id": int | null,
+        "images": [
+          {
+            "ordering": int,
+            "image_url": str
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### 17) POST `/category`
 - Метод: `POST`
@@ -179,7 +352,25 @@
     - `description: str | null`
     - `parent_id: int | null`
     - `manufacturer_id: int | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": CategoryReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null,
+    "parent_id": int | null,
+    "manufacturer_id": int | null,
+    "images": [
+      {
+        "ordering": int,
+        "image_url": str
+      }
+    ]
+  }
+}
+```
 
 ### 18) PUT `/category/{category_id}`
 - Метод: `PUT`
@@ -194,7 +385,25 @@
     - `images: UploadFile[] | null`
     - `orderings: int[] | null`
 - Примечание: если передан один из `images/orderings`, второй тоже обязателен.
-- Успешный ответ (`200 OK`): `{ "success": true, "data": CategoryReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null,
+    "parent_id": int | null,
+    "manufacturer_id": int | null,
+    "images": [
+      {
+        "ordering": int,
+        "image_url": str
+      }
+    ]
+  }
+}
+```
 
 ### 19) DELETE `/category/{category_id}`
 - Метод: `DELETE`
@@ -216,7 +425,26 @@
     - `action: str | null`
     - `limit: int = 20` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": CategoryAuditReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "category_id": int,
+        "action": str,
+        "old_data": { "key": "value" } | null,
+        "new_data": { "key": "value" } | null,
+        "user_id": int,
+        "created_at": "2025-01-01T00:00:00"
+      }
+    ]
+  }
+}
+```
 
 ## Товары
 
@@ -227,14 +455,75 @@
   - Query:
     - `product_id: int | null`
     - `name: str | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "name": str,
+        "description": str | null,
+        "price": number,
+        "category_id": int | null,
+        "supplier_id": int | null,
+        "product_type_id": int | null,
+        "images": [
+          {
+            "image_url": str,
+            "is_main": bool
+          }
+        ],
+        "attributes": [
+          {
+            "id": int | null,
+            "name": str,
+            "value": str,
+            "is_filterable": bool
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### 22) GET `/product/{product_id}`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
   - Path: `product_id: int` (обяз.)
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null,
+    "price": number,
+    "category_id": int | null,
+    "supplier_id": int | null,
+    "product_type_id": int | null,
+    "images": [
+      {
+        "image_url": str,
+        "is_main": bool
+      }
+    ],
+    "attributes": [
+      {
+        "id": int | null,
+        "name": str,
+        "value": str,
+        "is_filterable": bool
+      }
+    ]
+  }
+}
+```
 
 ### 23) GET `/product`
 - Метод: `GET`
@@ -246,7 +535,40 @@
     - `product_type_id: int | null`
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "name": str,
+        "description": str | null,
+        "price": number,
+        "category_id": int | null,
+        "supplier_id": int | null,
+        "product_type_id": int | null,
+        "images": [
+          {
+            "image_url": str,
+            "is_main": bool
+          }
+        ],
+        "attributes": [
+          {
+            "id": int | null,
+            "name": str,
+            "value": str,
+            "is_filterable": bool
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### 24) POST `/product`
 - Метод: `POST`
@@ -262,7 +584,35 @@
     - `attributes_json: str | null` (JSON-массив атрибутов)
     - `images: UploadFile[] | null`
     - `image_is_main: str[] | null` (`true/false/1/0/...`)
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null,
+    "price": number,
+    "category_id": int | null,
+    "supplier_id": int | null,
+    "product_type_id": int | null,
+    "images": [
+      {
+        "image_url": str,
+        "is_main": bool
+      }
+    ],
+    "attributes": [
+      {
+        "id": int | null,
+        "name": str,
+        "value": str,
+        "is_filterable": bool
+      }
+    ]
+  }
+}
+```
 
 ### 25) PUT `/product/{product_id}`
 - Метод: `PUT`
@@ -279,7 +629,35 @@
     - `attributes_json: str | null` (если передан, должен быть валидным JSON-массивом)
     - `images: UploadFile[] | null`
     - `image_is_main: str[] | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "description": str | null,
+    "price": number,
+    "category_id": int | null,
+    "supplier_id": int | null,
+    "product_type_id": int | null,
+    "images": [
+      {
+        "image_url": str,
+        "is_main": bool
+      }
+    ],
+    "attributes": [
+      {
+        "id": int | null,
+        "name": str,
+        "value": str,
+        "is_filterable": bool
+      }
+    ]
+  }
+}
+```
 
 ### 26) DELETE `/product/{product_id}`
 - Метод: `DELETE`
@@ -301,7 +679,26 @@
     - `action: str | null`
     - `limit: int = 20` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductAuditReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "product_id": int,
+        "action": str,
+        "old_data": { "key": "value" } | null,
+        "new_data": { "key": "value" } | null,
+        "user_id": int,
+        "created_at": "2025-01-01T00:00:00"
+      }
+    ]
+  }
+}
+```
 
 ## Типы продуктов
 
@@ -310,7 +707,17 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Path: `product_type_id: int` (обяз.)
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductTypeReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "parent_id": int | null
+  }
+}
+```
 
 ### 29) GET `/product/type`
 - Метод: `GET`
@@ -320,7 +727,22 @@
     - `name: str | null`
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductTypeReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "name": str,
+        "parent_id": int | null
+      }
+    ]
+  }
+}
+```
 
 ### 30) POST `/product/type`
 - Метод: `POST`
@@ -329,7 +751,17 @@
   - Body (JSON):
     - `name: str` (обяз.)
     - `parent_id: int | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductTypeReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "parent_id": int | null
+  }
+}
+```
 
 ### 31) PUT `/product/type/{product_type_id}`
 - Метод: `PUT`
@@ -339,7 +771,17 @@
   - Body (JSON):
     - `name: str | null`
     - `parent_id: int | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductTypeReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "name": str,
+    "parent_id": int | null
+  }
+}
+```
 
 ### 32) DELETE `/product/type/{product_type_id}`
 - Метод: `DELETE`
@@ -361,16 +803,35 @@
     - `action: str | null`
     - `limit: int = 20` (max 100)
     - `offset: int = 0`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductTypeAuditReadSchema[] } }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "product_type_id": int,
+        "action": str,
+        "old_data": { "key": "value" } | null,
+        "new_data": { "key": "value" } | null,
+        "user_id": int,
+        "created_at": "2025-01-01T00:00:00"
+      }
+    ]
+  }
+}
+```
 
 ## Атрибуты продуктов
 
 ### 34) GET `/product/attribute/{attribute_id}`
-- Метод: `GET` (не реализован)
-- Доступ: Н/Д
+- Метод: `GET`
+- Доступ: **не реализован**
 - Параметры:
   - Path: `attribute_id: int` (обяз.)
-- Примечание: эндпоинт не реализован
+- Примечание: эндпоинт не реализован (доступны только POST/PUT/DELETE)
 
 ### 35) POST `/product/attribute`
 - Метод: `POST`
@@ -380,7 +841,18 @@
     - `name: str` (обяз.)
     - `value: str` (обяз.)
     - `is_filterable: bool = false`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductAttributeReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int | null,
+    "name": str,
+    "value": str,
+    "is_filterable": bool
+  }
+}
+```
 
 ### 36) PUT `/product/attribute/{attribute_id}`
 - Метод: `PUT`
@@ -391,7 +863,18 @@
     - `name: str | null`
     - `value: str | null`
     - `is_filterable: bool | null`
-- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductAttributeReadSchema }`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int | null,
+    "name": str,
+    "value": str,
+    "is_filterable": bool
+  }
+}
+```
 
 ### 37) DELETE `/product/attribute/{attribute_id}`
 - Метод: `DELETE`
