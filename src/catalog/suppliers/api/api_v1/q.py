@@ -7,6 +7,7 @@ from src.catalog.suppliers.api.schemas.schemas import (
 )
 from src.catalog.suppliers.composition import SupplierComposition
 from src.core.api.responses import api_response
+from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
 supplier_q_router = APIRouter(
@@ -21,7 +22,7 @@ supplier_q_router = APIRouter(
     Возвращает карточку поставщика по идентификатору.
 
     Права:
-    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+    - Требуется permission: `supplier:view`
 
     Сценарии:
     - Загрузка данных поставщика перед оформлением закупки.
@@ -46,7 +47,9 @@ supplier_q_router = APIRouter(
             },
         },
         404: {"description": "Поставщик не найден"},
+        403: {"description": "Недостаточно прав"},
     },
+    dependencies=[Depends(require_permissions("supplier:view"))],
 )
 async def get_by_id(
     supplier_id: int,
@@ -64,7 +67,7 @@ async def get_by_id(
     Возвращает список поставщиков с фильтром по имени и пагинацией.
 
     Права:
-    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+    - Требуется permission: `supplier:view`
 
     Сценарии:
     - Выбор поставщика при создании товара.
@@ -98,8 +101,10 @@ async def get_by_id(
                     }
                 }
             },
-        }
+        },
+        403: {"description": "Недостаточно прав"},
     },
+    dependencies=[Depends(require_permissions("supplier:view"))],
 )
 async def filter_suppliers(
     name: str | None = Query(None, description="Фильтр по имени"),

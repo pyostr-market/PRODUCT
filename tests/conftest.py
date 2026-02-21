@@ -35,6 +35,7 @@ def authorized_user():
         'supplier:create',
         'supplier:update',
         'supplier:delete',
+        'supplier:view',
         'category:audit',
         'category:create',
         'category:update',
