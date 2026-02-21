@@ -11,7 +11,6 @@ from src.core.conf.settings import get_settings
 load_dotenv()
 
 
-
 def _pretty_message(raw: str) -> str:
     try:
         payload = json.loads(raw)

@@ -1,0 +1,308 @@
+# Routes Rules: все роуты проекта
+
+Ниже перечислены все кастомные роуты проекта.
+
+Обозначения:
+- `Требуемое право`: конкретный permission для вызова.
+- `Только авторизация`: нужен Bearer access token, отдельный permission не требуется.
+- Для большинства методов успешный ответ имеет обертку:
+```json
+{ "success": true, "data": ... }
+```
+
+## Система
+
+### 1) GET `/system/health`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры: нет
+- Успешный ответ (`200 OK`):
+```json
+{ "status": "ok" }
+```
+
+### 2) GET `/system/docs`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры: нет
+- Успешный ответ (`200 OK`): HTML страница Swagger UI
+
+## Производители
+
+### 3) GET `/manufacturer/{manufacturer_id}`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Path: `manufacturer_id: int` (обяз.)
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ManufacturerReadSchema }`
+
+### 4) GET `/manufacturer/`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Query:
+    - `name: str | null`
+    - `limit: int = 10` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ManufacturerReadSchema[] } }`
+
+### 5) POST `/manufacturer/`
+- Метод: `POST`
+- Доступ: `Требуемое право` = `manufacturer:create`
+- Параметры:
+  - Body (JSON):
+    - `name: str` (обяз.)
+    - `description: str | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ManufacturerReadSchema }`
+
+### 6) PUT `/manufacturer/{manufacturer_id}`
+- Метод: `PUT`
+- Доступ: `Требуемое право` = `manufacturer:update`
+- Параметры:
+  - Path: `manufacturer_id: int` (обяз.)
+  - Body (JSON):
+    - `name: str | null`
+    - `description: str | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ManufacturerReadSchema }`
+
+### 7) DELETE `/manufacturer/{manufacturer_id}`
+- Метод: `DELETE`
+- Доступ: `Требуемое право` = `manufacturer:delete`
+- Параметры:
+  - Path: `manufacturer_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+### 8) GET `/manufacturer/admin/audit`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `manufacturer:audit`
+- Параметры:
+  - Query:
+    - `manufacturer_id: int | null`
+    - `user_id: int | null`
+    - `action: str | null`
+    - `limit: int = 20` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ManufacturerAuditReadSchema[] } }`
+
+## Поставщики
+
+### 9) GET `/supplier/{supplier_id}`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Path: `supplier_id: int` (обяз.)
+- Успешный ответ (`200 OK`): `{ "success": true, "data": SupplierReadSchema }`
+
+### 10) GET `/supplier/`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Query:
+    - `name: str | null`
+    - `limit: int = 10` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": SupplierReadSchema[] } }`
+
+### 11) POST `/supplier/`
+- Метод: `POST`
+- Доступ: `Требуемое право` = `supplier:create`
+- Параметры:
+  - Body (JSON):
+    - `name: str` (обяз.)
+    - `contact_email: str | null`
+    - `phone: str | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": SupplierReadSchema }`
+
+### 12) PUT `/supplier/{supplier_id}`
+- Метод: `PUT`
+- Доступ: `Требуемое право` = `supplier:update`
+- Параметры:
+  - Path: `supplier_id: int` (обяз.)
+  - Body (JSON):
+    - `name: str | null`
+    - `contact_email: str | null`
+    - `phone: str | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": SupplierReadSchema }`
+
+### 13) DELETE `/supplier/{supplier_id}`
+- Метод: `DELETE`
+- Доступ: `Требуемое право` = `supplier:delete`
+- Параметры:
+  - Path: `supplier_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+### 14) GET `/supplier/admin/audit`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `supplier:audit`
+- Параметры:
+  - Query:
+    - `supplier_id: int | null`
+    - `user_id: int | null`
+    - `action: str | null`
+    - `limit: int = 20` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": SupplierAuditReadSchema[] } }`
+
+## Категории
+
+### 15) GET `/category/{category_id}`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Path: `category_id: int` (обяз.)
+- Успешный ответ (`200 OK`): `{ "success": true, "data": CategoryReadSchema }`
+
+### 16) GET `/category/`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Query:
+    - `name: str | null`
+    - `limit: int = 10` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": CategoryReadSchema[] } }`
+
+### 17) POST `/category/`
+- Метод: `POST`
+- Доступ: `Требуемое право` = `category:create`
+- Параметры:
+  - Body (`multipart/form-data`):
+    - `name: str` (обяз.)
+    - `images: UploadFile[]` (обяз.)
+    - `orderings: int[]` (обяз.)
+    - `description: str | null`
+    - `parent_id: int | null`
+    - `manufacturer_id: int | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": CategoryReadSchema }`
+
+### 18) PUT `/category/{category_id}`
+- Метод: `PUT`
+- Доступ: `Требуемое право` = `category:update`
+- Параметры:
+  - Path: `category_id: int` (обяз.)
+  - Body (`multipart/form-data`):
+    - `name: str | null`
+    - `description: str | null`
+    - `parent_id: int | null`
+    - `manufacturer_id: int | null`
+    - `images: UploadFile[] | null`
+    - `orderings: int[] | null`
+- Примечание: если передан один из `images/orderings`, второй тоже обязателен.
+- Успешный ответ (`200 OK`): `{ "success": true, "data": CategoryReadSchema }`
+
+### 19) DELETE `/category/{category_id}`
+- Метод: `DELETE`
+- Доступ: `Требуемое право` = `category:delete`
+- Параметры:
+  - Path: `category_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+### 20) GET `/category/admin/audit`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `category:audit`
+- Параметры:
+  - Query:
+    - `category_id: int | null`
+    - `user_id: int | null`
+    - `action: str | null`
+    - `limit: int = 20` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": CategoryAuditReadSchema[] } }`
+
+## Товары
+
+### 21) GET `/product/related/variants`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Query:
+    - `product_id: int | null`
+    - `name: str | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductReadSchema[] } }`
+
+### 22) GET `/product/{product_id}`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Path: `product_id: int` (обяз.)
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductReadSchema }`
+
+### 23) GET `/product/`
+- Метод: `GET`
+- Доступ: публичный (без токена)
+- Параметры:
+  - Query:
+    - `name: str | null`
+    - `category_id: int | null`
+    - `product_type_id: int | null`
+    - `limit: int = 10` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductReadSchema[] } }`
+
+### 24) POST `/product/`
+- Метод: `POST`
+- Доступ: `Требуемое право` = `product:create`
+- Параметры:
+  - Body (`multipart/form-data`):
+    - `name: str` (обяз.)
+    - `price: Decimal` (обяз.)
+    - `description: str | null`
+    - `category_id: int | null`
+    - `supplier_id: int | null`
+    - `product_type_id: int | null`
+    - `attributes_json: str | null` (JSON-массив атрибутов)
+    - `images: UploadFile[] | null`
+    - `image_is_main: str[] | null` (`true/false/1/0/...`)
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductReadSchema }`
+
+### 25) PUT `/product/{product_id}`
+- Метод: `PUT`
+- Доступ: `Требуемое право` = `product:update`
+- Параметры:
+  - Path: `product_id: int` (обяз.)
+  - Body (`multipart/form-data`):
+    - `name: str | null`
+    - `price: Decimal | null`
+    - `description: str | null`
+    - `category_id: int | null`
+    - `supplier_id: int | null`
+    - `product_type_id: int | null`
+    - `attributes_json: str | null` (если передан, должен быть валидным JSON-массивом)
+    - `images: UploadFile[] | null`
+    - `image_is_main: str[] | null`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": ProductReadSchema }`
+
+### 26) DELETE `/product/{product_id}`
+- Метод: `DELETE`
+- Доступ: `Требуемое право` = `product:delete`
+- Параметры:
+  - Path: `product_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+### 27) GET `/product/admin/audit`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `product:audit`
+- Параметры:
+  - Query:
+    - `product_id: int | null`
+    - `user_id: int | null`
+    - `action: str | null`
+    - `limit: int = 20` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`): `{ "success": true, "data": { "total": int, "items": ProductAuditReadSchema[] } }`
+
+## Примечание по авторизации
+- В этом сервисе нет собственных роутов `/auth/*`.
+- Защищённые роуты ожидают Bearer JWT в `Authorization` и при необходимости проверяют permission через `require_permissions(...)`.

@@ -1,6 +1,6 @@
 from fastapi import Request
+from fastapi.middleware.cors import CORSMiddleware
 
-import src.mount_models
 from src.core.api.fastapi_conf import app_server
 from src.core.api.responses import api_response
 from src.core.exceptions.base import BaseServiceError
@@ -11,6 +11,15 @@ setup_logging()
 
 
 def create_app():
+    app_server.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "*",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     mount_all(app_server)
     return app_server
 
