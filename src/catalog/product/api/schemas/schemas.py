@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -7,8 +7,23 @@ from pydantic import BaseModel, ConfigDict, Field
 class ProductImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    image_id: Optional[int] = None
     image_url: str
     is_main: bool
+
+
+class ProductImageOperationSchema(BaseModel):
+    """Операция с изображением при обновлении товара."""
+    model_config = ConfigDict(from_attributes=True)
+
+    action: Literal["to_create", "to_delete", "pass"]
+    image_id: Optional[int] = None  # ID существующего изображения (для to_delete/pass)
+    is_main: bool = False  # Флаг главного изображения
+    ordering: Optional[int] = None  # Порядок сортировки (опционально)
+    
+    # Поля только для to_create
+    image: Optional[bytes] = None  # Байты изображения
+    image_name: Optional[str] = None  # Имя файла
 
 
 class ProductAttributeSchema(BaseModel):
@@ -60,6 +75,7 @@ class ProductUpdateSchema(BaseModel):
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
     product_type_id: Optional[int] = None
+    images: Optional[List[ProductImageOperationSchema]] = None
     attributes: Optional[List[ProductAttributeSchema]] = None
 
 

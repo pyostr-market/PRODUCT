@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 
 
 @dataclass
 class ProductImageReadDTO:
     image_key: str
+    image_id: Optional[int] = None
     image_url: Optional[str] = None
     is_main: bool = False
 
@@ -15,6 +16,17 @@ class ProductImageInputDTO:
     image: bytes
     image_name: str = "test.jpg"
     is_main: bool = False
+
+
+@dataclass
+class ProductImageOperationDTO:
+    """Операция с изображением при обновлении товара."""
+    action: Literal["to_create", "to_delete", "pass"]
+    image_id: Optional[int] = None  # ID существующего изображения (для to_delete/pass)
+    image: Optional[bytes] = None  # Байты нового изображения (для to_create)
+    image_name: Optional[str] = None  # Имя файла (для to_create)
+    is_main: bool = False  # Флаг главного изображения
+    ordering: Optional[int] = None  # Порядок сортировки (опционально)
 
 
 @dataclass
@@ -79,5 +91,5 @@ class ProductUpdateDTO:
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
     product_type_id: Optional[int] = None
-    images: Optional[list[ProductImageInputDTO]] = None
+    images: Optional[list[ProductImageOperationDTO]] = None
     attributes: Optional[list[ProductAttributeInputDTO]] = None

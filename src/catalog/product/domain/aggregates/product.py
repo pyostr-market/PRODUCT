@@ -9,6 +9,7 @@ from src.catalog.product.domain.exceptions import ProductNameTooShort
 class ProductImageAggregate:
     object_key: str
     is_main: bool = False
+    image_id: Optional[int] = None  # ID изображения в БД (для существующих изображений)
 
 
 class ProductAttributeAggregate:

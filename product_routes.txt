@@ -601,6 +601,7 @@
     "product_type_id": int | null,
     "images": [
       {
+        "image_id": int,
         "image_url": str,
         "is_main": bool
       }
@@ -629,9 +630,25 @@
     - `category_id: int | null`
     - `supplier_id: int | null`
     - `product_type_id: int | null`
-    - `attributes_json: str | null` (если передан, должен быть валидным JSON-массивом)
-    - `images: UploadFile[] | null`
-    - `image_is_main: str[] | null`
+    - `attributes_json: str | null` (JSON-массив атрибутов)
+    - `images_json: str | null` (JSON-массив операций с изображениями)
+    - `images: UploadFile[] | null` (файлы для операций `to_create`)
+    - `image_is_main: str[] | null` (`true/false/1/0/...` для новых изображений)
+  
+  **Формат `images_json`** (массив операций):
+  ```json
+  [
+    {"action": "pass", "image_id": 123, "is_main": true},
+    {"action": "to_delete", "image_id": 456},
+    {"action": "to_create", "is_main": false}
+  ]
+  ```
+  
+  **Действия:**
+  - `to_create` — загрузить новое изображение (требуется файл в `images` для каждой операции `to_create`)
+  - `to_delete` — удалить существующее изображение (требуется `image_id`)
+  - `pass` — сохранить существующее изображение (требуется `image_id`, можно обновить `is_main`)
+  
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -646,6 +663,7 @@
     "product_type_id": int | null,
     "images": [
       {
+        "image_id": int,
         "image_url": str,
         "is_main": bool
       }

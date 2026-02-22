@@ -34,6 +34,7 @@ class UpdateProductCommand:
     async def execute(self, product_id: int, dto, user: User) -> ProductReadDTO:
         old_image_keys: list[str] = []
         new_image_keys: list[str] = []
+        deleted_image_keys: list[str] = []
 
         try:
             async with self.uow:
@@ -43,6 +44,7 @@ class UpdateProductCommand:
                     raise ProductNotFound()
 
                 old_image_keys = [image.object_key for image in aggregate.images]
+                old_image_ids = {image.image_id for image in aggregate.images if image.image_id}
 
                 old_data = {
                     "name": aggregate.name,
@@ -52,7 +54,7 @@ class UpdateProductCommand:
                     "supplier_id": aggregate.supplier_id,
                     "product_type_id": aggregate.product_type_id,
                     "images": [
-                        {"image_key": image.object_key, "is_main": image.is_main}
+                        {"image_key": image.object_key, "is_main": image.is_main, "image_id": image.image_id}
                         for image in aggregate.images
                     ],
                     "attributes": [
@@ -75,20 +77,48 @@ class UpdateProductCommand:
                 )
 
                 if dto.images is not None:
-                    mapped_images: list[ProductImageAggregate] = []
-                    for image in dto.images:
-                        image_key = self.image_storage.build_key(folder="products", filename=image.image_name)
-                        content_type = guess_content_type(image.image_name)
-                        await self.image_storage.upload_bytes(
-                            data=image.image,
-                            key=image_key,
-                            content_type=content_type,
-                        )
-                        new_image_keys.append(image_key)
-                        mapped_images.append(
-                            ProductImageAggregate(object_key=image_key, is_main=image.is_main)
-                        )
-                    aggregate.replace_images(mapped_images)
+                    final_images: list[ProductImageAggregate] = []
+
+                    for op in dto.images:
+                        if op.action == "to_delete":
+                            if op.image_id is not None and op.image_id in old_image_ids:
+                                for img in aggregate.images:
+                                    if img.image_id == op.image_id:
+                                        deleted_image_keys.append(img.object_key)
+                                        break
+
+                        elif op.action == "pass":
+                            if op.image_id is not None:
+                                for img in aggregate.images:
+                                    if img.image_id == op.image_id:
+                                        final_images.append(
+                                            ProductImageAggregate(
+                                                object_key=img.object_key,
+                                                is_main=op.is_main or img.is_main,
+                                                image_id=img.image_id,
+                                            )
+                                        )
+                                        break
+
+                        elif op.action == "to_create":
+                            if op.image is not None and op.image_name is not None:
+                                image_key = self.image_storage.build_key(folder="products", filename=op.image_name)
+                                content_type = guess_content_type(op.image_name)
+                                await self.image_storage.upload_bytes(
+                                    data=op.image,
+                                    key=image_key,
+                                    content_type=content_type,
+                                )
+                                new_image_keys.append(image_key)
+                                final_images.append(
+                                    ProductImageAggregate(
+                                        object_key=image_key,
+                                        is_main=op.is_main,
+                                        image_id=None,
+                                    )
+                                )
+
+                    aggregate.replace_images(final_images)
 
                 if dto.attributes is not None:
                     aggregate.replace_attributes(
@@ -112,7 +142,7 @@ class UpdateProductCommand:
                     "supplier_id": aggregate.supplier_id,
                     "product_type_id": aggregate.product_type_id,
                     "images": [
-                        {"image_key": image.object_key, "is_main": image.is_main}
+                        {"image_key": image.object_key, "is_main": image.is_main, "image_id": image.image_id}
                         for image in aggregate.images
                     ],
                     "attributes": [
@@ -147,6 +177,7 @@ class UpdateProductCommand:
                     product_type_id=aggregate.product_type_id,
                     images=[
                         ProductImageReadDTO(
+                            image_id=image.image_id,
                             image_key=image.object_key,
                             image_url=self.image_storage.build_public_url(image.object_key),
                             is_main=image.is_main,
@@ -168,11 +199,8 @@ class UpdateProductCommand:
                 await self.image_storage.delete_object(key)
             raise
 
-        if dto.images is not None:
-            new_keys_set = set(new_image_keys)
-            for key in old_image_keys:
-                if key not in new_keys_set:
-                    await self.image_storage.delete_object(key)
+        for key in deleted_image_keys:
+            await self.image_storage.delete_object(key)
 
         changed_fields = {
             key: value

@@ -5,11 +5,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.api.schemas.schemas import ProductReadSchema
+from src.catalog.product.api.schemas.schemas import (
+    ProductImageOperationSchema,
+    ProductReadSchema,
+)
 from src.catalog.product.application.dto.product import (
     ProductAttributeInputDTO,
     ProductCreateDTO,
     ProductImageInputDTO,
+    ProductImageOperationDTO,
     ProductUpdateDTO,
 )
 from src.catalog.product.composition import ProductComposition
@@ -113,6 +117,79 @@ async def _build_images_dto(
         mapped[0].is_main = True
 
     return mapped
+
+
+async def _build_image_operations_dto(
+    images_json: str | None,
+    new_images: list[UploadFile] | None,
+    new_image_is_main: list[str] | None,
+) -> list[ProductImageOperationDTO] | None:
+    """
+    Построение DTO для операций с изображениями при обновлении товара.
+
+    images_json - JSON-список операций {action, image_id, is_main, ordering}
+    new_images - новые файлы изображений для action=to_create
+    """
+    if not images_json and not new_images:
+        return None
+
+    operations: list[ProductImageOperationDTO] = []
+    new_image_idx = 0  # Счётчик для файлов новых изображений
+
+    if images_json:
+        try:
+            payload = json.loads(images_json)
+        except json.JSONDecodeError as exc:
+            raise ProductInvalidPayload(details={"reason": "invalid_images_json", "error": str(exc)})
+
+        if not isinstance(payload, list):
+            raise ProductInvalidPayload(details={"reason": "images_must_be_list"})
+
+        for item in payload:
+            if not isinstance(item, dict):
+                raise ProductInvalidPayload(details={"reason": "image_operation_must_be_object"})
+
+            action = item.get("action")
+            if action not in ("to_create", "to_delete", "pass"):
+                raise ProductInvalidPayload(details={"reason": "invalid_action", "action": action})
+
+            op = ProductImageOperationDTO(
+                action=action,  # type: ignore[arg-type]
+                image_id=item.get("image_id"),
+                is_main=_to_bool(str(item.get("is_main", "")), default=False),
+                ordering=item.get("ordering"),
+            )
+
+            if action == "to_create":
+                if new_images and new_image_idx < len(new_images):
+                    image_file = new_images[new_image_idx]
+                    image_payload = await image_file.read()
+
+                    if image_file.content_type and not image_file.content_type.startswith("image/"):
+                        raise ProductInvalidImage(
+                            details={"filename": image_file.filename, "content_type": image_file.content_type}
+                        )
+
+                    if not _is_image_bytes(image_payload):
+                        raise ProductInvalidImage(
+                            details={"filename": image_file.filename, "reason": "unsupported_or_invalid_binary"}
+                        )
+
+                    op.image = image_payload
+                    op.image_name = image_file.filename or "image.jpg"
+                    is_main_value = (
+                        new_image_is_main[new_image_idx]
+                        if new_image_is_main and new_image_idx < len(new_image_is_main)
+                        else None
+                    )
+                    op.is_main = _to_bool(is_main_value, default=False)
+                    new_image_idx += 1
+                else:
+                    raise ProductInvalidPayload(details={"reason": "missing_image_file_for_to_create"})
+
+            operations.append(op)
+
+    return operations if operations else None
 
 
 @product_commands_router.post(
@@ -222,9 +299,25 @@ async def create(
     Права:
     - Требуется permission: `product:update`
 
+    Работа с изображениями:
+    - Изображения передаются через `images_json` (JSON-массив операций) + `images` (файлы для to_create).
+    - Каждая операция имеет поле `action`: `to_create`, `to_delete`, `pass`.
+    - `to_create` — загрузить новое изображение (требуется файл в `images`).
+    - `to_delete` — удалить существующее изображение (требуется `image_id`).
+    - `pass` — сохранить существующее изображение (требуется `image_id`).
+    
+    Пример `images_json`:
+    ```json
+    [
+      {"action": "pass", "image_id": 123, "is_main": true},
+      {"action": "to_delete", "image_id": 456},
+      {"action": "to_create", "is_main": false}
+    ]
+    ```
+    
     Сценарии:
     - Изменение цены и описания товара.
-    - Замена изображений товара.
+    - Добавление/удаление изображений товара.
     - Обновление или перезапись набора атрибутов.
     """,
     response_description="Обновлённый товар в стандартной обёртке API",
@@ -272,14 +365,15 @@ async def update(
     supplier_id: Annotated[int | None, Form()] = None,
     product_type_id: Annotated[int | None, Form()] = None,
     attributes_json: Annotated[str | None, Form()] = None,
+    images_json: Annotated[str | None, Form()] = None,
     images: Annotated[list[UploadFile] | None, File()] = None,
     image_is_main: Annotated[list[str] | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     images_dto = None
-    if images is not None:
-        images_dto = await _build_images_dto(images, image_is_main)
+    if images_json is not None or images is not None:
+        images_dto = await _build_image_operations_dto(images_json, images, image_is_main)
 
     attributes_dto = None
     if attributes_json is not None:

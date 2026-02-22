@@ -40,6 +40,54 @@ async def test_create_product_200(authorized_client):
 
 
 @pytest.mark.asyncio
+async def test_create_product_200_multiple_images(authorized_client):
+    """Создание товара с несколькими изображениями."""
+    response = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар с несколькими фото",
+            "price": "100.00",
+            "image_is_main": ["true", "false", "false"],
+        },
+        files=[
+            ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
+            ("images", ("img2.jpg", JPEG_BYTES, "image/jpeg")),
+            ("images", ("img3.jpg", JPEG_BYTES, "image/jpeg")),
+        ],
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["success"] is True
+
+    product = ProductReadSchema(**body["data"])
+    assert len(product.images) == 3
+    assert product.images[0].is_main is True
+    assert all(img.image_id is not None for img in product.images)
+
+
+@pytest.mark.asyncio
+async def test_create_product_200_no_images(authorized_client):
+    """Создание товара без изображений."""
+    response = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар без фото",
+            "price": "100.00",
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["success"] is True
+
+    product = ProductReadSchema(**body["data"])
+    assert len(product.images) == 0
+
+
+@pytest.mark.asyncio
 async def test_create_product_400_name_too_short(authorized_client):
     response = await authorized_client.post(
         "/product",

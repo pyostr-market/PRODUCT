@@ -68,19 +68,24 @@ class SqlAlchemyProductRepository(ProductRepository):
         self.db.add(model)
         await self.db.flush()
 
+        new_image_models: list[ProductImage] = []
         for image in aggregate.images:
-            self.db.add(
-                ProductImage(
-                    product_id=model.id,
-                    image_url=image.object_key,
-                    is_main=image.is_main,
-                )
+            image_model = ProductImage(
+                product_id=model.id,
+                image_url=image.object_key,
+                is_main=image.is_main,
             )
+            self.db.add(image_model)
+            new_image_models.append(image_model)
 
         await self._replace_attributes(model.id, aggregate.attributes)
         await self.db.flush()
 
         aggregate._set_id(model.id)
+        
+        for idx, image in enumerate(aggregate.images):
+            image.image_id = new_image_models[idx].id
+        
         return aggregate
 
     async def update(self, aggregate: ProductAggregate) -> ProductAggregate:
@@ -97,25 +102,60 @@ class SqlAlchemyProductRepository(ProductRepository):
         model.product_type_id = aggregate.product_type_id
 
         if aggregate.images is not None:
-            result = await self.db.execute(
-                select(ProductImage).where(ProductImage.product_id == aggregate.id)
-            )
-            for image_model in result.scalars().all():
-                await self.db.delete(image_model)
-
-            for image in aggregate.images:
-                self.db.add(
-                    ProductImage(
-                        product_id=aggregate.id,
-                        image_url=image.object_key,
-                        is_main=image.is_main,
-                    )
-                )
+            await self._update_images(model.id, aggregate.images)
 
         await self._replace_attributes(aggregate.id, aggregate.attributes)
 
         await self.db.flush()
         return aggregate
+
+    async def _update_images(
+        self,
+        product_id: int,
+        images: list[ProductImageAggregate],
+    ):
+        """
+        Частичное обновление изображений товара.
+
+        Изображения могут быть:
+        - С ID (image_id) - существующие изображения (pass) или помеченные на удаление
+        - Без ID - новые изображения для создания
+
+        Удаляются только изображения с image_id, которых нет в финальном списке.
+        """
+        existing_ids: set[int] = set()
+        new_images_indices: list[int] = []
+
+        for idx, image in enumerate(images):
+            if image.image_id is not None:
+                existing_ids.add(image.image_id)
+            else:
+                new_images_indices.append(idx)
+
+        result = await self.db.execute(
+            select(ProductImage).where(ProductImage.product_id == product_id)
+        )
+        all_existing_images = list(result.scalars().all())
+
+        for image_model in all_existing_images:
+            if image_model.id not in existing_ids:
+                await self.db.delete(image_model)
+
+        new_image_models: list[ProductImage] = []
+        for idx in new_images_indices:
+            image = images[idx]
+            image_model = ProductImage(
+                product_id=product_id,
+                image_url=image.object_key,
+                is_main=image.is_main,
+            )
+            self.db.add(image_model)
+            new_image_models.append(image_model)
+
+        await self.db.flush()
+
+        for idx, image_idx in enumerate(new_images_indices):
+            images[image_idx].image_id = new_image_models[idx].id
 
     async def delete(self, product_id: int) -> bool:
         model = await self.db.get(Product, product_id)
@@ -217,6 +257,7 @@ class SqlAlchemyProductRepository(ProductRepository):
                 ProductImageAggregate(
                     object_key=image.image_url,
                     is_main=image.is_main,
+                    image_id=image.id,
                 )
                 for image in model.images
             ],

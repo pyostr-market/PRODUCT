@@ -110,6 +110,7 @@ class CreateProductCommand:
                     product_type_id=aggregate.product_type_id,
                     images=[
                         ProductImageReadDTO(
+                            image_id=image.image_id,
                             image_key=image.object_key,
                             image_url=self.image_storage.build_public_url(image.object_key),
                             is_main=image.is_main,
