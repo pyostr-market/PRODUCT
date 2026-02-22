@@ -41,7 +41,7 @@ class CreateProductCommand:
             await self.image_storage.upload_bytes(data=image.image, key=image_key, content_type=content_type)
             uploaded_keys.append(image_key)
             mapped_images.append(
-                ProductImageAggregate(object_key=image_key, is_main=image.is_main)
+                ProductImageAggregate(object_key=image_key, is_main=image.is_main, ordering=image.ordering)
             )
 
         mapped_attributes = [
@@ -114,6 +114,7 @@ class CreateProductCommand:
                             image_key=image.object_key,
                             image_url=self.image_storage.build_public_url(image.object_key),
                             is_main=image.is_main,
+                            ordering=image.ordering,
                         )
                         for image in aggregate.images
                     ],

@@ -22,6 +22,7 @@ async def test_create_product_200(authorized_client):
                 ]
             ),
             "image_is_main": "true",
+            "image_ordering": "0",
         },
         files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
     )
@@ -36,6 +37,7 @@ async def test_create_product_200(authorized_client):
     assert product.name == "iPhone 15 Pro 256 Гб Красный"
     assert len(product.images) == 1
     assert product.images[0].is_main is True
+    assert product.images[0].ordering == 0
     assert len(product.attributes) == 2
 
 
@@ -48,6 +50,7 @@ async def test_create_product_200_multiple_images(authorized_client):
             "name": "Товар с несколькими фото",
             "price": "100.00",
             "image_is_main": ["true", "false", "false"],
+            "image_ordering": ["0", "1", "2"],
         },
         files=[
             ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
@@ -64,6 +67,9 @@ async def test_create_product_200_multiple_images(authorized_client):
     product = ProductReadSchema(**body["data"])
     assert len(product.images) == 3
     assert product.images[0].is_main is True
+    assert product.images[0].ordering == 0
+    assert product.images[1].ordering == 1
+    assert product.images[2].ordering == 2
     assert all(img.image_id is not None for img in product.images)
 
 
@@ -85,6 +91,40 @@ async def test_create_product_200_no_images(authorized_client):
 
     product = ProductReadSchema(**body["data"])
     assert len(product.images) == 0
+
+
+@pytest.mark.asyncio
+async def test_create_product_200_custom_ordering(authorized_client):
+    """Создание товара с изображениями с кастомным порядком."""
+    response = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар с кастомным порядком",
+            "price": "100.00",
+            "image_is_main": ["false", "true", "false"],
+            "image_ordering": ["10", "5", "20"],
+        },
+        files=[
+            ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
+            ("images", ("img2.jpg", JPEG_BYTES, "image/jpeg")),
+            ("images", ("img3.jpg", JPEG_BYTES, "image/jpeg")),
+        ],
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["success"] is True
+
+    product = ProductReadSchema(**body["data"])
+    assert len(product.images) == 3
+    
+    # Проверяем, что ordering сохранился как указан
+    orderings = {img.ordering: img for img in product.images}
+    assert 5 in orderings
+    assert 10 in orderings
+    assert 20 in orderings
+    assert orderings[5].is_main is True  # Главное изображение с ordering=5
 
 
 @pytest.mark.asyncio

@@ -86,6 +86,7 @@ def _parse_attributes(attributes_json: str | None) -> list[ProductAttributeInput
 async def _build_images_dto(
     images: list[UploadFile] | None,
     image_is_main: list[str] | None,
+    image_ordering: list[str] | None,
 ) -> list[ProductImageInputDTO]:
     if not images:
         return []
@@ -106,11 +107,22 @@ async def _build_images_dto(
             )
 
         is_main_value = image_is_main[idx] if image_is_main and idx < len(image_is_main) else None
+        
+        # Получаем ordering: если передан список, берём по индексу, иначе используем индекс
+        if image_ordering and idx < len(image_ordering):
+            try:
+                ordering_value = int(image_ordering[idx])
+            except (ValueError, TypeError):
+                ordering_value = idx
+        else:
+            ordering_value = idx
+            
         mapped.append(
             ProductImageInputDTO(
                 image=payload,
                 image_name=image_file.filename or "test.jpg",
                 is_main=_to_bool(is_main_value, default=(idx == 0)),
+                ordering=ordering_value,
             )
         )
 
@@ -269,10 +281,11 @@ async def create(
     attributes_json: Annotated[str | None, Form()] = None,
     images: Annotated[list[UploadFile] | None, File()] = None,
     image_is_main: Annotated[list[str] | None, Form()] = None,
+    image_ordering: Annotated[list[str] | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    images_dto = await _build_images_dto(images, image_is_main)
+    images_dto = await _build_images_dto(images, image_is_main, image_ordering)
     attributes_dto = _parse_attributes(attributes_json)
 
     commands = ProductComposition.build_create_command(db)

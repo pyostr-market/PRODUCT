@@ -19,6 +19,7 @@ async def test_update_product_200_with_image_operations(authorized_client):
             "description": "Описание",
             "price": "100.00",
             "image_is_main": ["true", "false"],
+            "image_ordering": ["0", "1"],
         },
         files=[
             ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
@@ -30,7 +31,9 @@ async def test_update_product_200_with_image_operations(authorized_client):
     product_id = create.json()["data"]["id"]
     images = create.json()["data"]["images"]
     assert len(images) == 2
-    
+    assert images[0]["ordering"] == 0
+    assert images[1]["ordering"] == 1
+
     image_1_id = images[0]["image_id"]
     image_2_id = images[1]["image_id"]
 
@@ -40,9 +43,9 @@ async def test_update_product_200_with_image_operations(authorized_client):
             "name": "Обновлённый товар",
             "price": "150.00",
             "images_json": json.dumps([
-                {"action": "pass", "image_id": image_1_id, "is_main": True},
+                {"action": "pass", "image_id": image_1_id, "is_main": True, "ordering": 0},
                 {"action": "to_delete", "image_id": image_2_id},
-                {"action": "to_create", "is_main": False},
+                {"action": "to_create", "is_main": False, "ordering": 1},
             ]),
         },
         files=[("images", ("new.jpg", JPEG_BYTES_NEW, "image/jpeg"))],
@@ -57,6 +60,8 @@ async def test_update_product_200_with_image_operations(authorized_client):
     assert updated.name == "Обновлённый товар"
     assert str(updated.price) == "150.00"
     assert len(updated.images) == 2
+    assert updated.images[0].ordering == 0
+    assert updated.images[1].ordering == 1
 
 
 @pytest.mark.asyncio
@@ -67,6 +72,7 @@ async def test_update_product_200_pass_all_images(authorized_client):
         data={
             "name": "Товар",
             "price": "100.00",
+            "image_ordering": ["0", "1"],
         },
         files=[
             ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
@@ -77,9 +83,9 @@ async def test_update_product_200_pass_all_images(authorized_client):
     assert create.status_code == 200
     product_id = create.json()["data"]["id"]
     images = create.json()["data"]["images"]
-    
+
     images_json = json.dumps([
-        {"action": "pass", "image_id": img["image_id"], "is_main": (idx == 0)}
+        {"action": "pass", "image_id": img["image_id"], "is_main": (idx == 0), "ordering": idx}
         for idx, img in enumerate(images)
     ])
 
@@ -94,6 +100,8 @@ async def test_update_product_200_pass_all_images(authorized_client):
     assert response.status_code == 200
     body = response.json()
     assert len(body["data"]["images"]) == 2
+    assert body["data"]["images"][0]["ordering"] == 0
+    assert body["data"]["images"][1]["ordering"] == 1
 
 
 @pytest.mark.asyncio
@@ -104,6 +112,7 @@ async def test_update_product_200_delete_all_images(authorized_client):
         data={
             "name": "Товар",
             "price": "100.00",
+            "image_ordering": ["0"],
         },
         files=[
             ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
@@ -148,9 +157,9 @@ async def test_update_product_200_add_multiple_images(authorized_client):
         data={
             "name": "Товар с новыми фото",
             "images_json": json.dumps([
-                {"action": "to_create", "is_main": True},
-                {"action": "to_create", "is_main": False},
-                {"action": "to_create", "is_main": False},
+                {"action": "to_create", "is_main": True, "ordering": 0},
+                {"action": "to_create", "is_main": False, "ordering": 1},
+                {"action": "to_create", "is_main": False, "ordering": 2},
             ]),
         },
         files=[
@@ -163,6 +172,9 @@ async def test_update_product_200_add_multiple_images(authorized_client):
     assert response.status_code == 200
     body = response.json()
     assert len(body["data"]["images"]) == 3
+    assert body["data"]["images"][0]["ordering"] == 0
+    assert body["data"]["images"][1]["ordering"] == 1
+    assert body["data"]["images"][2]["ordering"] == 2
 
 
 @pytest.mark.asyncio
@@ -173,6 +185,7 @@ async def test_update_product_200_mixed_operations(authorized_client):
         data={
             "name": "Товар",
             "price": "100.00",
+            "image_ordering": ["0", "1"],
         },
         files=[
             ("images", ("old1.jpg", JPEG_BYTES, "image/jpeg")),
@@ -189,10 +202,10 @@ async def test_update_product_200_mixed_operations(authorized_client):
         data={
             "name": "Товар микс",
             "images_json": json.dumps([
-                {"action": "pass", "image_id": images[0]["image_id"], "is_main": True},
+                {"action": "pass", "image_id": images[0]["image_id"], "is_main": True, "ordering": 0},
                 {"action": "to_delete", "image_id": images[1]["image_id"]},
-                {"action": "to_create", "is_main": False},
-                {"action": "to_create", "is_main": False},
+                {"action": "to_create", "is_main": False, "ordering": 1},
+                {"action": "to_create", "is_main": False, "ordering": 2},
             ]),
         },
         files=[
@@ -204,6 +217,9 @@ async def test_update_product_200_mixed_operations(authorized_client):
     assert response.status_code == 200
     body = response.json()
     assert len(body["data"]["images"]) == 3
+    assert body["data"]["images"][0]["ordering"] == 0
+    assert body["data"]["images"][1]["ordering"] == 1
+    assert body["data"]["images"][2]["ordering"] == 2
 
 
 @pytest.mark.asyncio
@@ -359,8 +375,8 @@ async def test_update_product_200_pass_with_image_key(authorized_client):
         data={
             "name": "Обновлённый товар",
             "images_json": json.dumps([
-                {"action": "pass", "image_key": image_key, "is_main": True},
-                {"action": "to_create", "is_main": False},
+                {"action": "pass", "image_key": image_key, "is_main": True, "ordering": 0},
+                {"action": "to_create", "is_main": False, "ordering": 1},
             ]),
         },
         files=[("images", ("new.jpg", JPEG_BYTES_NEW, "image/jpeg"))],
@@ -369,6 +385,8 @@ async def test_update_product_200_pass_with_image_key(authorized_client):
     assert response.status_code == 200
     body = response.json()
     assert len(body["data"]["images"]) == 2
+    assert body["data"]["images"][0]["ordering"] == 0
+    assert body["data"]["images"][1]["ordering"] == 1
 
 
 @pytest.mark.asyncio
@@ -392,8 +410,8 @@ async def test_update_product_200_pass_with_image_url(authorized_client):
         data={
             "name": "Обновлённый товар",
             "images_json": json.dumps([
-                {"action": "pass", "image_url": image_key, "is_main": True},
-                {"action": "to_create", "is_main": False},
+                {"action": "pass", "image_url": image_key, "is_main": True, "ordering": 0},
+                {"action": "to_create", "is_main": False, "ordering": 1},
             ]),
         },
         files=[("images", ("new.jpg", JPEG_BYTES_NEW, "image/jpeg"))],
@@ -402,6 +420,8 @@ async def test_update_product_200_pass_with_image_url(authorized_client):
     assert response.status_code == 200
     body = response.json()
     assert len(body["data"]["images"]) == 2
+    assert body["data"]["images"][0]["ordering"] == 0
+    assert body["data"]["images"][1]["ordering"] == 1
 
 
 @pytest.mark.asyncio
@@ -412,6 +432,7 @@ async def test_update_product_200_pass_without_id_or_url(authorized_client):
         data={
             "name": "Товар",
             "price": "100.00",
+            "image_ordering": ["0", "1"],
         },
         files=[
             ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
@@ -427,7 +448,7 @@ async def test_update_product_200_pass_without_id_or_url(authorized_client):
         data={
             "name": "Обновлённый товар",
             "images_json": json.dumps([
-                {"action": "pass", "is_main": True},
+                {"action": "pass", "is_main": True, "ordering": 0},
             ]),
         },
     )
@@ -446,6 +467,7 @@ async def test_update_product_200_change_main_image(authorized_client):
             "name": "Товар",
             "price": "100.00",
             "image_is_main": ["true", "false"],
+            "image_ordering": ["0", "1"],
         },
         files=[
             ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
@@ -456,11 +478,13 @@ async def test_update_product_200_change_main_image(authorized_client):
     assert create.status_code == 200
     product_id = create.json()["data"]["id"]
     images = create.json()["data"]["images"]
-    
+
     # Первое изображение главное
     assert images[0]["is_main"] is True
     assert images[1]["is_main"] is False
-    
+    assert images[0]["ordering"] == 0
+    assert images[1]["ordering"] == 1
+
     image_1_id = images[0]["image_id"]
     image_2_id = images[1]["image_id"]
 
@@ -470,8 +494,8 @@ async def test_update_product_200_change_main_image(authorized_client):
         data={
             "name": "Обновлённый товар",
             "images_json": json.dumps([
-                {"action": "pass", "image_id": image_1_id, "is_main": False},
-                {"action": "pass", "image_id": image_2_id, "is_main": True},
+                {"action": "pass", "image_id": image_1_id, "is_main": False, "ordering": 0},
+                {"action": "pass", "image_id": image_2_id, "is_main": True, "ordering": 1},
             ]),
         },
     )
@@ -479,10 +503,71 @@ async def test_update_product_200_change_main_image(authorized_client):
     assert response.status_code == 200
     body = response.json()
     updated_images = body["data"]["images"]
-    
+
     # Второе изображение стало главным
     assert len(updated_images) == 2
     img1 = next(img for img in updated_images if img["image_id"] == image_1_id)
     img2 = next(img for img in updated_images if img["image_id"] == image_2_id)
     assert img1["is_main"] is False
     assert img2["is_main"] is True
+    assert img1["ordering"] == 0
+    assert img2["ordering"] == 1
+
+
+@pytest.mark.asyncio
+async def test_update_product_200_change_ordering(authorized_client):
+    """Изменение порядка сортировки изображений."""
+    create = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар",
+            "price": "100.00",
+            "image_is_main": ["true", "false", "false"],
+            "image_ordering": ["0", "1", "2"],
+        },
+        files=[
+            ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
+            ("images", ("img2.jpg", JPEG_BYTES_NEW, "image/jpeg")),
+            ("images", ("img3.jpg", JPEG_BYTES_ANOTHER, "image/jpeg")),
+        ],
+    )
+
+    assert create.status_code == 200
+    product_id = create.json()["data"]["id"]
+    images = create.json()["data"]["images"]
+
+    # Проверяем начальный порядок
+    assert images[0]["ordering"] == 0
+    assert images[1]["ordering"] == 1
+    assert images[2]["ordering"] == 2
+
+    image_1_id = images[0]["image_id"]
+    image_2_id = images[1]["image_id"]
+    image_3_id = images[2]["image_id"]
+
+    # Меняем порядок: третье изображение делаем первым, первое - последним
+    response = await authorized_client.put(
+        f"/product/{product_id}",
+        data={
+            "name": "Обновлённый товар",
+            "images_json": json.dumps([
+                {"action": "pass", "image_id": image_1_id, "is_main": False, "ordering": 10},
+                {"action": "pass", "image_id": image_2_id, "is_main": False, "ordering": 5},
+                {"action": "pass", "image_id": image_3_id, "is_main": True, "ordering": 0},
+            ]),
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    updated_images = body["data"]["images"]
+
+    # Проверяем новый порядок
+    img1 = next(img for img in updated_images if img["image_id"] == image_1_id)
+    img2 = next(img for img in updated_images if img["image_id"] == image_2_id)
+    img3 = next(img for img in updated_images if img["image_id"] == image_3_id)
+    
+    assert img1["ordering"] == 10
+    assert img2["ordering"] == 5
+    assert img3["ordering"] == 0
+    assert img3["is_main"] is True  # Главное изображение изменилось

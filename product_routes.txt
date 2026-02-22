@@ -478,7 +478,8 @@
             "image_id": int,
             "image_key": str,
             "image_url": str,
-            "is_main": bool
+            "is_main": bool,
+            "ordering": int
           }
         ],
         "attributes": [
@@ -517,7 +518,8 @@
         "image_id": int,
         "image_key": str,
         "image_url": str,
-        "is_main": bool
+        "is_main": bool,
+        "ordering": int
       }
     ],
     "attributes": [
@@ -562,7 +564,8 @@
             "image_id": int,
             "image_key": str,
             "image_url": str,
-            "is_main": bool
+            "is_main": bool,
+            "ordering": int
           }
         ],
         "attributes": [
@@ -593,6 +596,7 @@
     - `attributes_json: str | null` (JSON-массив атрибутов)
     - `images: UploadFile[] | null`
     - `image_is_main: str[] | null` (`true/false/1/0/...`)
+    - `image_ordering: int[] | null` (порядок сортировки для каждого изображения)
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -610,7 +614,8 @@
         "image_id": int,
         "image_key": str,
         "image_url": str,
-        "is_main": bool
+        "is_main": bool,
+        "ordering": int
       }
     ],
     "attributes": [
@@ -641,15 +646,16 @@
     - `images_json: str | null` (JSON-массив операций с изображениями)
     - `images: UploadFile[] | null` (файлы для операций `to_create`)
     - `image_is_main: str[] | null` (`true/false/1/0/...` для новых изображений)
-  
+    - `image_ordering: int[] | null` (порядок сортировки для новых изображений)
+
   **Формат `images_json`** (массив операций):
   ```json
   [
-    {"action": "pass", "image_id": 123, "is_main": true},
-    {"action": "pass", "image_key": "products/55f1d02c-fcea-4020-b533-56bbe41f638a.jpg", "is_main": true},
+    {"action": "pass", "image_id": 123, "is_main": true, "ordering": 0},
+    {"action": "pass", "image_key": "products/55f1d02c-fcea-4020-b533-56bbe41f638a.jpg", "is_main": true, "ordering": 1},
     {"action": "to_delete", "image_id": 456},
     {"action": "to_delete", "image_key": "products/old-image.jpg"},
-    {"action": "to_create", "is_main": false}
+    {"action": "to_create", "is_main": false, "ordering": 2}
   ]
   ```
   
@@ -679,7 +685,8 @@
         "image_id": int,
         "image_key": str,
         "image_url": str,
-        "is_main": bool
+        "is_main": bool,
+        "ordering": int
       }
     ],
     "attributes": [

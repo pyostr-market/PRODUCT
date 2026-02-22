@@ -30,8 +30,10 @@ class ProductReadRepository:
             product_type_id=model.product_type_id,
             images=[
                 ProductImageReadDTO(
+                    image_id=image.id,
                     image_key=image.image_url,
                     is_main=image.is_main,
+                    ordering=image.ordering,
                 )
                 for image in model.images
             ],

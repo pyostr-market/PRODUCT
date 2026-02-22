@@ -74,6 +74,7 @@ class SqlAlchemyProductRepository(ProductRepository):
                 product_id=model.id,
                 image_url=image.object_key,
                 is_main=image.is_main,
+                ordering=image.ordering,
             )
             self.db.add(image_model)
             new_image_models.append(image_model)
@@ -125,12 +126,13 @@ class SqlAlchemyProductRepository(ProductRepository):
         """
         existing_ids: set[int] = set()
         new_images_indices: list[int] = []
-        existing_image_updates: dict[int, bool] = {}  # image_id -> is_main
+        # image_id -> (is_main, ordering | None)
+        existing_image_updates: dict[int, tuple[bool, Optional[int]]] = {}
 
         for idx, image in enumerate(images):
             if image.image_id is not None:
                 existing_ids.add(image.image_id)
-                existing_image_updates[image.image_id] = image.is_main
+                existing_image_updates[image.image_id] = (image.is_main, image.ordering if image.ordering is not None else None)
             else:
                 new_images_indices.append(idx)
 
@@ -144,7 +146,10 @@ class SqlAlchemyProductRepository(ProductRepository):
                 await self.db.delete(image_model)
             elif image_model.id in existing_image_updates:
                 # Обновляем is_main для существующего изображения
-                image_model.is_main = existing_image_updates[image_model.id]
+                image_model.is_main, ordering_value = existing_image_updates[image_model.id]
+                # Обновляем ordering только если он явно указан
+                if ordering_value is not None:
+                    image_model.ordering = ordering_value
 
         new_image_models: list[ProductImage] = []
         for idx in new_images_indices:
@@ -153,6 +158,7 @@ class SqlAlchemyProductRepository(ProductRepository):
                 product_id=product_id,
                 image_url=image.object_key,
                 is_main=image.is_main,
+                ordering=image.ordering if image.ordering is not None else 0,
             )
             self.db.add(image_model)
             new_image_models.append(image_model)
@@ -263,6 +269,7 @@ class SqlAlchemyProductRepository(ProductRepository):
                     object_key=image.image_url,
                     is_main=image.is_main,
                     image_id=image.id,
+                    ordering=image.ordering,
                 )
                 for image in model.images
             ],

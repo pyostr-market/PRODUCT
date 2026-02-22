@@ -11,6 +11,7 @@ class ProductImageReadSchema(BaseModel):
     image_key: str
     image_url: str
     is_main: bool
+    ordering: int
 
 
 class ProductImageOperationSchema(BaseModel):
@@ -22,8 +23,8 @@ class ProductImageOperationSchema(BaseModel):
     image_url: Optional[str] = None  # URL/ключ существующего изображения (альтернатива image_id)
     image_key: Optional[str] = None  # Ключ изображения (альтернатива image_url, для обратной совместимости)
     is_main: bool = False  # Флаг главного изображения
-    ordering: Optional[int] = None  # Порядок сортировки (опционально)
-    
+    ordering: Optional[int] = None  # Порядок сортировки (опционально при обновлении)
+
     # Поля только для to_create
     image: Optional[bytes] = None  # Байты изображения
     image_name: Optional[str] = None  # Имя файла

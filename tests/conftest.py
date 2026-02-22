@@ -139,6 +139,7 @@ async def authorized_client(engine, authorized_user):
 class FakeImageStorage:
     def __init__(self):
         self.deleted_keys = []
+        self._counter = 0
 
     async def upload_bytes(self, *, data: bytes, key: str, content_type: str | None = None) -> None:
         return None
@@ -147,7 +148,8 @@ class FakeImageStorage:
         self.deleted_keys.append(key)
 
     def build_key(self, *, folder: str, filename: str) -> str:
-        return f"{folder}/test-image-uuid.img"
+        self._counter += 1
+        return f"{folder}/test-image-{self._counter}.img"
 
     def build_public_url(self, key: str) -> str:
         return f"https://test-s3.local/{key}"
@@ -185,3 +187,30 @@ async def client(engine):
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_test_data(engine):
+    """Очистка данных между тестами."""
+    # Очищаем данные ПЕРЕД каждым тестом
+    async with engine.begin() as conn:
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attribute_values CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attributes CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM products CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM categories CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM manufacturers CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM suppliers CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_types CASCADE"))
+    
+    yield
+    # Очищаем данные ПОСЛЕ каждого теста (для безопасности)
+    # async with engine.begin() as conn:
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attribute_values CASCADE"))
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attributes CASCADE"))
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM products CASCADE"))
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM categories CASCADE"))
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM manufacturers CASCADE"))
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM suppliers CASCADE"))
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_types CASCADE"))

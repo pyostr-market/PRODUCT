@@ -10,6 +10,7 @@ class ProductImageAggregate:
     object_key: str
     is_main: bool = False
     image_id: Optional[int] = None  # ID изображения в БД (для существующих изображений)
+    ordering: int = 0
 
 
 class ProductAttributeAggregate:

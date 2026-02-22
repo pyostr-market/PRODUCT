@@ -104,6 +104,7 @@ class UpdateProductCommand:
                                                 object_key=img.object_key,
                                                 is_main=op.is_main,  # Используем is_main из операции
                                                 image_id=img.image_id,
+                                                ordering=op.ordering,
                                             )
                                         )
                                         break
@@ -116,6 +117,7 @@ class UpdateProductCommand:
                                                 object_key=img.object_key,
                                                 is_main=op.is_main,  # Используем is_main из операции
                                                 image_id=img.image_id,
+                                                ordering=op.ordering,
                                             )
                                         )
                                         break
@@ -128,6 +130,7 @@ class UpdateProductCommand:
                                                 object_key=img.object_key,
                                                 is_main=op.is_main,  # Используем is_main из операции
                                                 image_id=img.image_id,
+                                                ordering=op.ordering,
                                             )
                                         )
 
@@ -146,6 +149,7 @@ class UpdateProductCommand:
                                         object_key=image_key,
                                         is_main=op.is_main,
                                         image_id=None,
+                                        ordering=op.ordering,
                                     )
                                 )
 
@@ -228,6 +232,7 @@ class UpdateProductCommand:
                             image_key=image.object_key,
                             image_url=self.image_storage.build_public_url(image.object_key),
                             is_main=image.is_main,
+                            ordering=image.ordering,
                         )
                         for image in aggregate.images
                     ],

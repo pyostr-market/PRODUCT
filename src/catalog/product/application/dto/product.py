@@ -9,6 +9,7 @@ class ProductImageReadDTO:
     image_id: Optional[int] = None
     image_url: Optional[str] = None
     is_main: bool = False
+    ordering: int = 0
 
 
 @dataclass
@@ -16,6 +17,7 @@ class ProductImageInputDTO:
     image: bytes
     image_name: str = "test.jpg"
     is_main: bool = False
+    ordering: int = 0
 
 
 @dataclass
@@ -27,7 +29,7 @@ class ProductImageOperationDTO:
     image_name: Optional[str] = None  # Имя файла (для to_create)
     image_url: Optional[str] = None  # URL существующего изображения (альтернатива image_id)
     is_main: bool = False  # Флаг главного изображения
-    ordering: Optional[int] = None  # Порядок сортировки (опционально)
+    ordering: Optional[int] = None  # Порядок сортировки (опционально при обновлении)
 
 
 @dataclass

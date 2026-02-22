@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from src.core.db.database import Base
@@ -18,6 +18,7 @@ class ProductImage(TimestampMixin, Base):
 
     image_url = Column(String(500), nullable=False)
     is_main = Column(Boolean, default=False)
+    ordering = Column(Integer, default=0, nullable=False)
 
     product = relationship(
         "Product",
