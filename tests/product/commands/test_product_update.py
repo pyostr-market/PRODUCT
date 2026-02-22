@@ -402,3 +402,54 @@ async def test_update_product_200_pass_without_id_or_url(authorized_client):
     assert response.status_code == 200
     body = response.json()
     assert len(body["data"]["images"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_update_product_200_change_main_image(authorized_client):
+    """Смена главного изображения через pass с is_main=false/true."""
+    create = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар",
+            "price": "100.00",
+            "image_is_main": ["true", "false"],
+        },
+        files=[
+            ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
+            ("images", ("img2.jpg", JPEG_BYTES_ANOTHER, "image/jpeg")),
+        ],
+    )
+
+    assert create.status_code == 200
+    product_id = create.json()["data"]["id"]
+    images = create.json()["data"]["images"]
+    
+    # Первое изображение главное
+    assert images[0]["is_main"] is True
+    assert images[1]["is_main"] is False
+    
+    image_1_id = images[0]["image_id"]
+    image_2_id = images[1]["image_id"]
+
+    # Меняем главное изображение на второе
+    response = await authorized_client.put(
+        f"/product/{product_id}",
+        data={
+            "name": "Обновлённый товар",
+            "images_json": json.dumps([
+                {"action": "pass", "image_id": image_1_id, "is_main": False},
+                {"action": "pass", "image_id": image_2_id, "is_main": True},
+            ]),
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    updated_images = body["data"]["images"]
+    
+    # Второе изображение стало главным
+    assert len(updated_images) == 2
+    img1 = next(img for img in updated_images if img["image_id"] == image_1_id)
+    img2 = next(img for img in updated_images if img["image_id"] == image_2_id)
+    assert img1["is_main"] is False
+    assert img2["is_main"] is True

@@ -102,7 +102,7 @@ class UpdateProductCommand:
                                         final_images.append(
                                             ProductImageAggregate(
                                                 object_key=img.object_key,
-                                                is_main=op.is_main or img.is_main,
+                                                is_main=op.is_main,  # Используем is_main из операции
                                                 image_id=img.image_id,
                                             )
                                         )
@@ -114,7 +114,7 @@ class UpdateProductCommand:
                                         final_images.append(
                                             ProductImageAggregate(
                                                 object_key=img.object_key,
-                                                is_main=op.is_main or img.is_main,
+                                                is_main=op.is_main,  # Используем is_main из операции
                                                 image_id=img.image_id,
                                             )
                                         )
@@ -126,7 +126,7 @@ class UpdateProductCommand:
                                         final_images.append(
                                             ProductImageAggregate(
                                                 object_key=img.object_key,
-                                                is_main=op.is_main or img.is_main,
+                                                is_main=op.is_main,  # Используем is_main из операции
                                                 image_id=img.image_id,
                                             )
                                         )
@@ -148,6 +148,22 @@ class UpdateProductCommand:
                                         image_id=None,
                                     )
                                 )
+
+                    # Нормализуем is_main: если ни одно изображение не помечено как главное,
+                    # делаем первое изображение главным
+                    if final_images and not any(img.is_main for img in final_images):
+                        final_images[0].is_main = True
+                    
+                    # Если несколько изображений помечены как главные, оставляем только первое
+                    main_count = sum(1 for img in final_images if img.is_main)
+                    if main_count > 1:
+                        main_found = False
+                        for img in final_images:
+                            if img.is_main:
+                                if not main_found:
+                                    main_found = True
+                                else:
+                                    img.is_main = False
 
                     aggregate.replace_images(final_images)
 
