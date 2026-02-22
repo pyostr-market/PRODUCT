@@ -339,8 +339,41 @@ async def test_update_product_200_partial_fields(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_update_product_200_pass_with_image_url(authorized_client):
+async def test_update_product_200_pass_with_image_key(authorized_client):
     """Сохранение изображения через image_key вместо image_id."""
+    create = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар",
+            "price": "100.00",
+        },
+        files=[("images", ("img.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+
+    assert create.status_code == 200
+    product_id = create.json()["data"]["id"]
+    image_key = create.json()["data"]["images"][0]["image_key"]
+
+    response = await authorized_client.put(
+        f"/product/{product_id}",
+        data={
+            "name": "Обновлённый товар",
+            "images_json": json.dumps([
+                {"action": "pass", "image_key": image_key, "is_main": True},
+                {"action": "to_create", "is_main": False},
+            ]),
+        },
+        files=[("images", ("new.jpg", JPEG_BYTES_NEW, "image/jpeg"))],
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["data"]["images"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_update_product_200_pass_with_image_url(authorized_client):
+    """Сохранение изображения через image_url (альтернатива image_key)."""
     create = await authorized_client.post(
         "/product",
         data={

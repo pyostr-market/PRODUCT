@@ -125,10 +125,12 @@ class SqlAlchemyProductRepository(ProductRepository):
         """
         existing_ids: set[int] = set()
         new_images_indices: list[int] = []
+        existing_image_updates: dict[int, bool] = {}  # image_id -> is_main
 
         for idx, image in enumerate(images):
             if image.image_id is not None:
                 existing_ids.add(image.image_id)
+                existing_image_updates[image.image_id] = image.is_main
             else:
                 new_images_indices.append(idx)
 
@@ -140,6 +142,9 @@ class SqlAlchemyProductRepository(ProductRepository):
         for image_model in all_existing_images:
             if image_model.id not in existing_ids:
                 await self.db.delete(image_model)
+            elif image_model.id in existing_image_updates:
+                # Обновляем is_main для существующего изображения
+                image_model.is_main = existing_image_updates[image_model.id]
 
         new_image_models: list[ProductImage] = []
         for idx in new_images_indices:

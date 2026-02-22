@@ -19,7 +19,8 @@ class ProductImageOperationSchema(BaseModel):
 
     action: Literal["to_create", "to_delete", "pass"]
     image_id: Optional[int] = None  # ID существующего изображения (для to_delete/pass)
-    image_url: Optional[str] = None  # URL существующего изображения (альтернатива image_id)
+    image_url: Optional[str] = None  # URL/ключ существующего изображения (альтернатива image_id)
+    image_key: Optional[str] = None  # Ключ изображения (альтернатива image_url, для обратной совместимости)
     is_main: bool = False  # Флаг главного изображения
     ordering: Optional[int] = None  # Порядок сортировки (опционально)
     

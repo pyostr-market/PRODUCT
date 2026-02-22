@@ -1,5 +1,6 @@
 import json
 from decimal import Decimal
+from pprint import pprint
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
@@ -156,7 +157,8 @@ async def _build_image_operations_dto(
             op = ProductImageOperationDTO(
                 action=action,  # type: ignore[arg-type]
                 image_id=item.get("image_id"),
-                image_url=item.get("image_url"),
+                # Поддерживаем оба поля: image_url и image_key (для обратной совместимости)
+                image_url=item.get("image_url") or item.get("image_key"),
                 is_main=_to_bool(str(item.get("is_main", "")), default=False),
                 ordering=item.get("ordering"),
             )
@@ -372,6 +374,9 @@ async def update(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    pprint(images_json)
+    pprint(images)
+    pprint(image_is_main)
     images_dto = None
     if images_json is not None or images is not None:
         images_dto = await _build_image_operations_dto(images_json, images, image_is_main)
