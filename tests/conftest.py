@@ -141,6 +141,11 @@ class FakeImageStorage:
         self.deleted_keys = []
         self._counter = 0
 
+    def reset(self):
+        """Сброс счётчика для тестов."""
+        self._counter = 0
+        self.deleted_keys = []
+
     async def upload_bytes(self, *, data: bytes, key: str, content_type: str | None = None) -> None:
         return None
 
@@ -190,8 +195,11 @@ async def client(engine):
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def cleanup_test_data(engine):
+async def cleanup_test_data(engine, image_storage_mock):
     """Очистка данных между тестами."""
+    # Сбрасываем счётчик изображений
+    image_storage_mock.reset()
+    
     # Очищаем данные ПЕРЕД каждым тестом
     async with engine.begin() as conn:
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))

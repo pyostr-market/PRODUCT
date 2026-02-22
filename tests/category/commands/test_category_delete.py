@@ -28,7 +28,7 @@ async def test_delete_category_200(authorized_client, image_storage_mock):
     get_response = await authorized_client.get(f"/category/{category_id}")
     assert get_response.status_code == 404
 
-    assert "categories/test-image-uuid.img" in image_storage_mock.deleted_keys
+    assert "categories/test-image-1.img" in image_storage_mock.deleted_keys
 
 
 @pytest.mark.asyncio
