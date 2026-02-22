@@ -156,6 +156,7 @@ async def _build_image_operations_dto(
             op = ProductImageOperationDTO(
                 action=action,  # type: ignore[arg-type]
                 image_id=item.get("image_id"),
+                image_url=item.get("image_url"),
                 is_main=_to_bool(str(item.get("is_main", "")), default=False),
                 ordering=item.get("ordering"),
             )

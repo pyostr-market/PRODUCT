@@ -8,6 +8,7 @@ class ProductImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     image_id: Optional[int] = None
+    image_key: str
     image_url: str
     is_main: bool
 
@@ -18,6 +19,7 @@ class ProductImageOperationSchema(BaseModel):
 
     action: Literal["to_create", "to_delete", "pass"]
     image_id: Optional[int] = None  # ID существующего изображения (для to_delete/pass)
+    image_url: Optional[str] = None  # URL существующего изображения (альтернатива image_id)
     is_main: bool = False  # Флаг главного изображения
     ordering: Optional[int] = None  # Порядок сортировки (опционально)
     

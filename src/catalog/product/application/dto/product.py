@@ -25,6 +25,7 @@ class ProductImageOperationDTO:
     image_id: Optional[int] = None  # ID существующего изображения (для to_delete/pass)
     image: Optional[bytes] = None  # Байты нового изображения (для to_create)
     image_name: Optional[str] = None  # Имя файла (для to_create)
+    image_url: Optional[str] = None  # URL существующего изображения (альтернатива image_id)
     is_main: bool = False  # Флаг главного изображения
     ordering: Optional[int] = None  # Порядок сортировки (опционально)
 

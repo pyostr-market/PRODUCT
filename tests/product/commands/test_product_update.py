@@ -336,3 +336,69 @@ async def test_update_product_200_partial_fields(authorized_client):
     body = response.json()
     assert str(body["data"]["price"]) == "250.00"
     assert len(body["data"]["images"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_update_product_200_pass_with_image_url(authorized_client):
+    """Сохранение изображения через image_key вместо image_id."""
+    create = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар",
+            "price": "100.00",
+        },
+        files=[("images", ("img.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+
+    assert create.status_code == 200
+    product_id = create.json()["data"]["id"]
+    image_key = create.json()["data"]["images"][0]["image_key"]
+
+    response = await authorized_client.put(
+        f"/product/{product_id}",
+        data={
+            "name": "Обновлённый товар",
+            "images_json": json.dumps([
+                {"action": "pass", "image_url": image_key, "is_main": True},
+                {"action": "to_create", "is_main": False},
+            ]),
+        },
+        files=[("images", ("new.jpg", JPEG_BYTES_NEW, "image/jpeg"))],
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["data"]["images"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_update_product_200_pass_without_id_or_url(authorized_client):
+    """pass без image_id и image_url сохраняет все существующие изображения."""
+    create = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар",
+            "price": "100.00",
+        },
+        files=[
+            ("images", ("img1.jpg", JPEG_BYTES, "image/jpeg")),
+            ("images", ("img2.jpg", JPEG_BYTES_ANOTHER, "image/jpeg")),
+        ],
+    )
+
+    assert create.status_code == 200
+    product_id = create.json()["data"]["id"]
+
+    response = await authorized_client.put(
+        f"/product/{product_id}",
+        data={
+            "name": "Обновлённый товар",
+            "images_json": json.dumps([
+                {"action": "pass", "is_main": True},
+            ]),
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["data"]["images"]) == 2

@@ -81,13 +81,21 @@ class UpdateProductCommand:
 
                     for op in dto.images:
                         if op.action == "to_delete":
+                            # Удаляем по image_id
                             if op.image_id is not None and op.image_id in old_image_ids:
                                 for img in aggregate.images:
                                     if img.image_id == op.image_id:
                                         deleted_image_keys.append(img.object_key)
                                         break
+                            # Или по image_url
+                            elif op.image_url is not None:
+                                for img in aggregate.images:
+                                    if img.object_key == op.image_url:
+                                        deleted_image_keys.append(img.object_key)
+                                        break
 
                         elif op.action == "pass":
+                            # Сохраняем по image_id
                             if op.image_id is not None:
                                 for img in aggregate.images:
                                     if img.image_id == op.image_id:
@@ -99,6 +107,29 @@ class UpdateProductCommand:
                                             )
                                         )
                                         break
+                            # Или по image_url
+                            elif op.image_url is not None:
+                                for img in aggregate.images:
+                                    if img.object_key == op.image_url:
+                                        final_images.append(
+                                            ProductImageAggregate(
+                                                object_key=img.object_key,
+                                                is_main=op.is_main or img.is_main,
+                                                image_id=img.image_id,
+                                            )
+                                        )
+                                        break
+                            # Если ни image_id, ни image_url не указаны — сохраняем все существующие
+                            else:
+                                for img in aggregate.images:
+                                    if not any(f.image_id == img.image_id for f in final_images):
+                                        final_images.append(
+                                            ProductImageAggregate(
+                                                object_key=img.object_key,
+                                                is_main=op.is_main or img.is_main,
+                                                image_id=img.image_id,
+                                            )
+                                        )
 
                         elif op.action == "to_create":
                             if op.image is not None and op.image_name is not None:

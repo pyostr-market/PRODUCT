@@ -475,6 +475,8 @@
         "product_type_id": int | null,
         "images": [
           {
+            "image_id": int,
+            "image_key": str,
             "image_url": str,
             "is_main": bool
           }
@@ -512,6 +514,8 @@
     "product_type_id": int | null,
     "images": [
       {
+        "image_id": int,
+        "image_key": str,
         "image_url": str,
         "is_main": bool
       }
@@ -555,6 +559,8 @@
         "product_type_id": int | null,
         "images": [
           {
+            "image_id": int,
+            "image_key": str,
             "image_url": str,
             "is_main": bool
           }
@@ -602,6 +608,7 @@
     "images": [
       {
         "image_id": int,
+        "image_key": str,
         "image_url": str,
         "is_main": bool
       }
@@ -639,15 +646,21 @@
   ```json
   [
     {"action": "pass", "image_id": 123, "is_main": true},
+    {"action": "pass", "image_url": "products/55f1d02c-fcea-4020-b533-56bbe41f638a.jpg", "is_main": true},
     {"action": "to_delete", "image_id": 456},
+    {"action": "to_delete", "image_url": "products/old-image.jpg"},
     {"action": "to_create", "is_main": false}
   ]
   ```
   
   **Действия:**
   - `to_create` — загрузить новое изображение (требуется файл в `images` для каждой операции `to_create`)
-  - `to_delete` — удалить существующее изображение (требуется `image_id`)
-  - `pass` — сохранить существующее изображение (требуется `image_id`, можно обновить `is_main`)
+  - `to_delete` — удалить существующее изображение (требуется `image_id` или `image_url`/`image_key`)
+  - `pass` — сохранить существующее изображение (требуется `image_id` или `image_url`/`image_key`, можно обновить `is_main`)
+  
+  **Примечание:** 
+  - `image_url` в операции — это значение поля `image_key` из ответа GET (путь к файлу, а не полный URL).
+  - Если `pass` указан без `image_id` и `image_url`, все существующие изображения сохраняются.
   
 - Успешный ответ (`200 OK`):
 ```json
@@ -664,6 +677,7 @@
     "images": [
       {
         "image_id": int,
+        "image_key": str,
         "image_url": str,
         "is_main": bool
       }
