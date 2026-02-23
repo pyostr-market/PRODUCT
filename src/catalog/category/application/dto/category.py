@@ -10,12 +10,14 @@ class CategoryImageReadDTO:
     ordering: int
     image_key: str
     image_url: Optional[str] = None
+    upload_id: Optional[int] = None
 
 
 @dataclass
 class CategoryImageInputDTO:
-    image: bytes
-    image_name: str = "test.jpg"
+    upload_id: Optional[int] = None  # ID загруженного изображения из UploadHistory
+    image: Optional[bytes] = None  # Байты изображения (для загрузки напрямую)
+    image_name: Optional[str] = None  # Имя файла
     ordering: int = 0
 
 

@@ -33,7 +33,7 @@ class SqlAlchemyProductRepository(ProductRepository):
         stmt = (
             select(Product)
             .options(
-                selectinload(Product.images),
+                selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
@@ -53,7 +53,7 @@ class SqlAlchemyProductRepository(ProductRepository):
         stmt = (
             select(Product)
             .options(
-                selectinload(Product.images),
+                selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
@@ -85,7 +85,7 @@ class SqlAlchemyProductRepository(ProductRepository):
         for image in aggregate.images:
             image_model = ProductImage(
                 product_id=model.id,
-                image_url=image.object_key,
+                upload_id=image.upload_id,
                 is_main=image.is_main,
                 ordering=image.ordering,
             )
@@ -96,10 +96,10 @@ class SqlAlchemyProductRepository(ProductRepository):
         await self.db.flush()
 
         aggregate._set_id(model.id)
-        
+
         for idx, image in enumerate(aggregate.images):
             image.image_id = new_image_models[idx].id
-        
+
         return aggregate
 
     async def update(self, aggregate: ProductAggregate) -> ProductAggregate:
@@ -132,20 +132,24 @@ class SqlAlchemyProductRepository(ProductRepository):
         Частичное обновление изображений товара.
 
         Изображения могут быть:
-        - С ID (image_id) - существующие изображения (pass) или помеченные на удаление
-        - Без ID - новые изображения для создания
+        - С image_id - существующие записи в product_images (pass/update)
+        - Без image_id - новые изображения для создания
 
-        Удаляются только изображения с image_id, которых нет в финальном списке.
+        При удалении записи из product_images файл в S3 НЕ удаляется.
         """
         existing_ids: set[int] = set()
         new_images_indices: list[int] = []
-        # image_id -> (is_main, ordering | None)
-        existing_image_updates: dict[int, tuple[bool, Optional[int]]] = {}
+        # image_id -> (upload_id, is_main, ordering | None)
+        existing_image_updates: dict[int, tuple[int, bool, Optional[int]]] = {}
 
         for idx, image in enumerate(images):
             if image.image_id is not None:
                 existing_ids.add(image.image_id)
-                existing_image_updates[image.image_id] = (image.is_main, image.ordering if image.ordering is not None else None)
+                existing_image_updates[image.image_id] = (
+                    image.upload_id,
+                    image.is_main,
+                    image.ordering if image.ordering is not None else None
+                )
             else:
                 new_images_indices.append(idx)
 
@@ -156,11 +160,12 @@ class SqlAlchemyProductRepository(ProductRepository):
 
         for image_model in all_existing_images:
             if image_model.id not in existing_ids:
+                # Удаляем только запись из БД, файл в S3 остаётся
                 await self.db.delete(image_model)
             elif image_model.id in existing_image_updates:
-                # Обновляем is_main для существующего изображения
-                image_model.is_main, ordering_value = existing_image_updates[image_model.id]
-                # Обновляем ordering только если он явно указан
+                upload_id, is_main, ordering_value = existing_image_updates[image_model.id]
+                image_model.upload_id = upload_id
+                image_model.is_main = is_main
                 if ordering_value is not None:
                     image_model.ordering = ordering_value
 
@@ -169,7 +174,7 @@ class SqlAlchemyProductRepository(ProductRepository):
             image = images[idx]
             image_model = ProductImage(
                 product_id=product_id,
-                image_url=image.object_key,
+                upload_id=image.upload_id,
                 is_main=image.is_main,
                 ordering=image.ordering if image.ordering is not None else 0,
             )
@@ -213,7 +218,7 @@ class SqlAlchemyProductRepository(ProductRepository):
         stmt = (
             select(Product)
             .options(
-                selectinload(Product.images),
+                selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
@@ -309,10 +314,11 @@ class SqlAlchemyProductRepository(ProductRepository):
             product_type_id=model.product_type_id,
             images=[
                 ProductImageAggregate(
-                    object_key=image.image_url,
+                    upload_id=image.upload_id,
                     is_main=image.is_main,
                     image_id=image.id,
                     ordering=image.ordering,
+                    object_key=image.upload.file_path if image.upload else None,
                 )
                 for image in model.images
             ],

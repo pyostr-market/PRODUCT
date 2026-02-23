@@ -10,16 +10,18 @@ from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 @dataclass
 class ProductImageReadDTO:
     image_key: str
-    image_id: Optional[int] = None
+    image_id: Optional[int] = None  # upload_id
     image_url: Optional[str] = None
     is_main: bool = False
     ordering: int = 0
+    upload_id: Optional[int] = None
 
 
 @dataclass
 class ProductImageInputDTO:
-    image: bytes
-    image_name: str = "test.jpg"
+    upload_id: Optional[int] = None  # ID загруженного изображения из UploadHistory
+    image: Optional[bytes] = None  # Байты изображения (для загрузки напрямую)
+    image_name: Optional[str] = None  # Имя файла
     is_main: bool = False
     ordering: int = 0
 
@@ -27,13 +29,11 @@ class ProductImageInputDTO:
 @dataclass
 class ProductImageOperationDTO:
     """Операция с изображением при обновлении товара."""
-    action: Literal["to_create", "to_delete", "pass"]
-    image_id: Optional[int] = None  # ID существующего изображения (для to_delete/pass)
-    image: Optional[bytes] = None  # Байты нового изображения (для to_create)
-    image_name: Optional[str] = None  # Имя файла (для to_create)
-    image_url: Optional[str] = None  # URL существующего изображения (альтернатива image_id)
-    is_main: bool = False  # Флаг главного изображения
-    ordering: Optional[int] = None  # Порядок сортировки (опционально при обновлении)
+    action: str  # "create", "update", "pass", "delete"
+    upload_id: Optional[int] = None  # ID изображения из UploadHistory
+    image_url: Optional[str] = None  # URL изображения (альтернатива upload_id)
+    is_main: Optional[bool] = None
+    ordering: Optional[int] = None
 
 
 @dataclass

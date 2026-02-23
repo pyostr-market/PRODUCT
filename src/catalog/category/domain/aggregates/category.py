@@ -11,8 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass
 class CategoryImageAggregate:
-    object_key: str
+    upload_id: int  # ID из UploadHistory
     ordering: int
+    object_key: str | None = None  # Ключ объекта в S3 (file_path из UploadHistory)
 
 
 class CategoryAggregate:

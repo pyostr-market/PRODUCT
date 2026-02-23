@@ -17,64 +17,41 @@ class CategoryNestedSchema(BaseModel):
     description: Optional[str] = None
 
 
-class CategoryImageSchema(BaseModel):
-    image: bytes = Field(default=b"test.jpg", examples=["dGVzdC5qcGc="])
-    image_name: str = "test.jpg"
-    ordering: int = 0
-
-
 class CategoryImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    upload_id: int  # ID из UploadHistory
+    image_url: str  # Публичный URL
     ordering: int
-    image_url: str
+
+
+class CategoryImageReferenceSchema(BaseModel):
+    """Ссылка на загруженное изображение для создания категории."""
+    model_config = ConfigDict(from_attributes=True)
+
+    upload_id: int  # ID из UploadHistory
+    ordering: int = 0
+
+
+class CategoryImageSchema(BaseModel):
+    upload_id: int  # ID загруженного изображения из UploadHistory
+    ordering: int = 0
 
 
 class CategoryCreateSchema(BaseModel):
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "name": "Электроника",
-                "description": "Категория электроники",
-                "images": [
-                    {
-                        "image": "dGVzdC5qcGc=",
-                        "image_name": "test.jpg",
-                        "ordering": 0,
-                    }
-                ],
-            }
-        }
-    )
-
     name: str
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
-    images: List[CategoryImageSchema] = Field(default_factory=lambda: [CategoryImageSchema()])
+    images: List[CategoryImageReferenceSchema] = Field(default_factory=list)
 
 
 class CategoryUpdateSchema(BaseModel):
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "name": "Обновленная категория",
-                "images": [
-                    {
-                        "image": "dGVzdC5qcGc=",
-                        "image_name": "test.jpg",
-                        "ordering": 0,
-                    }
-                ],
-            }
-        }
-    )
-
     name: Optional[str] = None
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
-    images: Optional[List[CategoryImageSchema]] = None
+    images: Optional[List[CategoryImageReferenceSchema]] = None
 
 
 class CategoryReadSchema(BaseModel):

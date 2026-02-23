@@ -1,3 +1,6 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
 from src.catalog.category.application.dto.category import (
     CategoryCreateDTO,
@@ -12,6 +15,7 @@ from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
 from src.core.services.images.storage import guess_content_type
+from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
 class CreateCategoryCommand:
@@ -23,12 +27,14 @@ class CreateCategoryCommand:
         uow,
         image_storage: ImageStorageService,
         event_bus: AsyncEventBus,
+        db: AsyncSession,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
         self.event_bus = event_bus
+        self.db = db
 
     async def execute(
         self,
@@ -36,14 +42,46 @@ class CreateCategoryCommand:
         user: User,
     ) -> CategoryReadDTO:
         uploaded_images: list[CategoryImageAggregate] = []
-        uploaded_keys: list[str] = []
 
         for image in dto.images:
-            image_key = self.image_storage.build_key(folder="categories", filename=image.image_name)
-            content_type = guess_content_type(image.image_name)
-            await self.image_storage.upload_bytes(data=image.image, key=image_key, content_type=content_type)
-            uploaded_keys.append(image_key)
-            uploaded_images.append(CategoryImageAggregate(object_key=image_key, ordering=image.ordering))
+            if image.upload_id:
+                # Используем предварительно загруженное изображение
+                stmt = select(UploadHistory).where(UploadHistory.id == image.upload_id)
+                result = await self.db.execute(stmt)
+                upload_record = result.scalar_one_or_none()
+                
+                if not upload_record:
+                    from src.catalog.category.domain.exceptions import CategoryInvalidImage
+                    raise CategoryInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
+                
+                uploaded_images.append(CategoryImageAggregate(
+                    upload_id=upload_record.id,
+                    ordering=image.ordering,
+                    object_key=upload_record.file_path,
+                ))
+            elif image.image:
+                # Загружаем изображение напрямую
+                image_key = self.image_storage.build_key(folder="categories", filename=image.image_name)
+                content_type = guess_content_type(image.image_name)
+                await self.image_storage.upload_bytes(data=image.image, key=image_key, content_type=content_type)
+
+                # Создаём запись в UploadHistory
+                upload_record = UploadHistory(
+                    user_id=None,
+                    file_path=image_key,
+                    folder="categories",
+                    content_type=content_type,
+                    original_filename=image.image_name,
+                    file_size=len(image.image),
+                )
+                self.db.add(upload_record)
+                await self.db.flush()
+
+                uploaded_images.append(CategoryImageAggregate(
+                    upload_id=upload_record.id,
+                    ordering=image.ordering,
+                    object_key=image_key,
+                ))
 
         try:
             async with self.uow:
@@ -68,7 +106,7 @@ class CreateCategoryCommand:
                             "parent_id": aggregate.parent_id,
                             "manufacturer_id": aggregate.manufacturer_id,
                             "images": [
-                                {"image_key": image.object_key, "ordering": image.ordering}
+                                {"upload_id": image.upload_id, "ordering": image.ordering}
                                 for image in aggregate.images
                             ],
                         },
@@ -86,15 +124,14 @@ class CreateCategoryCommand:
                     images=[
                         CategoryImageReadDTO(
                             ordering=image.ordering,
-                            image_key=image.object_key,
-                            image_url=self.image_storage.build_public_url(image.object_key),
+                            image_key="",  # Будет заполнено из UploadHistory
+                            image_url="",  # Будет заполнено из UploadHistory
+                            upload_id=image.upload_id,
                         )
                         for image in sorted(aggregate.images, key=lambda i: i.ordering)
                     ],
                 )
         except Exception:
-            for key in uploaded_keys:
-                await self.image_storage.delete_object(key)
             raise
 
         self.event_bus.publish_many_nowait(

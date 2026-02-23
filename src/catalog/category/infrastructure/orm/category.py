@@ -25,7 +25,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         stmt = (
             select(Category)
             .options(
-                selectinload(Category.images),
+                selectinload(Category.images).selectinload(CategoryImage.upload),
                 selectinload(Category.parent),
                 selectinload(Category.manufacturer),
             )
@@ -54,7 +54,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
             self.db.add(
                 CategoryImage(
                     category_id=model.id,
-                    object_key=image.object_key,
+                    upload_id=image.upload_id,
                     ordering=image.ordering,
                 )
             )
@@ -68,6 +68,8 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         if not model:
             return False
 
+        # При удалении категории записи из category_images удаляются (CASCADE),
+        # но файлы в S3 остаются
         await self.db.delete(model)
         return True
 
@@ -82,16 +84,18 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         model.parent_id = aggregate.parent_id
         model.manufacturer_id = aggregate.manufacturer_id
 
+        # Удаляем старые связи изображений (файлы в S3 остаются)
         stmt = select(CategoryImage).where(CategoryImage.category_id == aggregate.id)
         result = await self.db.execute(stmt)
         for image_model in result.scalars().all():
             await self.db.delete(image_model)
 
+        # Создаём новые связи
         for image in aggregate.images:
             self.db.add(
                 CategoryImage(
                     category_id=aggregate.id,
-                    object_key=image.object_key,
+                    upload_id=image.upload_id,
                     ordering=image.ordering,
                 )
             )
@@ -125,7 +129,11 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
             parent_id=model.parent_id,
             manufacturer_id=model.manufacturer_id,
             images=[
-                CategoryImageAggregate(object_key=image.object_key, ordering=image.ordering)
+                CategoryImageAggregate(
+                    upload_id=image.upload_id,
+                    ordering=image.ordering,
+                    object_key=image.upload.file_path if image.upload else None,
+                )
                 for image in sorted(model.images, key=lambda i: i.ordering)
             ],
             parent=parent,

@@ -163,6 +163,7 @@ class FakeImageStorage:
 @pytest.fixture(autouse=True)
 def image_storage_mock(monkeypatch):
     fake_storage = FakeImageStorage()
+    # Патчим S3ImageStorageService.from_settings для всех мест, где используется конкретный класс
     monkeypatch.setattr(
         S3ImageStorageService,
         "from_settings",

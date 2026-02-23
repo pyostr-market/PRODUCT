@@ -1,3 +1,6 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 from src.catalog.product.application.dto.audit import ProductAuditDTO
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
@@ -11,8 +14,8 @@ from src.catalog.product.domain.aggregates.product import (
 )
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
-from src.core.services.images import ImageStorageService
-from src.core.services.images.storage import guess_content_type
+from src.core.services.images.storage import S3ImageStorageService, guess_content_type
+from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
 class CreateProductCommand:
@@ -22,27 +25,65 @@ class CreateProductCommand:
         repository,
         audit_repository,
         uow,
-        image_storage: ImageStorageService,
+        image_storage: S3ImageStorageService,
         event_bus: AsyncEventBus,
+        db: AsyncSession,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
         self.event_bus = event_bus
+        self.db = db
 
     async def execute(self, dto, user: User) -> ProductReadDTO:
-        uploaded_keys: list[str] = []
-
         mapped_images: list[ProductImageAggregate] = []
+        
         for image in dto.images:
-            image_key = self.image_storage.build_key(folder="products", filename=image.image_name)
-            content_type = guess_content_type(image.image_name)
-            await self.image_storage.upload_bytes(data=image.image, key=image_key, content_type=content_type)
-            uploaded_keys.append(image_key)
-            mapped_images.append(
-                ProductImageAggregate(object_key=image_key, is_main=image.is_main, ordering=image.ordering)
-            )
+            if image.upload_id:
+                # Используем предварительно загруженное изображение из UploadHistory
+                stmt = select(UploadHistory).where(UploadHistory.id == image.upload_id)
+                result = await self.db.execute(stmt)
+                upload_record = result.scalar_one_or_none()
+                
+                if not upload_record:
+                    from src.catalog.product.domain.exceptions import ProductInvalidImage
+                    raise ProductInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
+                
+                mapped_images.append(
+                    ProductImageAggregate(
+                        upload_id=upload_record.id,
+                        is_main=image.is_main,
+                        ordering=image.ordering,
+                        object_key=upload_record.file_path,
+                    )
+                )
+            elif image.image:
+                # Загружаем изображение напрямую и создаём запись в UploadHistory
+                image_key = self.image_storage.build_key(folder="products", filename=image.image_name)
+                content_type = guess_content_type(image.image_name)
+                await self.image_storage.upload_bytes(data=image.image, key=image_key, content_type=content_type)
+
+                # Создаём запись в UploadHistory
+                upload_record = UploadHistory(
+                    user_id=None,  # Будет установлено позже или через context
+                    file_path=image_key,
+                    folder="products",
+                    content_type=content_type,
+                    original_filename=image.image_name,
+                    file_size=len(image.image),
+                )
+                self.db.add(upload_record)
+                await self.db.flush()
+
+                mapped_images.append(
+                    ProductImageAggregate(
+                        upload_id=upload_record.id,
+                        is_main=image.is_main,
+                        ordering=image.ordering,
+                        object_key=image_key,
+                    )
+                )
 
         mapped_attributes = [
             ProductAttributeAggregate(
@@ -76,7 +117,7 @@ class CreateProductCommand:
                     "supplier_id": aggregate.supplier_id,
                     "product_type_id": aggregate.product_type_id,
                     "images": [
-                        {"image_key": image.object_key, "is_main": image.is_main}
+                        {"upload_id": image.upload_id, "is_main": image.is_main}
                         for image in aggregate.images
                     ],
                     "attributes": [
@@ -110,11 +151,12 @@ class CreateProductCommand:
                     product_type_id=aggregate.product_type_id,
                     images=[
                         ProductImageReadDTO(
-                            image_id=image.image_id,
-                            image_key=image.object_key,
-                            image_url=self.image_storage.build_public_url(image.object_key),
+                            image_id=image.upload_id,
+                            image_key="",  # Будет заполнено из UploadHistory
+                            image_url="",  # Будет заполнено из UploadHistory
                             is_main=image.is_main,
                             ordering=image.ordering,
+                            upload_id=image.upload_id,
                         )
                         for image in aggregate.images
                     ],
@@ -128,8 +170,6 @@ class CreateProductCommand:
                     ],
                 )
         except Exception:
-            for key in uploaded_keys:
-                await self.image_storage.delete_object(key)
             raise
 
         self.event_bus.publish_many_nowait(
@@ -161,7 +201,7 @@ class CreateProductCommand:
                     data={
                         "product_id": result.id,
                         "images": [
-                            {"image_key": image.image_key, "is_main": image.is_main}
+                            {"upload_id": image.upload_id, "is_main": image.is_main}
                             for image in result.images
                         ],
                     },

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     API_MODULES: list = [
         "src.core.api.api_module:CoreApiModule",
+        "src.uploads.api_module:UploadsApiModule",
         "src.catalog.manufacturer.api_module:ManufacturerApiModule",
         "src.catalog.suppliers.api_module:SupplierApiModule",
         "src.catalog.category.api_module:CategoryApiModule",

@@ -2,7 +2,7 @@ from src.catalog.category.application.dto.audit import CategoryAuditDTO
 from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
-from src.core.services.images import ImageStorageService
+from src.core.services.images.storage import S3ImageStorageService
 
 
 class DeleteCategoryCommand:
@@ -12,7 +12,7 @@ class DeleteCategoryCommand:
         repository,
         audit_repository,
         uow,
-        image_storage: ImageStorageService,
+        image_storage: S3ImageStorageService,
         event_bus: AsyncEventBus,
     ):
         self.repository = repository

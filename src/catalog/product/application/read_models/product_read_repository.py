@@ -15,15 +15,18 @@ from src.catalog.product.domain.aggregates.product_type import ProductTypeAggreg
 from src.catalog.product.infrastructure.models.product import Product
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
 from src.catalog.product.infrastructure.models.product_attribute_value import ProductAttributeValue
+from src.catalog.product.infrastructure.models.product_image import ProductImage
 from src.catalog.product.infrastructure.models.product_type import ProductType
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 from src.catalog.suppliers.infrastructure.models.supplier import Supplier
+from src.core.services.images.storage import S3ImageStorageService
 
 
 class ProductReadRepository:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.image_storage = S3ImageStorageService.from_settings()
 
     def _to_read_dto(self, model: Product) -> ProductReadDTO:
         category_dto = None
@@ -63,10 +66,12 @@ class ProductReadRepository:
             product_type_id=model.product_type_id,
             images=[
                 ProductImageReadDTO(
-                    image_id=image.id,
-                    image_key=image.image_url,
+                    image_id=image.upload_id,
+                    image_key=image.upload.file_path,
+                    image_url=self.image_storage.build_public_url(image.upload.file_path),
                     is_main=image.is_main,
                     ordering=image.ordering,
+                    upload_id=image.upload_id,
                 )
                 for image in model.images
             ],
@@ -88,7 +93,7 @@ class ProductReadRepository:
         stmt = (
             select(Product)
             .options(
-                selectinload(Product.images),
+                selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
@@ -108,7 +113,7 @@ class ProductReadRepository:
         stmt = (
             select(Product)
             .options(
-                selectinload(Product.images),
+                selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
@@ -137,7 +142,7 @@ class ProductReadRepository:
         stmt = (
             select(Product)
             .options(
-                selectinload(Product.images),
+                selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),

@@ -2,7 +2,7 @@ from src.catalog.product.application.dto.audit import ProductAuditDTO
 from src.catalog.product.domain.exceptions import ProductNotFound
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
-from src.core.services.images import ImageStorageService
+from src.core.services.images.storage import S3ImageStorageService
 
 
 class DeleteProductCommand:
@@ -12,7 +12,7 @@ class DeleteProductCommand:
         repository,
         audit_repository,
         uow,
-        image_storage: ImageStorageService,
+        image_storage: S3ImageStorageService,
         event_bus: AsyncEventBus,
     ):
         self.repository = repository

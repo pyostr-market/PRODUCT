@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from src.core.db.database import Base
@@ -14,10 +14,22 @@ class CategoryImage(TimestampMixin, Base):
         ForeignKey("categories.id", ondelete="CASCADE"),
         nullable=False,
     )
-    object_key = Column(String(500), nullable=False)
+
+    # Ссылка на UploadHistory
+    upload_id = Column(
+        BigInteger,
+        ForeignKey("upload_history.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+
     ordering = Column(Integer, nullable=False, default=0)
 
     category = relationship(
         "Category",
         back_populates="images",
+    )
+
+    upload = relationship(
+        "UploadHistory",
+        back_populates="category_images",
     )

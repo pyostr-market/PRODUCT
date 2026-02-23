@@ -92,6 +92,7 @@ container.register(
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        db=db,
     ),
 )
 
@@ -123,6 +124,7 @@ container.register(
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        db=db,
     ),
 )
 

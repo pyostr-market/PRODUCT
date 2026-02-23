@@ -10,6 +10,52 @@
 { "success": true, "data": ... }
 ```
 
+## Загрузка файлов
+
+### 0) POST `/upload`
+- Метод: `POST`
+- Доступ: Только авторизация (Bearer token)
+- Параметры (`multipart/form-data`):
+  - `file: UploadFile` (обяз.) — файл для загрузки
+  - `folder: str` (обяз.) — папка для файла (products, categories, manufacturers, etc.)
+  - `original_filename: str | null` — исходное имя файла (опционально)
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "upload_id": int,
+    "file_path": str,
+    "public_url": str,
+    "original_filename": str | null,
+    "content_type": str | null,
+    "file_size": int | null
+  }
+}
+```
+
+### 0.1) GET `/upload/{upload_id}`
+- Метод: `GET`
+- Доступ: Только авторизация (Bearer token)
+- Параметры:
+  - Path: `upload_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "file_path": str,
+    "folder": str,
+    "user_id": int | null,
+    "content_type": str | null,
+    "original_filename": str | null,
+    "file_size": int | null,
+    "created_at": "2025-01-01T00:00:00"
+  }
+}
+```
+
 ## Система
 
 ### 1) GET `/system/health`
@@ -312,6 +358,7 @@
     } | null,
     "images": [
       {
+        "upload_id": int,
         "ordering": int,
         "image_url": str
       }
@@ -353,6 +400,7 @@
         } | null,
         "images": [
           {
+            "upload_id": int,
             "ordering": int,
             "image_url": str
           }
@@ -369,11 +417,12 @@
 - Параметры:
   - Body (`multipart/form-data`):
     - `name: str` (обяз.)
-    - `images: UploadFile[]` (обяз.)
-    - `orderings: int[]` (обяз.)
     - `description: str | null`
     - `parent_id: int | null`
     - `manufacturer_id: int | null`
+    - `images: UploadFile[] | null` — файлы изображений
+    - `orderings: int[] | null` — порядковые номера для изображений
+- Примечание: если передан `images`, то `orderings` обязателен, и наоборот.
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -386,6 +435,7 @@
     "manufacturer_id": int | null,
     "images": [
       {
+        "upload_id": int,
         "ordering": int,
         "image_url": str
       }
@@ -404,8 +454,8 @@
     - `description: str | null`
     - `parent_id: int | null`
     - `manufacturer_id: int | null`
-    - `images: UploadFile[] | null`
-    - `orderings: int[] | null`
+    - `images: UploadFile[] | null` — файлы изображений для замены
+    - `orderings: int[] | null` — порядковые номера для изображений
 - Примечание: если передан один из `images/orderings`, второй тоже обязателен.
 - Успешный ответ (`200 OK`):
 ```json
@@ -419,6 +469,7 @@
     "manufacturer_id": int | null,
     "images": [
       {
+        "upload_id": int,
         "ordering": int,
         "image_url": str
       }
@@ -515,12 +566,13 @@
             "image_key": str,
             "image_url": str,
             "is_main": bool,
-            "ordering": int
+            "ordering": int,
+            "upload_id": int
           }
         ],
         "attributes": [
           {
-            "id": int | null,
+            "id": int,
             "name": str,
             "value": str,
             "is_filterable": bool
@@ -571,12 +623,13 @@
         "image_key": str,
         "image_url": str,
         "is_main": bool,
-        "ordering": int
+        "ordering": int,
+        "upload_id": int
       }
     ],
     "attributes": [
       {
-        "id": int | null,
+        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
@@ -594,6 +647,10 @@
     - `name: str | null`
     - `category_id: int | null`
     - `product_type_id: int | null`
+    - `attributes: str | null` — JSON-объект для фильтрации по атрибутам:
+      ```json
+      {"RAM": "8 GB", "Color": "Black"}
+      ```
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
 - Успешный ответ (`200 OK`):
@@ -633,12 +690,13 @@
             "image_key": str,
             "image_url": str,
             "is_main": bool,
-            "ordering": int
+            "ordering": int,
+            "upload_id": int
           }
         ],
         "attributes": [
           {
-            "id": int | null,
+            "id": int,
             "name": str,
             "value": str,
             "is_filterable": bool
@@ -653,18 +711,40 @@
 ### 24) POST `/product`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `product:create`
-- Параметры:
-  - Body (`multipart/form-data`):
-    - `name: str` (обяз.)
-    - `price: Decimal` (обяз.)
-    - `description: str | null`
-    - `category_id: int | null`
-    - `supplier_id: int | null`
-    - `product_type_id: int | null`
-    - `attributes_json: str | null` (JSON-массив атрибутов)
-    - `images: UploadFile[] | null`
-    - `image_is_main: str[] | null` (`true/false/1/0/...`)
-    - `image_ordering: int[] | null` (порядок сортировки для каждого изображения)
+- Параметры (`multipart/form-data`):
+  - `name: str` (обяз.)
+  - `price: Decimal` (обяз.)
+  - `description: str | null`
+  - `category_id: int | null`
+  - `supplier_id: int | null`
+  - `product_type_id: int | null`
+  - `attributes_json: str | null` — JSON-массив атрибутов:
+    ```json
+    [{"name": "RAM", "value": "8 GB", "is_filterable": true}]
+    ```
+  - **Вариант 1: Загрузка через form-data файлы** (рекомендуется):
+    - `images: UploadFile[] | null` — файлы изображений
+    - `image_is_main: str[] | null` — флаги главного изображения (true/false/1/0)
+    - `image_ordering: str[] | null` — порядковые номера (int)
+    - Пример:
+      ```
+      images=[img1.jpg, img2.jpg]
+      image_is_main=["true", "false"]
+      image_ordering=["0", "1"]
+      ```
+  - **Вариант 2: Загрузка через JSON (base64)**:
+    - `images_json: str | null` — JSON-массив изображений:
+      ```json
+      [
+        {"image": "data:image/jpeg;base64,/9j/...", "is_main": true, "ordering": 0},
+        {"image": "data:image/jpeg;base64,/9j/...", "is_main": false, "ordering": 1}
+      ]
+      ```
+      Каждый элемент массива содержит:
+      - `image`: изображение в формате base64 (data:image/jpeg;base64,...)
+      - `is_main`: флаг главного изображения (true/false/1/0)
+      - `ordering`: порядок сортировки (int)
+
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -679,8 +759,7 @@
     "product_type_id": int | null,
     "images": [
       {
-        "image_id": int,
-        "image_key": str,
+        "upload_id": int,
         "image_url": str,
         "is_main": bool,
         "ordering": int
@@ -688,7 +767,7 @@
     ],
     "attributes": [
       {
-        "id": int | null,
+        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
@@ -701,42 +780,51 @@
 ### 25) PUT `/product/{product_id}`
 - Метод: `PUT`
 - Доступ: `Требуемое право` = `product:update`
-- Параметры:
+- Параметры (`multipart/form-data`):
   - Path: `product_id: int` (обяз.)
-  - Body (`multipart/form-data`):
+  - Body:
     - `name: str | null`
     - `price: Decimal | null`
     - `description: str | null`
     - `category_id: int | null`
     - `supplier_id: int | null`
     - `product_type_id: int | null`
-    - `attributes_json: str | null` (JSON-массив атрибутов)
-    - `images_json: str | null` (JSON-массив операций с изображениями)
-    - `images: UploadFile[] | null` (файлы для операций `to_create`)
-    - `image_is_main: str[] | null` (`true/false/1/0/...` для новых изображений)
-    - `image_ordering: int[] | null` (порядок сортировки для новых изображений)
+    - `attributes_json: str | null` — JSON-массив атрибутов
+    - **Вариант 1: Операции через JSON + файлы** (рекомендуется):
+      - `images_json: str | null` — JSON-массив операций с изображениями:
+        ```json
+        [
+          {"action": "pass", "upload_id": 1, "is_main": true, "ordering": 0},
+          {"action": "delete", "upload_id": 2},
+          {"action": "create", "upload_id": 3, "is_main": false, "ordering": 1}
+        ]
+        ```
+      - `images: UploadFile[] | null` — файлы для операций `create` (опционально)
+      - `image_is_main: str[] | null` — флаги is_main для загружаемых файлов
+    - **Вариант 2: Только файлы** (упрощённый):
+      - `images: UploadFile[] | null` — файлы изображений для добавления
+      - `image_is_main: str[] | null` — флаги главного изображения
 
   **Формат `images_json`** (массив операций):
   ```json
   [
-    {"action": "pass", "image_id": 123, "is_main": true, "ordering": 0},
-    {"action": "pass", "image_key": "products/55f1d02c-fcea-4020-b533-56bbe41f638a.jpg", "is_main": true, "ordering": 1},
-    {"action": "to_delete", "image_id": 456},
-    {"action": "to_delete", "image_key": "products/old-image.jpg"},
-    {"action": "to_create", "is_main": false, "ordering": 2}
+    {"action": "pass", "upload_id": 1, "is_main": true, "ordering": 0},
+    {"action": "delete", "upload_id": 2},
+    {"action": "create", "upload_id": 3, "is_main": false, "ordering": 1}
   ]
   ```
 
   **Действия:**
-  - `to_create` — загрузить новое изображение (требуется файл в `images` для каждой операции `to_create`)
-  - `to_delete` — удалить существующее изображение (требуется `image_id` или `image_key`/`image_url`)
-  - `pass` — сохранить существующее изображение (требуется `image_id` или `image_key`/`image_url`, можно обновить `is_main` и `ordering`)
+  - `create` — добавить изображение (требуется `upload_id` предварительно загруженного файла через `POST /upload`)
+  - `delete` — удалить связь изображения (файл в S3 остаётся)
+  - `pass` — сохранить существующее изображение (можно обновить `is_main` и `ordering`)
 
   **Примечание:**
-  - Можно использовать `image_key` или `image_url` (это одно и то же поле — путь к файлу в S3).
-  - Если `pass` указан без `image_id` и `image_key`/`image_url`, все существующие изображения сохраняются.
-  - Поле `ordering` является опциональным. Если не указано, существующий порядок сортировки сохраняется.
-  
+  - Перед использованием `action: create` необходимо загрузить файл через `POST /upload` и получить `upload_id`
+  - При удалении записи из БД файл в S3 **не удаляется**
+  - Поле `ordering` является опциональным
+  - Если первое изображение не помечено как `is_main=true`, оно автоматически становится главным
+
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -751,8 +839,7 @@
     "product_type_id": int | null,
     "images": [
       {
-        "image_id": int,
-        "image_key": str,
+        "upload_id": int,
         "image_url": str,
         "is_main": bool,
         "ordering": int
@@ -760,7 +847,7 @@
     ],
     "attributes": [
       {
-        "id": int | null,
+        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
@@ -939,14 +1026,7 @@
 
 ## Атрибуты продуктов
 
-### 34) GET `/product/attribute/{attribute_id}`
-- Метод: `GET`
-- Доступ: **не реализован**
-- Параметры:
-  - Path: `attribute_id: int` (обяз.)
-- Примечание: эндпоинт не реализован (доступны только POST/PUT/DELETE)
-
-### 35) POST `/product/attribute`
+### 34) POST `/product/attribute`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `product_attribute:create`
 - Параметры:
@@ -959,7 +1039,7 @@
 {
   "success": true,
   "data": {
-    "id": int | null,
+    "id": int,
     "name": str,
     "value": str,
     "is_filterable": bool
@@ -967,7 +1047,7 @@
 }
 ```
 
-### 36) PUT `/product/attribute/{attribute_id}`
+### 35) PUT `/product/attribute/{attribute_id}`
 - Метод: `PUT`
 - Доступ: `Требуемое право` = `product_attribute:update`
 - Параметры:
@@ -981,7 +1061,7 @@
 {
   "success": true,
   "data": {
-    "id": int | null,
+    "id": int,
     "name": str,
     "value": str,
     "is_filterable": bool
@@ -989,7 +1069,7 @@
 }
 ```
 
-### 37) DELETE `/product/attribute/{attribute_id}`
+### 36) DELETE `/product/attribute/{attribute_id}`
 - Метод: `DELETE`
 - Доступ: `Требуемое право` = `product_attribute:delete`
 - Параметры:

@@ -1,3 +1,5 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
 from src.catalog.category.application.dto.category import (
     CategoryImageReadDTO,
@@ -10,6 +12,7 @@ from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
 from src.core.services.images.storage import guess_content_type
+from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
 class UpdateCategoryCommand:
@@ -21,12 +24,14 @@ class UpdateCategoryCommand:
         uow,
         image_storage: ImageStorageService,
         event_bus: AsyncEventBus,
+        db: AsyncSession,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
         self.event_bus = event_bus
+        self.db = db
 
     async def execute(
         self,
@@ -66,6 +71,7 @@ class UpdateCategoryCommand:
 
                 if dto.images is not None:
                     uploaded_images: list[CategoryImageAggregate] = []
+                    new_upload_ids: list[int] = []
                     for image in dto.images:
                         new_image_key = self.image_storage.build_key(folder="categories", filename=image.image_name)
                         content_type = guess_content_type(image.image_name)
@@ -75,8 +81,26 @@ class UpdateCategoryCommand:
                             content_type=content_type,
                         )
                         new_image_keys.append(new_image_key)
+                        
+                        # Создаём запись в UploadHistory
+                        upload_record = UploadHistory(
+                            user_id=None,
+                            file_path=new_image_key,
+                            folder="categories",
+                            content_type=content_type,
+                            original_filename=image.image_name,
+                            file_size=len(image.image),
+                        )
+                        self.db.add(upload_record)
+                        await self.db.flush()
+                        new_upload_ids.append(upload_record.id)
+                        
                         uploaded_images.append(
-                            CategoryImageAggregate(object_key=new_image_key, ordering=image.ordering)
+                            CategoryImageAggregate(
+                                upload_id=upload_record.id,
+                                object_key=new_image_key,
+                                ordering=image.ordering,
+                            )
                         )
                     aggregate.replace_images(uploaded_images)
 
@@ -113,6 +137,7 @@ class UpdateCategoryCommand:
                     manufacturer_id=aggregate.manufacturer_id,
                     images=[
                         CategoryImageReadDTO(
+                            upload_id=image.upload_id,
                             ordering=image.ordering,
                             image_key=image.object_key,
                             image_url=self.image_storage.build_public_url(image.object_key),

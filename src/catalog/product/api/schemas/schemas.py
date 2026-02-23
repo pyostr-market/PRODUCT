@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import List, Literal, Optional
 
+from fastapi import UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -29,27 +30,39 @@ class ProductTypeNestedSchema(BaseModel):
 class ProductImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    image_id: Optional[int] = None
-    image_key: str
-    image_url: str
+    upload_id: int  # ID из UploadHistory
+    image_url: str  # Публичный URL
     is_main: bool
     ordering: int
 
 
-class ProductImageOperationSchema(BaseModel):
+class ProductImageReferenceSchema(BaseModel):
+    """Ссылка на загруженное изображение для создания товара."""
+    model_config = ConfigDict(from_attributes=True)
+
+    upload_id: int  # ID из UploadHistory
+    is_main: bool = False
+    ordering: int = 0
+
+
+class ProductImageActionSchema(BaseModel):
     """Операция с изображением при обновлении товара."""
     model_config = ConfigDict(from_attributes=True)
 
-    action: Literal["to_create", "to_delete", "pass"]
-    image_id: Optional[int] = None  # ID существующего изображения (для to_delete/pass)
-    image_url: Optional[str] = None  # URL/ключ существующего изображения (альтернатива image_id)
-    image_key: Optional[str] = None  # Ключ изображения (альтернатива image_url, для обратной совместимости)
-    is_main: bool = False  # Флаг главного изображения
-    ordering: Optional[int] = None  # Порядок сортировки (опционально при обновлении)
+    action: Literal["create", "update", "pass", "delete"]
+    upload_id: Optional[int] = None  # ID изображения из UploadHistory
+    image_url: Optional[str] = None  # URL изображения (альтернатива upload_id)
+    is_main: Optional[bool] = None
+    ordering: Optional[int] = None
 
-    # Поля только для to_create
-    image: Optional[bytes] = None  # Байты изображения
-    image_name: Optional[str] = None  # Имя файла
+
+class ProductImageInputSchema(BaseModel):
+    """Изображение для создания товара (multipart/form-data)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    image: UploadFile
+    is_main: bool = False
+    ordering: int = 0
 
 
 class ProductAttributeSchema(BaseModel):
@@ -94,6 +107,14 @@ class ProductCreateSchema(BaseModel):
     attributes: List[ProductAttributeSchema] = Field(default_factory=list)
 
 
+class ProductCreateImagesSchema(BaseModel):
+    """Элемент массива изображений для создания товара."""
+    model_config = ConfigDict(from_attributes=True)
+
+    is_main: bool = False
+    ordering: int = 0
+
+
 class ProductUpdateSchema(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
@@ -101,7 +122,7 @@ class ProductUpdateSchema(BaseModel):
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
     product_type_id: Optional[int] = None
-    images: Optional[List[ProductImageOperationSchema]] = None
+    images: Optional[List[ProductImageActionSchema]] = None
     attributes: Optional[List[ProductAttributeSchema]] = None
 
 

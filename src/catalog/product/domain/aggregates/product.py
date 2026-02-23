@@ -13,10 +13,11 @@ if TYPE_CHECKING:
 
 @dataclass
 class ProductImageAggregate:
-    object_key: str
+    upload_id: int  # ID из UploadHistory
     is_main: bool = False
-    image_id: Optional[int] = None  # ID изображения в БД (для существующих изображений)
+    image_id: Optional[int] = None  # ID записи в product_images (для существующих изображений)
     ordering: int = 0
+    object_key: Optional[str] = None  # Для обратной совместимости
 
 
 class ProductAttributeAggregate:

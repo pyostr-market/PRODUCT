@@ -1,3 +1,6 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 from src.catalog.product.application.dto.audit import ProductAuditDTO
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
@@ -11,8 +14,8 @@ from src.catalog.product.domain.aggregates.product import (
 from src.catalog.product.domain.exceptions import ProductNotFound
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
-from src.core.services.images import ImageStorageService
-from src.core.services.images.storage import guess_content_type
+from src.core.services.images.storage import S3ImageStorageService, guess_content_type
+from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
 class UpdateProductCommand:
@@ -22,20 +25,18 @@ class UpdateProductCommand:
         repository,
         audit_repository,
         uow,
-        image_storage: ImageStorageService,
+        image_storage: S3ImageStorageService,
         event_bus: AsyncEventBus,
+        db: AsyncSession,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
         self.event_bus = event_bus
+        self.db = db
 
     async def execute(self, product_id: int, dto, user: User) -> ProductReadDTO:
-        old_image_keys: list[str] = []
-        new_image_keys: list[str] = []
-        deleted_image_keys: list[str] = []
-
         try:
             async with self.uow:
                 aggregate = await self.repository.get(product_id)
@@ -43,7 +44,6 @@ class UpdateProductCommand:
                 if not aggregate:
                     raise ProductNotFound()
 
-                old_image_keys = [image.object_key for image in aggregate.images]
                 old_image_ids = {image.image_id for image in aggregate.images if image.image_id}
 
                 old_data = {
@@ -54,7 +54,7 @@ class UpdateProductCommand:
                     "supplier_id": aggregate.supplier_id,
                     "product_type_id": aggregate.product_type_id,
                     "images": [
-                        {"image_key": image.object_key, "is_main": image.is_main, "image_id": image.image_id}
+                        {"upload_id": image.upload_id, "is_main": image.is_main, "image_id": image.image_id}
                         for image in aggregate.images
                     ],
                     "attributes": [
@@ -80,94 +80,50 @@ class UpdateProductCommand:
                     final_images: list[ProductImageAggregate] = []
 
                     for op in dto.images:
-                        if op.action == "to_delete":
-                            # Удаляем по image_id
-                            if op.image_id is not None and op.image_id in old_image_ids:
+                        if op.action == "delete":
+                            # Удаляем по upload_id
+                            if op.upload_id is not None:
                                 for img in aggregate.images:
-                                    if img.image_id == op.image_id:
-                                        deleted_image_keys.append(img.object_key)
-                                        break
-                            # Или по image_url
-                            elif op.image_url is not None:
-                                for img in aggregate.images:
-                                    if img.object_key == op.image_url:
-                                        deleted_image_keys.append(img.object_key)
+                                    if img.upload_id == op.upload_id:
                                         break
 
                         elif op.action == "pass":
-                            # Сохраняем по image_id
-                            if op.image_id is not None:
+                            # Сохраняем по upload_id
+                            if op.upload_id is not None:
                                 for img in aggregate.images:
-                                    if img.image_id == op.image_id:
+                                    if img.upload_id == op.upload_id:
                                         final_images.append(
                                             ProductImageAggregate(
-                                                object_key=img.object_key,
-                                                is_main=op.is_main,  # Используем is_main из операции
+                                                upload_id=img.upload_id,
+                                                is_main=op.is_main if op.is_main is not None else img.is_main,
                                                 image_id=img.image_id,
-                                                ordering=op.ordering,
+                                                ordering=op.ordering if op.ordering is not None else img.ordering,
+                                                object_key=img.object_key,
                                             )
                                         )
                                         break
-                            # Или по image_url
-                            elif op.image_url is not None:
-                                for img in aggregate.images:
-                                    if img.object_key == op.image_url:
-                                        final_images.append(
-                                            ProductImageAggregate(
-                                                object_key=img.object_key,
-                                                is_main=op.is_main,  # Используем is_main из операции
-                                                image_id=img.image_id,
-                                                ordering=op.ordering,
-                                            )
-                                        )
-                                        break
-                            # Если ни image_id, ни image_url не указаны — сохраняем все существующие
-                            else:
-                                for img in aggregate.images:
-                                    if not any(f.image_id == img.image_id for f in final_images):
-                                        final_images.append(
-                                            ProductImageAggregate(
-                                                object_key=img.object_key,
-                                                is_main=op.is_main,  # Используем is_main из операции
-                                                image_id=img.image_id,
-                                                ordering=op.ordering,
-                                            )
-                                        )
 
-                        elif op.action == "to_create":
-                            if op.image is not None and op.image_name is not None:
-                                image_key = self.image_storage.build_key(folder="products", filename=op.image_name)
-                                content_type = guess_content_type(op.image_name)
-                                await self.image_storage.upload_bytes(
-                                    data=op.image,
-                                    key=image_key,
-                                    content_type=content_type,
-                                )
-                                new_image_keys.append(image_key)
-                                final_images.append(
-                                    ProductImageAggregate(
-                                        object_key=image_key,
-                                        is_main=op.is_main,
-                                        image_id=None,
-                                        ordering=op.ordering,
+                        elif op.action == "create":
+                            if op.upload_id is not None:
+                                # Проверяем, что upload_id существует
+                                stmt = select(UploadHistory).where(UploadHistory.id == op.upload_id)
+                                result = await self.db.execute(stmt)
+                                upload_record = result.scalar_one_or_none()
+
+                                if upload_record:
+                                    final_images.append(
+                                        ProductImageAggregate(
+                                            upload_id=upload_record.id,
+                                            is_main=op.is_main if op.is_main is not None else False,
+                                            image_id=None,
+                                            ordering=op.ordering if op.ordering is not None else 0,
+                                            object_key=upload_record.file_path,
+                                        )
                                     )
-                                )
 
-                    # Нормализуем is_main: если ни одно изображение не помечено как главное,
-                    # делаем первое изображение главным
+                    # Нормализуем is_main
                     if final_images and not any(img.is_main for img in final_images):
                         final_images[0].is_main = True
-                    
-                    # Если несколько изображений помечены как главные, оставляем только первое
-                    main_count = sum(1 for img in final_images if img.is_main)
-                    if main_count > 1:
-                        main_found = False
-                        for img in final_images:
-                            if img.is_main:
-                                if not main_found:
-                                    main_found = True
-                                else:
-                                    img.is_main = False
 
                     aggregate.replace_images(final_images)
 
@@ -193,7 +149,7 @@ class UpdateProductCommand:
                     "supplier_id": aggregate.supplier_id,
                     "product_type_id": aggregate.product_type_id,
                     "images": [
-                        {"image_key": image.object_key, "is_main": image.is_main, "image_id": image.image_id}
+                        {"upload_id": image.upload_id, "is_main": image.is_main, "image_id": image.image_id}
                         for image in aggregate.images
                     ],
                     "attributes": [
@@ -228,11 +184,12 @@ class UpdateProductCommand:
                     product_type_id=aggregate.product_type_id,
                     images=[
                         ProductImageReadDTO(
-                            image_id=image.image_id,
-                            image_key=image.object_key,
-                            image_url=self.image_storage.build_public_url(image.object_key),
+                            image_id=image.upload_id,
+                            image_key="",
+                            image_url="",
                             is_main=image.is_main,
                             ordering=image.ordering,
+                            upload_id=image.upload_id,
                         )
                         for image in aggregate.images
                     ],
@@ -247,12 +204,7 @@ class UpdateProductCommand:
                 )
 
         except Exception:
-            for key in new_image_keys:
-                await self.image_storage.delete_object(key)
             raise
-
-        for key in deleted_image_keys:
-            await self.image_storage.delete_object(key)
 
         changed_fields = {
             key: value

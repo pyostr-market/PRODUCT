@@ -10,14 +10,17 @@ from src.catalog.category.application.dto.category import (
 )
 from src.catalog.category.domain.aggregates.category import CategoryAggregate
 from src.catalog.category.infrastructure.models.categories import Category
+from src.catalog.category.infrastructure.models.category_image import CategoryImage
 from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
+from src.core.services.images.storage import S3ImageStorageService
 
 
 class CategoryReadRepository:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.image_storage = S3ImageStorageService.from_settings()
 
     def _to_read_dto(self, model: Category) -> CategoryReadDTO:
         parent_dto = None
@@ -45,7 +48,12 @@ class CategoryReadRepository:
             parent_id=model.parent_id,
             manufacturer_id=model.manufacturer_id,
             images=[
-                CategoryImageReadDTO(ordering=image.ordering, image_key=image.object_key)
+                CategoryImageReadDTO(
+                    ordering=image.ordering,
+                    image_key=image.upload.file_path,
+                    image_url=self.image_storage.build_public_url(image.upload.file_path),
+                    upload_id=image.upload_id,
+                )
                 for image in sorted(model.images, key=lambda i: i.ordering)
             ],
             parent=parent_dto,
@@ -56,7 +64,7 @@ class CategoryReadRepository:
         stmt = (
             select(Category)
             .options(
-                selectinload(Category.images),
+                selectinload(Category.images).selectinload(CategoryImage.upload),
                 selectinload(Category.parent),
                 selectinload(Category.manufacturer),
             )
@@ -78,7 +86,7 @@ class CategoryReadRepository:
     ) -> Tuple[List[CategoryReadDTO], int]:
 
         stmt = select(Category).options(
-            selectinload(Category.images),
+            selectinload(Category.images).selectinload(CategoryImage.upload),
             selectinload(Category.parent),
             selectinload(Category.manufacturer),
         )
