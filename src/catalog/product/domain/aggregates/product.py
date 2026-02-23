@@ -1,8 +1,14 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
+from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.domain.exceptions import ProductNameTooShort
+from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+
+if TYPE_CHECKING:
+    from src.catalog.category.domain.aggregates.category import CategoryAggregate
 
 
 @dataclass
@@ -68,6 +74,9 @@ class ProductAggregate:
         images: Optional[list[ProductImageAggregate]] = None,
         attributes: Optional[list[ProductAttributeAggregate]] = None,
         product_id: Optional[int] = None,
+        category: Optional['CategoryAggregate'] = None,
+        supplier: Optional[SupplierAggregate] = None,
+        product_type: Optional[ProductTypeAggregate] = None,
     ):
         if not name or len(name.strip()) < 2:
             raise ProductNameTooShort()
@@ -81,6 +90,9 @@ class ProductAggregate:
         self._product_type_id = product_type_id
         self._images = images or []
         self._attributes = attributes or []
+        self._category = category
+        self._supplier = supplier
+        self._product_type = product_type
         self._normalize_images_main_flag()
 
     @property
@@ -118,6 +130,18 @@ class ProductAggregate:
     @property
     def attributes(self) -> list[ProductAttributeAggregate]:
         return self._attributes
+
+    @property
+    def category(self) -> Optional['CategoryAggregate']:
+        return self._category
+
+    @property
+    def supplier(self) -> Optional[SupplierAggregate]:
+        return self._supplier
+
+    @property
+    def product_type(self) -> Optional[ProductTypeAggregate]:
+        return self._product_type
 
     def rename(self, new_name: str):
         if not new_name or len(new_name.strip()) < 2:

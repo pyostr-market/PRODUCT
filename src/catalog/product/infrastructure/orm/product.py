@@ -4,17 +4,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.catalog.category.domain.aggregates.category import CategoryAggregate
+from src.catalog.category.infrastructure.models.categories import Category
+from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
 from src.catalog.product.domain.aggregates.product import (
     ProductAggregate,
     ProductAttributeAggregate,
     ProductImageAggregate,
 )
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.domain.exceptions import ProductNotFound
 from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.infrastructure.models.product import Product
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
 from src.catalog.product.infrastructure.models.product_attribute_value import ProductAttributeValue
 from src.catalog.product.infrastructure.models.product_image import ProductImage
+from src.catalog.product.infrastructure.models.product_type import ProductType
+from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+from src.catalog.suppliers.infrastructure.models.supplier import Supplier
 
 
 class SqlAlchemyProductRepository(ProductRepository):
@@ -28,6 +35,9 @@ class SqlAlchemyProductRepository(ProductRepository):
             .options(
                 selectinload(Product.images),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+                selectinload(Product.product_type),
             )
             .where(Product.id == product_id)
         )
@@ -45,6 +55,9 @@ class SqlAlchemyProductRepository(ProductRepository):
             .options(
                 selectinload(Product.images),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+                selectinload(Product.product_type),
             )
             .where(Product.name == name)
         )
@@ -202,6 +215,9 @@ class SqlAlchemyProductRepository(ProductRepository):
             .options(
                 selectinload(Product.images),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+                selectinload(Product.product_type),
             )
             .where(Product.category_id == category_id)
             .order_by(Product.id)
@@ -256,6 +272,33 @@ class SqlAlchemyProductRepository(ProductRepository):
 
     @staticmethod
     def _to_aggregate(model: Product) -> ProductAggregate:
+        category = None
+        if model.category:
+            category = CategoryAggregate(
+                category_id=model.category.id,
+                name=model.category.name,
+                description=model.category.description,
+                parent_id=model.category.parent_id,
+                manufacturer_id=model.category.manufacturer_id,
+            )
+
+        supplier = None
+        if model.supplier:
+            supplier = SupplierAggregate(
+                supplier_id=model.supplier.id,
+                name=model.supplier.name,
+                contact_email=model.supplier.contact_email,
+                phone=model.supplier.phone,
+            )
+
+        product_type = None
+        if model.product_type:
+            product_type = ProductTypeAggregate(
+                name=model.product_type.name,
+                parent_id=model.product_type.parent_id,
+                product_type_id=model.product_type.id,
+            )
+
         return ProductAggregate(
             product_id=model.id,
             name=model.name,
@@ -281,4 +324,7 @@ class SqlAlchemyProductRepository(ProductRepository):
                 )
                 for attribute_value in model.attributes
             ],
+            category=category,
+            supplier=supplier,
+            product_type=product_type,
         )

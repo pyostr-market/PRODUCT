@@ -2,6 +2,10 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal, Optional
 
+from src.catalog.category.domain.aggregates.category import CategoryAggregate
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
+from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+
 
 @dataclass
 class ProductImageReadDTO:
@@ -72,6 +76,9 @@ class ProductReadDTO:
     product_type_id: Optional[int]
     images: list[ProductImageReadDTO]
     attributes: list[ProductAttributeReadDTO]
+    category: Optional[CategoryAggregate] = None
+    supplier: Optional[SupplierAggregate] = None
+    product_type: Optional[ProductTypeAggregate] = None
 
 
 @dataclass

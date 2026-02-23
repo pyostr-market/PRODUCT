@@ -8,7 +8,10 @@ from src.catalog.category.application.dto.category import (
     CategoryImageReadDTO,
     CategoryReadDTO,
 )
+from src.catalog.category.domain.aggregates.category import CategoryAggregate
 from src.catalog.category.infrastructure.models.categories import Category
+from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
 
 
 class CategoryReadRepository:
@@ -16,17 +19,24 @@ class CategoryReadRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, category_id: int) -> Optional[CategoryReadDTO]:
-        stmt = (
-            select(Category)
-            .options(selectinload(Category.images))
-            .where(Category.id == category_id)
-        )
+    def _to_read_dto(self, model: Category) -> CategoryReadDTO:
+        parent_dto = None
+        if model.parent:
+            parent_dto = CategoryAggregate(
+                category_id=model.parent.id,
+                name=model.parent.name,
+                description=model.parent.description,
+                parent_id=model.parent.parent_id,
+                manufacturer_id=model.parent.manufacturer_id,
+            )
 
-        result = await self.db.execute(stmt)
-        model = result.scalar_one_or_none()
-        if not model:
-            return None
+        manufacturer_dto = None
+        if model.manufacturer:
+            manufacturer_dto = ManufacturerAggregate(
+                manufacturer_id=model.manufacturer.id,
+                name=model.manufacturer.name,
+                description=model.manufacturer.description,
+            )
 
         return CategoryReadDTO(
             id=model.id,
@@ -38,7 +48,27 @@ class CategoryReadRepository:
                 CategoryImageReadDTO(ordering=image.ordering, image_key=image.object_key)
                 for image in sorted(model.images, key=lambda i: i.ordering)
             ],
+            parent=parent_dto,
+            manufacturer=manufacturer_dto,
         )
+
+    async def get_by_id(self, category_id: int) -> Optional[CategoryReadDTO]:
+        stmt = (
+            select(Category)
+            .options(
+                selectinload(Category.images),
+                selectinload(Category.parent),
+                selectinload(Category.manufacturer),
+            )
+            .where(Category.id == category_id)
+        )
+
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+
+        return self._to_read_dto(model)
 
     async def filter(
         self,
@@ -47,7 +77,11 @@ class CategoryReadRepository:
         offset: int,
     ) -> Tuple[List[CategoryReadDTO], int]:
 
-        stmt = select(Category).options(selectinload(Category.images))
+        stmt = select(Category).options(
+            selectinload(Category.images),
+            selectinload(Category.parent),
+            selectinload(Category.manufacturer),
+        )
 
         count_stmt = select(func.count()).select_from(Category)
 
@@ -60,19 +94,6 @@ class CategoryReadRepository:
         result = await self.db.execute(stmt)
         count_result = await self.db.execute(count_stmt)
 
-        items = [
-            CategoryReadDTO(
-                id=model.id,
-                name=model.name,
-                description=model.description,
-                parent_id=model.parent_id,
-                manufacturer_id=model.manufacturer_id,
-                images=[
-                    CategoryImageReadDTO(ordering=image.ordering, image_key=image.object_key)
-                    for image in sorted(model.images, key=lambda i: i.ordering)
-                ],
-            )
-            for model in result.scalars().all()
-        ]
+        items = [self._to_read_dto(model) for model in result.scalars().all()]
         total = count_result.scalar() or 0
         return items, total

@@ -1,5 +1,7 @@
 import pytest
 
+JPEG_BYTES = b"\xff\xd8\xff\xe0test-image"
+
 
 @pytest.mark.asyncio
 async def test_filter_product_list_200(authorized_client, client):
@@ -23,12 +25,16 @@ async def test_filter_product_list_200(authorized_client, client):
 
     assert data["total"] >= 3
     assert len(data["items"]) >= 3
-    
-    # Проверяем, что у товаров есть изображения с ordering
+
+    # Проверяем, что у товаров есть изображения с ordering и связанные данные
     for item in data["items"]:
         assert "images" in item
         for image in item["images"]:
             assert "ordering" in image
+        # Проверяем наличие связанных данных (могут быть null)
+        assert "category" in item
+        assert "supplier" in item
+        assert "product_type" in item
 
 
 @pytest.mark.asyncio
@@ -50,6 +56,44 @@ async def test_filter_product_by_name(authorized_client, client):
     assert "Filter iPhone" in names
     assert "Filter Samsung" in names
     assert "Other Item" not in names
+
+
+@pytest.mark.asyncio
+async def test_filter_product_with_category(authorized_client, client):
+    """Фильтрация товаров с проверкой связанных категорий."""
+    # Создаём категорию
+    cat_resp = await authorized_client.post(
+        "/category",
+        data={"name": "Filter Category", "orderings": "0"},
+        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+    assert cat_resp.status_code == 200, f"Category create failed: {cat_resp.json()}"
+    category_id = cat_resp.json()["data"]["id"]
+    
+    # Создаём товар с категорией
+    await authorized_client.post(
+        "/product",
+        data={
+            "name": "Product with Category",
+            "price": "999.00",
+            "category_id": str(category_id),
+        },
+    )
+
+    response = await client.get("/product?name=Product")
+
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+
+    assert data["total"] >= 1
+    product = data["items"][0]
+
+    # Проверяем, что категория вернулась как вложенный объект
+    assert product["category"] is not None
+    assert product["category"]["id"] == category_id
+    assert product["category"]["name"] == "Filter Category"
 
 
 @pytest.mark.asyncio
@@ -78,7 +122,7 @@ async def test_filter_product_with_images_and_ordering(authorized_client, client
 
     assert data["total"] >= 1
     product = data["items"][0]
-    
+
     assert len(product["images"]) == 2
     assert product["images"][0]["ordering"] == 0
     assert product["images"][1]["ordering"] == 1

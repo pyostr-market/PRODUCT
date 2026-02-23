@@ -4,14 +4,20 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.catalog.category.domain.aggregates.category import CategoryAggregate
+from src.catalog.category.infrastructure.models.categories import Category
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
     ProductReadDTO,
 )
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.infrastructure.models.product import Product
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
 from src.catalog.product.infrastructure.models.product_attribute_value import ProductAttributeValue
+from src.catalog.product.infrastructure.models.product_type import ProductType
+from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+from src.catalog.suppliers.infrastructure.models.supplier import Supplier
 
 
 class ProductReadRepository:
@@ -20,6 +26,33 @@ class ProductReadRepository:
         self.db = db
 
     def _to_read_dto(self, model: Product) -> ProductReadDTO:
+        category_dto = None
+        if model.category:
+            category_dto = CategoryAggregate(
+                category_id=model.category.id,
+                name=model.category.name,
+                description=model.category.description,
+                parent_id=model.category.parent_id,
+                manufacturer_id=model.category.manufacturer_id,
+            )
+
+        supplier_dto = None
+        if model.supplier:
+            supplier_dto = SupplierAggregate(
+                supplier_id=model.supplier.id,
+                name=model.supplier.name,
+                contact_email=model.supplier.contact_email,
+                phone=model.supplier.phone,
+            )
+
+        product_type_dto = None
+        if model.product_type:
+            product_type_dto = ProductTypeAggregate(
+                name=model.product_type.name,
+                parent_id=model.product_type.parent_id,
+                product_type_id=model.product_type.id,
+            )
+
         return ProductReadDTO(
             id=model.id,
             name=model.name,
@@ -46,6 +79,9 @@ class ProductReadRepository:
                 )
                 for attribute_value in model.attributes
             ],
+            category=category_dto,
+            supplier=supplier_dto,
+            product_type=product_type_dto,
         )
 
     async def get_by_id(self, product_id: int) -> Optional[ProductReadDTO]:
@@ -54,6 +90,9 @@ class ProductReadRepository:
             .options(
                 selectinload(Product.images),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+                selectinload(Product.product_type),
             )
             .where(Product.id == product_id)
         )
@@ -71,6 +110,9 @@ class ProductReadRepository:
             .options(
                 selectinload(Product.images),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+                selectinload(Product.product_type),
             )
             .where(Product.name == name)
         )
@@ -97,6 +139,9 @@ class ProductReadRepository:
             .options(
                 selectinload(Product.images),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+                selectinload(Product.product_type),
             )
         )
         count_stmt = select(func.count()).select_from(Product)

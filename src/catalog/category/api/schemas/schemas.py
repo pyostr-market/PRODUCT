@@ -3,6 +3,20 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class ManufacturerNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    description: Optional[str] = None
+
+
+class CategoryNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    description: Optional[str] = None
+
+
 class CategoryImageSchema(BaseModel):
     image: bytes = Field(default=b"test.jpg", examples=["dGVzdC5qcGc="])
     image_name: str = "test.jpg"
@@ -72,6 +86,8 @@ class CategoryReadSchema(BaseModel):
     parent_id: Optional[int]
     manufacturer_id: Optional[int]
     images: List[CategoryImageReadSchema]
+    parent: Optional[CategoryNestedSchema] = None
+    manufacturer: Optional[ManufacturerNestedSchema] = None
 
 
 class CategoryListResponse(BaseModel):

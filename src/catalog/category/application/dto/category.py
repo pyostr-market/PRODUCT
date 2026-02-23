@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from src.catalog.category.domain.aggregates.category import CategoryAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+
 
 @dataclass
 class CategoryImageReadDTO:
@@ -24,6 +27,8 @@ class CategoryReadDTO:
     parent_id: Optional[int]
     manufacturer_id: Optional[int]
     images: list[CategoryImageReadDTO]
+    parent: Optional[CategoryAggregate] = None
+    manufacturer: Optional[ManufacturerAggregate] = None
 
 
 @dataclass

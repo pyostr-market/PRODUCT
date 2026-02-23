@@ -300,6 +300,16 @@
     "description": str | null,
     "parent_id": int | null,
     "manufacturer_id": int | null,
+    "parent": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "manufacturer": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
     "images": [
       {
         "ordering": int,
@@ -331,6 +341,16 @@
         "description": str | null,
         "parent_id": int | null,
         "manufacturer_id": int | null,
+        "parent": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null,
+        "manufacturer": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null,
         "images": [
           {
             "ordering": int,
@@ -473,6 +493,22 @@
         "category_id": int | null,
         "supplier_id": int | null,
         "product_type_id": int | null,
+        "category": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null,
+        "supplier": {
+          "id": int,
+          "name": str,
+          "contact_email": str | null,
+          "phone": str | null
+        } | null,
+        "product_type": {
+          "id": int,
+          "name": str,
+          "parent_id": int | null
+        } | null,
         "images": [
           {
             "image_id": int,
@@ -513,6 +549,22 @@
     "category_id": int | null,
     "supplier_id": int | null,
     "product_type_id": int | null,
+    "category": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "supplier": {
+      "id": int,
+      "name": str,
+      "contact_email": str | null,
+      "phone": str | null
+    } | null,
+    "product_type": {
+      "id": int,
+      "name": str,
+      "parent_id": int | null
+    } | null,
     "images": [
       {
         "image_id": int,
@@ -559,6 +611,22 @@
         "category_id": int | null,
         "supplier_id": int | null,
         "product_type_id": int | null,
+        "category": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null,
+        "supplier": {
+          "id": int,
+          "name": str,
+          "contact_email": str | null,
+          "phone": str | null
+        } | null,
+        "product_type": {
+          "id": int,
+          "name": str,
+          "parent_id": int | null
+        } | null,
         "images": [
           {
             "image_id": int,

@@ -4,6 +4,28 @@ from typing import List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class CategoryNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    description: Optional[str] = None
+
+
+class SupplierNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    contact_email: Optional[str] = None
+    phone: Optional[str] = None
+
+
+class ProductTypeNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    parent_id: Optional[int] = None
+
+
 class ProductImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -95,6 +117,9 @@ class ProductReadSchema(BaseModel):
     product_type_id: Optional[int]
     images: List[ProductImageReadSchema]
     attributes: List[ProductAttributeReadSchema]
+    category: Optional[CategoryNestedSchema] = None
+    supplier: Optional[SupplierNestedSchema] = None
+    product_type: Optional[ProductTypeNestedSchema] = None
 
 
 class ProductListResponse(BaseModel):

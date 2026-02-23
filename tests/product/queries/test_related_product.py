@@ -92,12 +92,19 @@ async def test_related_products_by_id(authorized_client, client):
     assert "iPhone 15 Pro 256 Гб Зеленый" in names
     assert "iPhone 15 Pro 512 Гб Красный" in names
     assert "iPhone 15 Pro 256 Гб Красный" in names
-    
+
     # Проверяем, что у всех товаров есть изображения с ordering
     for item in items:
         assert "images" in item
         for image in item["images"]:
             assert "ordering" in image
+        # Проверяем наличие связанных данных
+        assert "category" in item
+        assert "supplier" in item
+        assert "product_type" in item
+        # Категория должна быть заполнена
+        assert item["category"] is not None
+        assert item["category"]["id"] == category_id
 
 
 @pytest.mark.asyncio

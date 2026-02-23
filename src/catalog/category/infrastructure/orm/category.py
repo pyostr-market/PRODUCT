@@ -12,6 +12,8 @@ from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.catalog.category.domain.repository.category import CategoryRepository
 from src.catalog.category.infrastructure.models.categories import Category
 from src.catalog.category.infrastructure.models.category_image import CategoryImage
+from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
 
 
 class SqlAlchemyCategoryRepository(CategoryRepository):
@@ -22,7 +24,11 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
     async def get(self, category_id: int) -> Optional[CategoryAggregate]:
         stmt = (
             select(Category)
-            .options(selectinload(Category.images))
+            .options(
+                selectinload(Category.images),
+                selectinload(Category.parent),
+                selectinload(Category.manufacturer),
+            )
             .where(Category.id == category_id)
         )
         result = await self.db.execute(stmt)
@@ -31,17 +37,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         if not model:
             return None
 
-        return CategoryAggregate(
-            category_id=model.id,
-            name=model.name,
-            description=model.description,
-            parent_id=model.parent_id,
-            manufacturer_id=model.manufacturer_id,
-            images=[
-                CategoryImageAggregate(object_key=image.object_key, ordering=image.ordering)
-                for image in sorted(model.images, key=lambda i: i.ordering)
-            ],
-        )
+        return self._to_aggregate(model)
 
     async def create(self, aggregate: CategoryAggregate) -> CategoryAggregate:
         model = Category(
@@ -102,3 +98,36 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
 
         await self.db.flush()
         return aggregate
+
+    def _to_aggregate(self, model: Category) -> CategoryAggregate:
+        parent = None
+        if model.parent:
+            parent = CategoryAggregate(
+                category_id=model.parent.id,
+                name=model.parent.name,
+                description=model.parent.description,
+                parent_id=model.parent.parent_id,
+                manufacturer_id=model.parent.manufacturer_id,
+            )
+
+        manufacturer = None
+        if model.manufacturer:
+            manufacturer = ManufacturerAggregate(
+                manufacturer_id=model.manufacturer.id,
+                name=model.manufacturer.name,
+                description=model.manufacturer.description,
+            )
+
+        return CategoryAggregate(
+            category_id=model.id,
+            name=model.name,
+            description=model.description,
+            parent_id=model.parent_id,
+            manufacturer_id=model.manufacturer_id,
+            images=[
+                CategoryImageAggregate(object_key=image.object_key, ordering=image.ordering)
+                for image in sorted(model.images, key=lambda i: i.ordering)
+            ],
+            parent=parent,
+            manufacturer=manufacturer,
+        )
