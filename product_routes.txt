@@ -12,7 +12,7 @@
 
 ## Загрузка файлов
 
-### 0) POST `/upload`
+### 0) POST `/upload/`
 - Метод: `POST`
 - Доступ: Только авторизация (Bearer token)
 - Параметры (`multipart/form-data`):
@@ -27,9 +27,9 @@
     "upload_id": int,
     "file_path": str,
     "public_url": str,
-    "original_filename": str | null,
-    "content_type": str | null,
-    "file_size": int | null
+    "original_filename": str,
+    "content_type": str,
+    "file_size": int
   }
 }
 ```
@@ -97,7 +97,7 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Query:
-    - `name: str | null`
+    - `name: str | null` — поиск по имени (частичное совпадение, case-insensitive, LIKE)
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
 - Успешный ответ (`200 OK`):
@@ -223,7 +223,7 @@
 - Доступ: `Требуемое право` = `supplier:view`
 - Параметры:
   - Query:
-    - `name: str | null`
+    - `name: str | null` — поиск по имени (частичное совпадение, case-insensitive, LIKE)
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
 - Успешный ответ (`200 OK`):
@@ -346,19 +346,8 @@
     "description": str | null,
     "parent_id": int | null,
     "manufacturer_id": int | null,
-    "parent": {
-      "id": int,
-      "name": str,
-      "description": str | null
-    } | null,
-    "manufacturer": {
-      "id": int,
-      "name": str,
-      "description": str | null
-    } | null,
     "images": [
       {
-        "upload_id": int,
         "ordering": int,
         "image_url": str
       }
@@ -372,7 +361,7 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Query:
-    - `name: str | null`
+    - `name: str | null` — поиск по имени (частичное совпадение, case-insensitive, LIKE)
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
 - Успешный ответ (`200 OK`):
@@ -388,19 +377,8 @@
         "description": str | null,
         "parent_id": int | null,
         "manufacturer_id": int | null,
-        "parent": {
-          "id": int,
-          "name": str,
-          "description": str | null
-        } | null,
-        "manufacturer": {
-          "id": int,
-          "name": str,
-          "description": str | null
-        } | null,
         "images": [
           {
-            "upload_id": int,
             "ordering": int,
             "image_url": str
           }
@@ -420,9 +398,9 @@
     - `description: str | null`
     - `parent_id: int | null`
     - `manufacturer_id: int | null`
-    - `images: UploadFile[] | null` — файлы изображений
-    - `orderings: int[] | null` — порядковые номера для изображений
-- Примечание: если передан `images`, то `orderings` обязателен, и наоборот.
+    - `images: UploadFile[]` (обяз.) — файлы изображений
+    - `orderings: int[]` (обяз.) — порядковые номера для изображений
+- Примечание: количество `images` и `orderings` должно совпадать.
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -435,7 +413,6 @@
     "manufacturer_id": int | null,
     "images": [
       {
-        "upload_id": int,
         "ordering": int,
         "image_url": str
       }
@@ -469,7 +446,6 @@
     "manufacturer_id": int | null,
     "images": [
       {
-        "upload_id": int,
         "ordering": int,
         "image_url": str
       }
@@ -544,35 +520,15 @@
         "category_id": int | null,
         "supplier_id": int | null,
         "product_type_id": int | null,
-        "category": {
-          "id": int,
-          "name": str,
-          "description": str | null
-        } | null,
-        "supplier": {
-          "id": int,
-          "name": str,
-          "contact_email": str | null,
-          "phone": str | null
-        } | null,
-        "product_type": {
-          "id": int,
-          "name": str,
-          "parent_id": int | null
-        } | null,
         "images": [
           {
-            "image_id": int,
-            "image_key": str,
             "image_url": str,
             "is_main": bool,
-            "ordering": int,
-            "upload_id": int
+            "ordering": int
           }
         ],
         "attributes": [
           {
-            "id": int,
             "name": str,
             "value": str,
             "is_filterable": bool
@@ -601,35 +557,15 @@
     "category_id": int | null,
     "supplier_id": int | null,
     "product_type_id": int | null,
-    "category": {
-      "id": int,
-      "name": str,
-      "description": str | null
-    } | null,
-    "supplier": {
-      "id": int,
-      "name": str,
-      "contact_email": str | null,
-      "phone": str | null
-    } | null,
-    "product_type": {
-      "id": int,
-      "name": str,
-      "parent_id": int | null
-    } | null,
     "images": [
       {
-        "image_id": int,
-        "image_key": str,
         "image_url": str,
         "is_main": bool,
-        "ordering": int,
-        "upload_id": int
+        "ordering": int
       }
     ],
     "attributes": [
       {
-        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
@@ -644,7 +580,7 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Query:
-    - `name: str | null`
+    - `name: str | null` — поиск по имени (частичное совпадение, case-insensitive, LIKE)
     - `category_id: int | null`
     - `product_type_id: int | null`
     - `attributes: str | null` — JSON-объект для фильтрации по атрибутам:
@@ -668,35 +604,15 @@
         "category_id": int | null,
         "supplier_id": int | null,
         "product_type_id": int | null,
-        "category": {
-          "id": int,
-          "name": str,
-          "description": str | null
-        } | null,
-        "supplier": {
-          "id": int,
-          "name": str,
-          "contact_email": str | null,
-          "phone": str | null
-        } | null,
-        "product_type": {
-          "id": int,
-          "name": str,
-          "parent_id": int | null
-        } | null,
         "images": [
           {
-            "image_id": int,
-            "image_key": str,
             "image_url": str,
             "is_main": bool,
-            "ordering": int,
-            "upload_id": int
+            "ordering": int
           }
         ],
         "attributes": [
           {
-            "id": int,
             "name": str,
             "value": str,
             "is_filterable": bool
@@ -767,7 +683,6 @@
     ],
     "attributes": [
       {
-        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
@@ -790,38 +705,29 @@
     - `supplier_id: int | null`
     - `product_type_id: int | null`
     - `attributes_json: str | null` — JSON-массив атрибутов
-    - **Вариант 1: Операции через JSON + файлы** (рекомендуется):
-      - `images_json: str | null` — JSON-массив операций с изображениями:
-        ```json
-        [
-          {"action": "pass", "upload_id": 1, "is_main": true, "ordering": 0},
-          {"action": "delete", "upload_id": 2},
-          {"action": "create", "upload_id": 3, "is_main": false, "ordering": 1}
-        ]
-        ```
-      - `images: UploadFile[] | null` — файлы для операций `create` (опционально)
-      - `image_is_main: str[] | null` — флаги is_main для загружаемых файлов
-    - **Вариант 2: Только файлы** (упрощённый):
-      - `images: UploadFile[] | null` — файлы изображений для добавления
-      - `image_is_main: str[] | null` — флаги главного изображения
+    - `images_json: str | null` — JSON-массив операций с изображениями:
+      ```json
+      [
+        {"action": "pass", "upload_id": 1, "is_main": true, "ordering": 0},
+        {"action": "create", "is_main": false, "ordering": 1}
+      ]
+      ```
+    - `images: UploadFile[] | null` — файлы для операций `create` (опционально)
+    - `image_is_main: str[] | null` — флаги is_main для загружаемых файлов
 
   **Формат `images_json`** (массив операций):
   ```json
   [
     {"action": "pass", "upload_id": 1, "is_main": true, "ordering": 0},
-    {"action": "delete", "upload_id": 2},
-    {"action": "create", "upload_id": 3, "is_main": false, "ordering": 1}
+    {"action": "create", "is_main": false, "ordering": 1}
   ]
   ```
 
   **Действия:**
-  - `create` — добавить изображение (требуется `upload_id` предварительно загруженного файла через `POST /upload`)
-  - `delete` — удалить связь изображения (файл в S3 остаётся)
+  - `create` — добавить изображение (файл передаётся в `images`)
   - `pass` — сохранить существующее изображение (можно обновить `is_main` и `ordering`)
 
   **Примечание:**
-  - Перед использованием `action: create` необходимо загрузить файл через `POST /upload` и получить `upload_id`
-  - При удалении записи из БД файл в S3 **не удаляется**
   - Поле `ordering` является опциональным
   - Если первое изображение не помечено как `is_main=true`, оно автоматически становится главным
 
@@ -839,7 +745,6 @@
     "product_type_id": int | null,
     "images": [
       {
-        "upload_id": int,
         "image_url": str,
         "is_main": bool,
         "ordering": int
@@ -847,7 +752,6 @@
     ],
     "attributes": [
       {
-        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
@@ -923,7 +827,7 @@
 - Доступ: публичный (без токена)
 - Параметры:
   - Query:
-    - `name: str | null`
+    - `name: str | null` — поиск по имени (частичное совпадение, case-insensitive, LIKE)
     - `limit: int = 10` (max 100)
     - `offset: int = 0`
 - Успешный ответ (`200 OK`):
@@ -1103,13 +1007,36 @@ GET /product?attributes={"RAM": "8 GB", "Color": "Black"}
         "id": 3001,
         "name": "Смартфон X",
         "attributes": [
-          {"id": 10, "name": "RAM", "value": "8 GB", "is_filterable": true},
-          {"id": 11, "name": "Color", "value": "Black", "is_filterable": true}
+          {"name": "RAM", "value": "8 GB", "is_filterable": true},
+          {"name": "Color", "value": "Black", "is_filterable": true}
         ]
       }
     ]
   }
 }
+```
+
+## Примечание по поиску (LIKE)
+
+Все методы `GET /<resource>` поддерживают поиск по полю `name` через параметр `name`:
+
+- **Производители**: `GET /manufacturer?name=Apple`
+- **Поставщики**: `GET /supplier?name=Поставка`
+- **Категории**: `GET /category?name=Смарт`
+- **Товары**: `GET /product?name=iPhone`
+- **Типы продуктов**: `GET /product/type?name=Smart`
+
+Поиск реализован через SQL `ILIKE '%значение%'` и поддерживает:
+- Регистронезависимый поиск (case-insensitive)
+- Поиск по части слова (начало, середина, конец)
+- Кириллические и латинские символы
+- Специальные символы (пробелы, дефисы, цифры)
+
+Примеры:
+```
+GET /manufacturer?name=app      # Найдёт: "Apple", "Application Corp"
+GET /product?name=фон           # Найдёт: "Смартфон", "Телефон"
+GET /category?name=book         # Найдёт: "MacBook", "Notebook"
 ```
 
 ## Примечание по авторизации
