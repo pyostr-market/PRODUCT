@@ -43,10 +43,17 @@ category_q_router = APIRouter(
                             "manufacturer_id": 3,
                             "images": [
                                 {
+                                    "upload_id": 10,
                                     "ordering": 0,
                                     "image_url": "https://cdn.example.com/category/smartphones-main.jpg",
                                 }
                             ],
+                            "parent": None,
+                            "manufacturer": {
+                                "id": 3,
+                                "name": "Acme Devices",
+                                "description": "Мировой производитель электроники"
+                            },
                         },
                     }
                 }
@@ -96,10 +103,17 @@ async def get_by_id(
                                     "manufacturer_id": 3,
                                     "images": [
                                         {
+                                            "upload_id": 10,
                                             "ordering": 0,
                                             "image_url": "https://cdn.example.com/category/smartphones-main.jpg",
                                         }
                                     ],
+                                    "parent": None,
+                                    "manufacturer": {
+                                        "id": 3,
+                                        "name": "Acme Devices",
+                                        "description": "Мировой производитель электроники"
+                                    },
                                 },
                                 {
                                     "id": 102,
@@ -107,7 +121,23 @@ async def get_by_id(
                                     "description": "Планшеты всех брендов",
                                     "parent_id": None,
                                     "manufacturer_id": 3,
-                                    "images": [],
+                                    "images": [
+                                        {
+                                            "upload_id": 11,
+                                            "ordering": 0,
+                                            "image_url": "https://cdn.example.com/category/tablets-main.jpg",
+                                        }
+                                    ],
+                                    "parent": {
+                                        "id": 101,
+                                        "name": "Смартфоны",
+                                        "description": "Смартфоны и аксессуары"
+                                    },
+                                    "manufacturer": {
+                                        "id": 3,
+                                        "name": "Acme Devices",
+                                        "description": "Мировой производитель электроники"
+                                    },
                                 },
                             ],
                         },

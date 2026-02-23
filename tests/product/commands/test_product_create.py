@@ -1,4 +1,3 @@
-import base64
 import json
 
 import pytest
@@ -8,23 +7,22 @@ from src.catalog.product.api.schemas.schemas import ProductReadSchema
 JPEG_BYTES = b"\xff\xd8\xff\xe0product-image"
 
 
-def _encode_image_base64(image_bytes: bytes) -> str:
-    """Кодировать изображение в base64 data URL."""
-    encoded = base64.b64encode(image_bytes).decode("utf-8")
-    return f"data:image/jpeg;base64,{encoded}"
-
-
 @pytest.mark.asyncio
-async def test_create_product_200(authorized_client):
+async def test_create_product_200(authorized_client, image_storage_mock):
     """Создание товара с изображениями через images_json."""
+    # Сначала загружаем изображение
+    upload_resp = await authorized_client.post(
+        "/upload/",
+        data={"folder": "products"},
+        files=[("file", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+    assert upload_resp.status_code == 200
+    upload_id = upload_resp.json()["data"]["upload_id"]
+
     images_payload = [
-        {
-            "image": _encode_image_base64(JPEG_BYTES),
-            "is_main": True,
-            "ordering": 0,
-        }
+        {"upload_id": upload_id, "is_main": True, "ordering": 0}
     ]
-    
+
     response = await authorized_client.post(
         "/product",
         data={
@@ -53,19 +51,29 @@ async def test_create_product_200(authorized_client):
     assert product.images[0].is_main is True
     assert product.images[0].ordering == 0
     assert len(product.attributes) == 2
-    # Проверяем, что изображение имеет upload_id
-    assert product.images[0].upload_id is not None
+    assert product.images[0].upload_id == upload_id
 
 
 @pytest.mark.asyncio
-async def test_create_product_200_multiple_images(authorized_client):
+async def test_create_product_200_multiple_images(authorized_client, image_storage_mock):
     """Создание товара с несколькими изображениями через images_json."""
+    # Загружаем несколько изображений
+    upload_ids = []
+    for i in range(3):
+        upload_resp = await authorized_client.post(
+            "/upload/",
+            data={"folder": "products"},
+            files=[("file", (f"test{i}.jpg", JPEG_BYTES, "image/jpeg"))],
+        )
+        assert upload_resp.status_code == 200
+        upload_ids.append(upload_resp.json()["data"]["upload_id"])
+
     images_payload = [
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": True, "ordering": 0},
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": False, "ordering": 1},
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": False, "ordering": 2},
+        {"upload_id": upload_ids[0], "is_main": True, "ordering": 0},
+        {"upload_id": upload_ids[1], "is_main": False, "ordering": 1},
+        {"upload_id": upload_ids[2], "is_main": False, "ordering": 2},
     ]
-    
+
     response = await authorized_client.post(
         "/product",
         data={
@@ -86,7 +94,7 @@ async def test_create_product_200_multiple_images(authorized_client):
     assert product.images[0].ordering == 0
     assert product.images[1].ordering == 1
     assert product.images[2].ordering == 2
-    assert all(img.upload_id is not None for img in product.images)
+    assert all(img.upload_id in upload_ids for img in product.images)
 
 
 @pytest.mark.asyncio
@@ -110,14 +118,25 @@ async def test_create_product_200_no_images(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_create_product_200_custom_ordering(authorized_client):
+async def test_create_product_200_custom_ordering(authorized_client, image_storage_mock):
     """Создание товара с изображениями с кастомным порядком через images_json."""
+    # Загружаем несколько изображений
+    upload_ids = []
+    for i in range(3):
+        upload_resp = await authorized_client.post(
+            "/upload/",
+            data={"folder": "products"},
+            files=[("file", (f"test{i}.jpg", JPEG_BYTES, "image/jpeg"))],
+        )
+        assert upload_resp.status_code == 200
+        upload_ids.append(upload_resp.json()["data"]["upload_id"])
+
     images_payload = [
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": False, "ordering": 10},
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": True, "ordering": 5},
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": False, "ordering": 20},
+        {"upload_id": upload_ids[0], "is_main": False, "ordering": 10},
+        {"upload_id": upload_ids[1], "is_main": True, "ordering": 5},
+        {"upload_id": upload_ids[2], "is_main": False, "ordering": 20},
     ]
-    
+
     response = await authorized_client.post(
         "/product",
         data={
@@ -161,12 +180,12 @@ async def test_create_product_400_name_too_short(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_create_product_400_invalid_image(authorized_client):
-    """Создание товара с некорректным изображением (не base64)."""
+async def test_create_product_400_missing_upload_id(authorized_client):
+    """Создание товара с отсутствующим upload_id."""
     images_payload = [
-        {"image": "not_valid_base64", "is_main": True, "ordering": 0},
+        {"is_main": True, "ordering": 0},
     ]
-    
+
     response = await authorized_client.post(
         "/product",
         data={
@@ -208,7 +227,7 @@ async def test_create_product_400_images_must_be_list(authorized_client):
         data={
             "name": "Товар",
             "price": "10.00",
-            "images_json": json.dumps({"image": "data:image/jpeg;base64,..."}),
+            "images_json": json.dumps({"upload_id": 1}),
         },
     )
 
@@ -219,7 +238,7 @@ async def test_create_product_400_images_must_be_list(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_create_product_200_with_category(authorized_client):
+async def test_create_product_200_with_category(authorized_client, image_storage_mock):
     """Создание товара с категорией через images_json."""
     # Сначала создаём категорию
     cat_resp = await authorized_client.post(
@@ -229,11 +248,20 @@ async def test_create_product_200_with_category(authorized_client):
     )
     assert cat_resp.status_code == 200
     category_id = cat_resp.json()["data"]["id"]
-    
+
+    # Загружаем изображение
+    upload_resp = await authorized_client.post(
+        "/upload/",
+        data={"folder": "products"},
+        files=[("file", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+    assert upload_resp.status_code == 200
+    upload_id = upload_resp.json()["data"]["upload_id"]
+
     images_payload = [
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": True, "ordering": 0},
+        {"upload_id": upload_id, "is_main": True, "ordering": 0},
     ]
-    
+
     response = await authorized_client.post(
         "/product",
         data={
@@ -252,3 +280,4 @@ async def test_create_product_200_with_category(authorized_client):
     product = ProductReadSchema(**body["data"])
     assert product.category_id == category_id
     assert len(product.images) == 1
+    assert product.images[0].upload_id == upload_id

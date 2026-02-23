@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 JPEG_BYTES = b"\xff\xd8\xff\xe0test-image"
@@ -97,20 +99,29 @@ async def test_filter_product_with_category(authorized_client, client):
 
 
 @pytest.mark.asyncio
-async def test_filter_product_with_images_and_ordering(authorized_client, client):
+async def test_filter_product_with_images_and_ordering(authorized_client, client, image_storage_mock):
     """Фильтрация товаров с изображениями и проверкой ordering."""
+    # Загружаем изображения
+    upload_ids = []
+    for i in range(2):
+        upload_resp = await authorized_client.post(
+            "/upload/",
+            data={"folder": "products"},
+            files=[("file", (f"img{i}.jpg", b"\xff\xd8\xff\xe0test{i}", "image/jpeg"))],
+        )
+        assert upload_resp.status_code == 200
+        upload_ids.append(upload_resp.json()["data"]["upload_id"])
+
     await authorized_client.post(
         "/product",
         data={
             "name": "Product with images",
             "price": "999.00",
-            "image_is_main": ["true", "false"],
-            "image_ordering": ["0", "1"],
+            "images_json": json.dumps([
+                {"upload_id": upload_ids[0], "is_main": True, "ordering": 0},
+                {"upload_id": upload_ids[1], "is_main": False, "ordering": 1},
+            ]),
         },
-        files=[
-            ("images", ("img1.jpg", b"\xff\xd8\xff\xe0test1", "image/jpeg")),
-            ("images", ("img2.jpg", b"\xff\xd8\xff\xe0test2", "image/jpeg")),
-        ],
     )
 
     response = await client.get("/product?name=Product")
@@ -124,6 +135,8 @@ async def test_filter_product_with_images_and_ordering(authorized_client, client
     product = data["items"][0]
 
     assert len(product["images"]) == 2
-    assert product["images"][0]["ordering"] == 0
-    assert product["images"][1]["ordering"] == 1
-    assert product["images"][0]["is_main"] is True
+    # Сортируем изображения по ordering для проверки
+    images_sorted = sorted(product["images"], key=lambda x: x["ordering"])
+    assert images_sorted[0]["ordering"] == 0
+    assert images_sorted[1]["ordering"] == 1
+    assert images_sorted[0]["is_main"] is True

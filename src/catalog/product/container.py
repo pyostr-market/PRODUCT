@@ -11,8 +11,10 @@ from src.catalog.product.application.queries.product_admin_queries import Produc
 from src.catalog.product.application.queries.product_queries import ProductQueries
 from src.catalog.product.application.queries.product_type_admin_queries import ProductTypeAdminQueries
 from src.catalog.product.application.queries.product_type_queries import ProductTypeQueries
+from src.catalog.product.application.queries.product_attribute_queries import ProductAttributeQueries
 from src.catalog.product.application.read_models.product_read_repository import ProductReadRepository
 from src.catalog.product.application.read_models.product_type_read_repository import ProductTypeReadRepository
+from src.catalog.product.application.read_models.product_attribute_read_repository import ProductAttributeReadRepository
 from src.catalog.product.domain.repository.audit import ProductAuditRepository
 from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.domain.repository.product_attribute import ProductAttributeRepository
@@ -69,6 +71,11 @@ container.register(
 )
 
 container.register(
+    ProductAttributeReadRepository,
+    lambda scope, db: ProductAttributeReadRepository(db),
+)
+
+container.register(
     ProductQueries,
     lambda scope, db: ProductQueries(
         read_repository=scope.resolve(ProductReadRepository, db=db),
@@ -81,6 +88,13 @@ container.register(
     ProductTypeQueries,
     lambda scope, db: ProductTypeQueries(
         read_repository=scope.resolve(ProductTypeReadRepository, db=db),
+    ),
+)
+
+container.register(
+    ProductAttributeQueries,
+    lambda scope, db: ProductAttributeQueries(
+        read_repository=scope.resolve(ProductAttributeReadRepository, db=db),
     ),
 )
 

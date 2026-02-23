@@ -66,7 +66,6 @@ class ProductReadRepository:
             product_type_id=model.product_type_id,
             images=[
                 ProductImageReadDTO(
-                    image_id=image.upload_id,
                     image_key=image.upload.file_path,
                     image_url=self.image_storage.build_public_url(image.upload.file_path),
                     is_main=image.is_main,

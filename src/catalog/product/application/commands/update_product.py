@@ -14,7 +14,7 @@ from src.catalog.product.domain.aggregates.product import (
 from src.catalog.product.domain.exceptions import ProductNotFound
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
-from src.core.services.images.storage import S3ImageStorageService, guess_content_type
+from src.core.services.images.storage import S3ImageStorageService
 from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
@@ -44,8 +44,6 @@ class UpdateProductCommand:
                 if not aggregate:
                     raise ProductNotFound()
 
-                old_image_ids = {image.image_id for image in aggregate.images if image.image_id}
-
                 old_data = {
                     "name": aggregate.name,
                     "description": aggregate.description,
@@ -54,7 +52,7 @@ class UpdateProductCommand:
                     "supplier_id": aggregate.supplier_id,
                     "product_type_id": aggregate.product_type_id,
                     "images": [
-                        {"upload_id": image.upload_id, "is_main": image.is_main, "image_id": image.image_id}
+                        {"upload_id": image.upload_id, "is_main": image.is_main}
                         for image in aggregate.images
                     ],
                     "attributes": [
@@ -96,7 +94,6 @@ class UpdateProductCommand:
                                             ProductImageAggregate(
                                                 upload_id=img.upload_id,
                                                 is_main=op.is_main if op.is_main is not None else img.is_main,
-                                                image_id=img.image_id,
                                                 ordering=op.ordering if op.ordering is not None else img.ordering,
                                                 object_key=img.object_key,
                                             )
@@ -115,7 +112,6 @@ class UpdateProductCommand:
                                         ProductImageAggregate(
                                             upload_id=upload_record.id,
                                             is_main=op.is_main if op.is_main is not None else False,
-                                            image_id=None,
                                             ordering=op.ordering if op.ordering is not None else 0,
                                             object_key=upload_record.file_path,
                                         )
@@ -149,7 +145,7 @@ class UpdateProductCommand:
                     "supplier_id": aggregate.supplier_id,
                     "product_type_id": aggregate.product_type_id,
                     "images": [
-                        {"upload_id": image.upload_id, "is_main": image.is_main, "image_id": image.image_id}
+                        {"upload_id": image.upload_id, "is_main": image.is_main}
                         for image in aggregate.images
                     ],
                     "attributes": [
@@ -184,7 +180,6 @@ class UpdateProductCommand:
                     product_type_id=aggregate.product_type_id,
                     images=[
                         ProductImageReadDTO(
-                            image_id=image.upload_id,
                             image_key="",
                             image_url="",
                             is_main=image.is_main,

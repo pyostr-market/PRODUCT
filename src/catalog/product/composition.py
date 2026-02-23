@@ -11,6 +11,7 @@ from src.catalog.product.application.queries.product_admin_queries import Produc
 from src.catalog.product.application.queries.product_queries import ProductQueries
 from src.catalog.product.application.queries.product_type_admin_queries import ProductTypeAdminQueries
 from src.catalog.product.application.queries.product_type_queries import ProductTypeQueries
+from src.catalog.product.application.queries.product_attribute_queries import ProductAttributeQueries
 from src.catalog.product.container import container
 
 
@@ -84,3 +85,8 @@ class ProductComposition:
     def build_delete_product_attribute_command(db):
         scope = container.create_scope()
         return scope.resolve(DeleteProductAttributeCommand, db=db)
+
+    @staticmethod
+    def build_product_attribute_queries(db):
+        scope = container.create_scope()
+        return scope.resolve(ProductAttributeQueries, db=db)

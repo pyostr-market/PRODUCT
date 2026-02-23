@@ -15,9 +15,8 @@ if TYPE_CHECKING:
 class ProductImageAggregate:
     upload_id: int  # ID из UploadHistory
     is_main: bool = False
-    image_id: Optional[int] = None  # ID записи в product_images (для существующих изображений)
     ordering: int = 0
-    object_key: Optional[str] = None  # Для обратной совместимости
+    object_key: Optional[str] = None  # Ключ объекта в хранилище
 
 
 class ProductAttributeAggregate:

@@ -1,15 +1,11 @@
 import json
 from decimal import Decimal
-from pprint import pprint
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.api.schemas.schemas import (
-    ProductImageActionSchema,
-    ProductReadSchema,
-)
+from src.catalog.product.api.schemas.schemas import ProductReadSchema
 from src.catalog.product.application.dto.product import (
     ProductAttributeInputDTO,
     ProductCreateDTO,
@@ -18,7 +14,7 @@ from src.catalog.product.application.dto.product import (
     ProductUpdateDTO,
 )
 from src.catalog.product.composition import ProductComposition
-from src.catalog.product.domain.exceptions import ProductInvalidImage, ProductInvalidPayload
+from src.catalog.product.domain.exceptions import ProductInvalidPayload
 from src.core.api.normalizers import normalize_optional_fk
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import get_current_user, require_permissions
@@ -28,23 +24,6 @@ from src.core.db.database import get_db
 product_commands_router = APIRouter(
     tags=["Товары"],
 )
-
-
-def _is_image_bytes(data: bytes) -> bool:
-    if not data:
-        return False
-
-    if data.startswith(b"\xff\xd8\xff"):
-        return True
-    if data.startswith(b"\x89PNG\r\n\x1a\n"):
-        return True
-    if data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
-        return True
-    if data.startswith(b"BM"):
-        return True
-    if data.startswith(b"RIFF") and len(data) >= 12 and data[8:12] == b"WEBP":
-        return True
-    return False
 
 
 def _to_bool(value: str | None, default: bool = False) -> bool:
@@ -86,12 +65,12 @@ def _parse_attributes(attributes_json: str | None) -> list[ProductAttributeInput
 async def _parse_images_json(images_json: str | None) -> list[ProductImageInputDTO]:
     """
     Парсинг JSON массива изображений для создания товара.
-    
+
     Формат images_json:
     ```json
     [
-      {"image": <файл в base64>, "is_main": true, "ordering": 0},
-      {"image": <файл в base64>, "is_main": false, "ordering": 1}
+      {"upload_id": 1, "is_main": true, "ordering": 0},
+      {"upload_id": 2, "is_main": false, "ordering": 1}
     ]
     ```
     """
@@ -111,25 +90,14 @@ async def _parse_images_json(images_json: str | None) -> list[ProductImageInputD
         if not isinstance(item, dict):
             raise ProductInvalidPayload(details={"reason": "image_item_must_be_object"})
 
-        # Получаем изображение (base64 строка или URL)
-        image_data = item.get("image")
-        if not image_data:
-            raise ProductInvalidPayload(details={"reason": "missing_image", "index": idx})
+        upload_id = item.get("upload_id")
+        if not upload_id:
+            raise ProductInvalidPayload(details={"reason": "missing_upload_id", "index": idx})
 
-        # Если это base64 строка, декодируем
-        if isinstance(image_data, str) and image_data.startswith("data:"):
-            # data:image/jpeg;base64,/9j/4AAQSkZJRg...
-            try:
-                import base64
-                header, encoded = image_data.split(",", 1)
-                payload_bytes = base64.b64decode(encoded)
-            except Exception as exc:
-                raise ProductInvalidImage(details={"reason": "invalid_base64", "index": idx, "error": str(exc)})
-        else:
-            raise ProductInvalidPayload(details={"reason": "image_must_be_base64", "index": idx})
-
-        if not _is_image_bytes(payload_bytes):
-            raise ProductInvalidImage(details={"filename": f"image_{idx}", "reason": "unsupported_or_invalid_binary"})
+        try:
+            upload_id = int(upload_id)
+        except (ValueError, TypeError):
+            raise ProductInvalidPayload(details={"reason": "upload_id_must_be_int", "index": idx})
 
         is_main = _to_bool(str(item.get("is_main", "")), default=(idx == 0))
         ordering = item.get("ordering", idx)
@@ -141,8 +109,7 @@ async def _parse_images_json(images_json: str | None) -> list[ProductImageInputD
 
         mapped.append(
             ProductImageInputDTO(
-                image=payload_bytes,
-                image_name=f"image_{idx}.jpg",
+                upload_id=upload_id,
                 is_main=is_main,
                 ordering=ordering,
             )
@@ -154,117 +121,51 @@ async def _parse_images_json(images_json: str | None) -> list[ProductImageInputD
     return mapped
 
 
-async def _build_images_dto(
-    images: list[UploadFile] | None,
-    image_is_main: list[str] | None,
-    image_ordering: list[str] | None,
-) -> list[ProductImageInputDTO]:
-    if not images:
-        return []
-
-    mapped: list[ProductImageInputDTO] = []
-
-    for idx, image_file in enumerate(images):
-        payload = await image_file.read()
-
-        if image_file.content_type and not image_file.content_type.startswith("image/"):
-            raise ProductInvalidImage(
-                details={"filename": image_file.filename, "content_type": image_file.content_type}
-            )
-
-        if not _is_image_bytes(payload):
-            raise ProductInvalidImage(
-                details={"filename": image_file.filename, "reason": "unsupported_or_invalid_binary"}
-            )
-
-        is_main_value = image_is_main[idx] if image_is_main and idx < len(image_is_main) else None
-        
-        # Получаем ordering: если передан список, берём по индексу, иначе используем индекс
-        if image_ordering and idx < len(image_ordering):
-            try:
-                ordering_value = int(image_ordering[idx])
-            except (ValueError, TypeError):
-                ordering_value = idx
-        else:
-            ordering_value = idx
-            
-        mapped.append(
-            ProductImageInputDTO(
-                image=payload,
-                image_name=image_file.filename or "test.jpg",
-                is_main=_to_bool(is_main_value, default=(idx == 0)),
-                ordering=ordering_value,
-            )
-        )
-
-    if mapped and not any(i.is_main for i in mapped):
-        mapped[0].is_main = True
-
-    return mapped
-
-
 async def _build_image_operations_dto(
     images_json: str | None,
-    new_images: list[UploadFile] | None,
-    new_image_is_main: list[str] | None,
 ) -> list[ProductImageOperationDTO] | None:
     """
     Построение DTO для операций с изображениями при обновлении товара.
 
     images_json - JSON-список операций {action, upload_id, is_main, ordering}
-    new_images - загружаемые файлы изображений
-    new_image_is_main - список значений is_main для загружаемых файлов
     """
-    if not images_json and not new_images:
+    if not images_json:
         return None
+
+    try:
+        payload = json.loads(images_json)
+    except json.DecodeError as exc:
+        raise ProductInvalidPayload(details={"reason": "invalid_images_json", "error": str(exc)})
+
+    if not isinstance(payload, list):
+        raise ProductInvalidPayload(details={"reason": "images_must_be_list"})
 
     operations: list[ProductImageOperationDTO] = []
 
-    if images_json:
-        try:
-            payload = json.loads(images_json)
-        except json.DecodeError as exc:
-            raise ProductInvalidPayload(details={"reason": "invalid_images_json", "error": str(exc)})
+    for item in payload:
+        if not isinstance(item, dict):
+            raise ProductInvalidPayload(details={"reason": "image_operation_must_be_object"})
 
-        if not isinstance(payload, list):
-            raise ProductInvalidPayload(details={"reason": "images_must_be_list"})
+        action = item.get("action")
+        # Поддерживаем как новые (create, delete, pass), так и старые (to_create, to_delete, pass) названия
+        if action not in ("create", "delete", "pass", "to_create", "to_delete"):
+            raise ProductInvalidPayload(details={"reason": "invalid_action", "action": action})
 
-        for item in payload:
-            if not isinstance(item, dict):
-                raise ProductInvalidPayload(details={"reason": "image_operation_must_be_object"})
+        # Нормализуем action
+        if action == "to_create":
+            action = "create"
+        elif action == "to_delete":
+            action = "delete"
 
-            action = item.get("action")
-            # Поддерживаем как новые (create, delete, pass), так и старые (to_create, to_delete, pass) названия
-            if action not in ("create", "delete", "pass", "to_create", "to_delete"):
-                raise ProductInvalidPayload(details={"reason": "invalid_action", "action": action})
+        op = ProductImageOperationDTO(
+            action=action,  # type: ignore[arg-type]
+            upload_id=item.get("upload_id"),
+            image_url=item.get("image_url"),
+            is_main=item.get("is_main", False),
+            ordering=item.get("ordering"),
+        )
 
-            # Нормализуем action
-            if action == "to_create":
-                action = "create"
-            elif action == "to_delete":
-                action = "delete"
-
-            op = ProductImageOperationDTO(
-                action=action,  # type: ignore[arg-type]
-                upload_id=item.get("upload_id"),
-                image_url=item.get("image_url"),
-                is_main=item.get("is_main", False),
-                ordering=item.get("ordering"),
-            )
-
-            operations.append(op)
-
-    # Обработка загружаемых файлов (для создания товара или быстрого добавления изображений)
-    if new_images:
-        for idx, image_file in enumerate(new_images):
-            is_main_value = new_image_is_main[idx] if new_image_is_main and idx < len(new_image_is_main) else None
-            operations.append(
-                ProductImageOperationDTO(
-                    action="create",
-                    is_main=_to_bool(is_main_value, default=(idx == 0)),
-                    ordering=idx,
-                )
-            )
+        operations.append(op)
 
     return operations if operations else None
 
@@ -284,18 +185,26 @@ async def _build_image_operations_dto(
     - Импорт товаров с пользовательскими атрибутами.
     - Загрузка нескольких изображений с выбором главного.
 
-    **Формат `images_json`** (массив изображений):
+    **Формат `images_json`** (массив объектов с upload_id):
     ```json
     [
-      {"image": <файл>, "is_main": true, "ordering": 0},
-      {"image": <файл>, "is_main": false, "ordering": 1}
+      {"upload_id": 1, "is_main": true, "ordering": 0},
+      {"upload_id": 2, "is_main": false, "ordering": 1}
     ]
     ```
-    
+
     Каждый элемент массива содержит:
-    - `image`: файл изображения (UploadFile)
-    - `is_main`: флаг главного изображения (true/false/1/0)
+    - `upload_id`: ID предварительно загруженного изображения через UploadHistory
+    - `is_main`: флаг главного изображения (true/false)
     - `ordering`: порядок сортировки (int)
+
+    **Формат `attributes_json`** (массив атрибутов):
+    ```json
+    [
+      {"name": "RAM", "value": "8 GB", "is_filterable": true},
+      {"name": "Цвет", "value": "Черный", "is_filterable": true}
+    ]
+    ```
     """,
     response_description="Созданный товар в стандартной обёртке API",
     responses={
@@ -322,8 +231,24 @@ async def _build_image_operations_dto(
                                 }
                             ],
                             "attributes": [
-                                {"name": "RAM", "value": "8 GB", "is_filterable": True}
+                                {"id": 10, "name": "RAM", "value": "8 GB", "is_filterable": True}
                             ],
+                            "category": {
+                                "id": 101,
+                                "name": "Смартфоны",
+                                "description": "Мобильные устройства"
+                            },
+                            "supplier": {
+                                "id": 210,
+                                "name": "ООО Поставка Плюс",
+                                "contact_email": "sales@supply-plus.example",
+                                "phone": "+7-999-123-45-67"
+                            },
+                            "product_type": {
+                                "id": 5,
+                                "name": "Смартфоны",
+                                "parent_id": None
+                            }
                         },
                     }
                 }
@@ -357,21 +282,10 @@ async def create(
     product_type_id: Annotated[int | None, Form()] = None,
     attributes_json: Annotated[str | None, Form()] = None,
     images_json: Annotated[str | None, Form()] = None,
-    images: Annotated[list[UploadFile] | None, File()] = None,
-    image_is_main: Annotated[list[str] | None, Form()] = None,
-    image_ordering: Annotated[list[str] | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    # Парсим изображения: либо из JSON, либо из загружаемых файлов
-    images_dto = None
-    if images is not None:
-        # Загрузка через form-data файлы
-        images_dto = await _build_images_dto(images, image_is_main, image_ordering)
-    elif images_json is not None:
-        # Загрузка через JSON (base64)
-        images_dto = await _parse_images_json(images_json)
-    
+    images_dto = await _parse_images_json(images_json) if images_json else []
     attributes_dto = _parse_attributes(attributes_json)
 
     commands = ProductComposition.build_create_command(db)
@@ -383,7 +297,7 @@ async def create(
             category_id=normalize_optional_fk(category_id),
             supplier_id=normalize_optional_fk(supplier_id),
             product_type_id=normalize_optional_fk(product_type_id),
-            images=images_dto or [],
+            images=images_dto,
             attributes=attributes_dto,
         ),
         user=user,
@@ -402,21 +316,23 @@ async def create(
     - Требуется permission: `product:update`
 
     Работа с изображениями:
-    - Изображения передаются через `images_json` (JSON-массив операций) + `images` (файлы для to_create).
-    - Каждая операция имеет поле `action`: `to_create`, `to_delete`, `pass`.
-    - `to_create` — загрузить новое изображение (требуется файл в `images`).
-    - `to_delete` — удалить существующее изображение (требуется `image_id`).
-    - `pass` — сохранить существующее изображение (требуется `image_id`).
-    
+    - Изображения передаются через `images_json` (JSON-массив операций).
+    - Каждая операция имеет поле `action`: `create`, `update`, `delete`, `pass` (или устаревшие `to_create`, `to_delete`).
+    - `create` — добавить изображение (требуется `upload_id`).
+    - `update` — обновить изображение (требуется `upload_id`).
+    - `delete` — удалить изображение (требуется `upload_id`).
+    - `pass` — сохранить существующее изображение (требуется `upload_id`).
+
     Пример `images_json`:
     ```json
     [
-      {"action": "pass", "image_id": 123, "is_main": true},
-      {"action": "to_delete", "image_id": 456},
-      {"action": "to_create", "is_main": false}
+      {"action": "pass", "upload_id": 123, "is_main": true, "ordering": 0},
+      {"action": "update", "upload_id": 124, "is_main": false, "ordering": 1},
+      {"action": "delete", "upload_id": 456},
+      {"action": "create", "upload_id": 789, "is_main": true, "ordering": 2}
     ]
     ```
-    
+
     Сценарии:
     - Изменение цены и описания товара.
     - Добавление/удаление изображений товара.
@@ -440,13 +356,31 @@ async def create(
                             "product_type_id": 5,
                             "images": [
                                 {
+                                    "upload_id": 1,
                                     "image_url": "https://cdn.example.com/product/smartphone-x-pro-main.jpg",
                                     "is_main": True,
+                                    "ordering": 0
                                 }
                             ],
                             "attributes": [
-                                {"name": "RAM", "value": "12 GB", "is_filterable": True}
+                                {"id": 10, "name": "RAM", "value": "12 GB", "is_filterable": True}
                             ],
+                            "category": {
+                                "id": 101,
+                                "name": "Смартфоны",
+                                "description": "Мобильные устройства"
+                            },
+                            "supplier": {
+                                "id": 210,
+                                "name": "ООО Поставка Плюс",
+                                "contact_email": "sales@supply-plus.example",
+                                "phone": "+7-999-123-45-67"
+                            },
+                            "product_type": {
+                                "id": 5,
+                                "name": "Смартфоны",
+                                "parent_id": None
+                            }
                         },
                     }
                 }
@@ -468,17 +402,10 @@ async def update(
     product_type_id: Annotated[int | None, Form()] = None,
     attributes_json: Annotated[str | None, Form()] = None,
     images_json: Annotated[str | None, Form()] = None,
-    images: Annotated[list[UploadFile] | None, File()] = None,
-    image_is_main: Annotated[list[str] | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    pprint(images_json)
-    pprint(images)
-    pprint(image_is_main)
-    images_dto = None
-    if images_json is not None or images is not None:
-        images_dto = await _build_image_operations_dto(images_json, images, image_is_main)
+    images_dto = await _build_image_operations_dto(images_json) if images_json else None
 
     attributes_dto = None
     if attributes_json is not None:

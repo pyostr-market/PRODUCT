@@ -56,15 +56,6 @@ class ProductImageActionSchema(BaseModel):
     ordering: Optional[int] = None
 
 
-class ProductImageInputSchema(BaseModel):
-    """Изображение для создания товара (multipart/form-data)."""
-    model_config = ConfigDict(from_attributes=True)
-
-    image: UploadFile
-    is_main: bool = False
-    ordering: int = 0
-
-
 class ProductAttributeSchema(BaseModel):
     name: str
     value: str
@@ -76,7 +67,7 @@ class ProductAttributeReadSchema(BaseModel):
 
     id: Optional[int] = None
     name: str
-    value: str
+    value: Optional[str] = ""
     is_filterable: bool
 
 
@@ -105,14 +96,6 @@ class ProductCreateSchema(BaseModel):
     supplier_id: Optional[int] = None
     product_type_id: Optional[int] = None
     attributes: List[ProductAttributeSchema] = Field(default_factory=list)
-
-
-class ProductCreateImagesSchema(BaseModel):
-    """Элемент массива изображений для создания товара."""
-    model_config = ConfigDict(from_attributes=True)
-
-    is_main: bool = False
-    ordering: int = 0
 
 
 class ProductUpdateSchema(BaseModel):

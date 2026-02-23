@@ -1,4 +1,3 @@
-import base64
 import json
 
 import pytest
@@ -10,25 +9,26 @@ JPEG_BYTES_NEW = b"\xff\xd8\xff\xe0product-new"
 JPEG_BYTES_ANOTHER = b"\xff\xd8\xff\xe0product-another"
 
 
-def _encode_image_base64(image_bytes: bytes) -> str:
-    """Кодировать изображение в base64 data URL."""
-    encoded = base64.b64encode(image_bytes).decode("utf-8")
-    return f"data:image/jpeg;base64,{encoded}"
-
-
 @pytest.mark.asyncio
-async def test_update_product_200_basic(authorized_client):
+async def test_update_product_200_basic(authorized_client, image_storage_mock):
     """Обновление основных полей товара."""
+    # Сначала загружаем изображение
+    upload_resp = await authorized_client.post(
+        "/upload/",
+        data={"folder": "products"},
+        files=[("file", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+    assert upload_resp.status_code == 200
+    upload_id = upload_resp.json()["data"]["upload_id"]
+
     # Создаём товар
-    images_payload = [{"image": _encode_image_base64(JPEG_BYTES), "is_main": True, "ordering": 0}]
-    
     create = await authorized_client.post(
         "/product",
         data={
             "name": "Товар для теста",
             "description": "Описание",
             "price": "100.00",
-            "images_json": json.dumps(images_payload),
+            "images_json": json.dumps([{"upload_id": upload_id, "is_main": True, "ordering": 0}]),
         },
     )
 
@@ -56,13 +56,24 @@ async def test_update_product_200_basic(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_update_product_200_delete_image(authorized_client):
+async def test_update_product_200_delete_image(authorized_client, image_storage_mock):
     """Удаление изображения товара."""
+    # Загружаем изображения
+    upload_ids = []
+    for i, data in enumerate([JPEG_BYTES, JPEG_BYTES_ANOTHER]):
+        upload_resp = await authorized_client.post(
+            "/upload/",
+            data={"folder": "products"},
+            files=[("file", (f"test{i}.jpg", data, "image/jpeg"))],
+        )
+        assert upload_resp.status_code == 200
+        upload_ids.append(upload_resp.json()["data"]["upload_id"])
+
     images_payload = [
-        {"image": _encode_image_base64(JPEG_BYTES), "is_main": True, "ordering": 0},
-        {"image": _encode_image_base64(JPEG_BYTES_ANOTHER), "is_main": False, "ordering": 1},
+        {"upload_id": upload_ids[0], "is_main": True, "ordering": 0},
+        {"upload_id": upload_ids[1], "is_main": False, "ordering": 1},
     ]
-    
+
     create = await authorized_client.post(
         "/product",
         data={
@@ -93,7 +104,7 @@ async def test_update_product_200_delete_image(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_update_product_200_add_image(authorized_client):
+async def test_update_product_200_add_image(authorized_client, image_storage_mock):
     """Добавление изображения к товару."""
     create = await authorized_client.post(
         "/product",
@@ -132,6 +143,48 @@ async def test_update_product_200_add_image(authorized_client):
 
 
 @pytest.mark.asyncio
+async def test_update_product_200_pass_image(authorized_client, image_storage_mock):
+    """Сохранение существующего изображения товара."""
+    # Загружаем изображение
+    upload_resp = await authorized_client.post(
+        "/upload/",
+        data={"folder": "products"},
+        files=[("file", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+    assert upload_resp.status_code == 200
+    upload_id = upload_resp.json()["data"]["upload_id"]
+
+    # Создаём товар с изображением
+    create = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар",
+            "price": "100.00",
+            "images_json": json.dumps([{"upload_id": upload_id, "is_main": True, "ordering": 0}]),
+        },
+    )
+
+    assert create.status_code == 200
+    product_id = create.json()["data"]["id"]
+
+    # Обновляем товар, сохраняя изображение
+    response = await authorized_client.put(
+        f"/product/{product_id}",
+        data={
+            "name": "Товар обновлён",
+            "images_json": json.dumps([
+                {"action": "pass", "upload_id": upload_id, "is_main": True, "ordering": 0},
+            ]),
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["data"]["images"]) == 1
+    assert body["data"]["images"][0]["upload_id"] == upload_id
+
+
+@pytest.mark.asyncio
 async def test_update_product_404_not_found(authorized_client):
     """Обновление несуществующего товара."""
     response = await authorized_client.put(
@@ -146,16 +199,23 @@ async def test_update_product_404_not_found(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_update_product_400_name_too_short(authorized_client):
+async def test_update_product_400_name_too_short(authorized_client, image_storage_mock):
     """Обновление с слишком коротким именем."""
-    images_payload = [{"image": _encode_image_base64(JPEG_BYTES), "is_main": True, "ordering": 0}]
-    
+    # Загружаем изображение
+    upload_resp = await authorized_client.post(
+        "/upload/",
+        data={"folder": "products"},
+        files=[("file", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+    )
+    assert upload_resp.status_code == 200
+    upload_id = upload_resp.json()["data"]["upload_id"]
+
     create = await authorized_client.post(
         "/product",
         data={
             "name": "Товар",
             "price": "100.00",
-            "images_json": json.dumps(images_payload),
+            "images_json": json.dumps([{"upload_id": upload_id, "is_main": True, "ordering": 0}]),
         },
     )
     product_id = create.json()["data"]["id"]

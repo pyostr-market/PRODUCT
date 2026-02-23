@@ -14,7 +14,7 @@ from src.catalog.product.domain.aggregates.product import (
 )
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
-from src.core.services.images.storage import S3ImageStorageService, guess_content_type
+from src.core.services.images.storage import S3ImageStorageService
 from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
@@ -38,52 +38,29 @@ class CreateProductCommand:
 
     async def execute(self, dto, user: User) -> ProductReadDTO:
         mapped_images: list[ProductImageAggregate] = []
-        
+
         for image in dto.images:
-            if image.upload_id:
-                # Используем предварительно загруженное изображение из UploadHistory
-                stmt = select(UploadHistory).where(UploadHistory.id == image.upload_id)
-                result = await self.db.execute(stmt)
-                upload_record = result.scalar_one_or_none()
-                
-                if not upload_record:
-                    from src.catalog.product.domain.exceptions import ProductInvalidImage
-                    raise ProductInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
-                
-                mapped_images.append(
-                    ProductImageAggregate(
-                        upload_id=upload_record.id,
-                        is_main=image.is_main,
-                        ordering=image.ordering,
-                        object_key=upload_record.file_path,
-                    )
-                )
-            elif image.image:
-                # Загружаем изображение напрямую и создаём запись в UploadHistory
-                image_key = self.image_storage.build_key(folder="products", filename=image.image_name)
-                content_type = guess_content_type(image.image_name)
-                await self.image_storage.upload_bytes(data=image.image, key=image_key, content_type=content_type)
+            if not image.upload_id:
+                from src.catalog.product.domain.exceptions import ProductInvalidImage
+                raise ProductInvalidImage(details={"reason": "upload_id_required"})
 
-                # Создаём запись в UploadHistory
-                upload_record = UploadHistory(
-                    user_id=None,  # Будет установлено позже или через context
-                    file_path=image_key,
-                    folder="products",
-                    content_type=content_type,
-                    original_filename=image.image_name,
-                    file_size=len(image.image),
-                )
-                self.db.add(upload_record)
-                await self.db.flush()
+            # Используем предварительно загруженное изображение из UploadHistory
+            stmt = select(UploadHistory).where(UploadHistory.id == image.upload_id)
+            result = await self.db.execute(stmt)
+            upload_record = result.scalar_one_or_none()
 
-                mapped_images.append(
-                    ProductImageAggregate(
-                        upload_id=upload_record.id,
-                        is_main=image.is_main,
-                        ordering=image.ordering,
-                        object_key=image_key,
-                    )
+            if not upload_record:
+                from src.catalog.product.domain.exceptions import ProductInvalidImage
+                raise ProductInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
+
+            mapped_images.append(
+                ProductImageAggregate(
+                    upload_id=upload_record.id,
+                    is_main=image.is_main,
+                    ordering=image.ordering,
+                    object_key=upload_record.file_path,
                 )
+            )
 
         mapped_attributes = [
             ProductAttributeAggregate(
@@ -151,9 +128,8 @@ class CreateProductCommand:
                     product_type_id=aggregate.product_type_id,
                     images=[
                         ProductImageReadDTO(
-                            image_id=image.upload_id,
-                            image_key="",  # Будет заполнено из UploadHistory
-                            image_url="",  # Будет заполнено из UploadHistory
+                            image_key="",
+                            image_url="",
                             is_main=image.is_main,
                             ordering=image.ordering,
                             upload_id=image.upload_id,

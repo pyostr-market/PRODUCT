@@ -9,12 +9,11 @@ from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 
 @dataclass
 class ProductImageReadDTO:
+    upload_id: int
     image_key: str
-    image_id: Optional[int] = None  # upload_id
     image_url: Optional[str] = None
     is_main: bool = False
     ordering: int = 0
-    upload_id: Optional[int] = None
 
 
 @dataclass

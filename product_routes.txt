@@ -348,10 +348,21 @@
     "manufacturer_id": int | null,
     "images": [
       {
-        "ordering": int,
-        "image_url": str
+        "upload_id": int,
+        "image_url": str,
+        "ordering": int
       }
-    ]
+    ],
+    "parent": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "manufacturer": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null
   }
 }
 ```
@@ -379,10 +390,21 @@
         "manufacturer_id": int | null,
         "images": [
           {
-            "ordering": int,
-            "image_url": str
+            "upload_id": int,
+            "image_url": str,
+            "ordering": int
           }
-        ]
+        ],
+        "parent": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null,
+        "manufacturer": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null
       }
     ]
   }
@@ -413,10 +435,21 @@
     "manufacturer_id": int | null,
     "images": [
       {
-        "ordering": int,
-        "image_url": str
+        "upload_id": int,
+        "image_url": str,
+        "ordering": int
       }
-    ]
+    ],
+    "parent": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "manufacturer": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null
   }
 }
 ```
@@ -446,10 +479,21 @@
     "manufacturer_id": int | null,
     "images": [
       {
-        "ordering": int,
-        "image_url": str
+        "upload_id": int,
+        "image_url": str,
+        "ordering": int
       }
-    ]
+    ],
+    "parent": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "manufacturer": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null
   }
 }
 ```
@@ -522,6 +566,7 @@
         "product_type_id": int | null,
         "images": [
           {
+            "upload_id": int,
             "image_url": str,
             "is_main": bool,
             "ordering": int
@@ -529,11 +574,28 @@
         ],
         "attributes": [
           {
+            "id": int,
             "name": str,
             "value": str,
             "is_filterable": bool
           }
-        ]
+        ],
+        "category": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null,
+        "supplier": {
+          "id": int,
+          "name": str,
+          "contact_email": str | null,
+          "phone": str | null
+        } | null,
+        "product_type": {
+          "id": int,
+          "name": str,
+          "parent_id": int | null
+        } | null
       }
     ]
   }
@@ -559,18 +621,35 @@
     "product_type_id": int | null,
     "images": [
       {
+        "upload_id": int,
         "image_url": str,
         "is_main": bool,
         "ordering": int
       }
     ],
     "attributes": [
-      {
+        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
       }
-    ]
+    ],
+    "category": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "supplier": {
+      "id": int,
+      "name": str,
+      "contact_email": str | null,
+      "phone": str | null
+    } | null,
+    "product_type": {
+      "id": int,
+      "name": str,
+      "parent_id": int | null
+    } | null
   }
 }
 ```
@@ -606,6 +685,7 @@
         "product_type_id": int | null,
         "images": [
           {
+            "upload_id": int,
             "image_url": str,
             "is_main": bool,
             "ordering": int
@@ -613,11 +693,28 @@
         ],
         "attributes": [
           {
+            "id": int,
             "name": str,
             "value": str,
             "is_filterable": bool
           }
-        ]
+        ],
+        "category": {
+          "id": int,
+          "name": str,
+          "description": str | null
+        } | null,
+        "supplier": {
+          "id": int,
+          "name": str,
+          "contact_email": str | null,
+          "phone": str | null
+        } | null,
+        "product_type": {
+          "id": int,
+          "name": str,
+          "parent_id": int | null
+        } | null
       }
     ]
   }
@@ -638,28 +735,17 @@
     ```json
     [{"name": "RAM", "value": "8 GB", "is_filterable": true}]
     ```
-  - **Вариант 1: Загрузка через form-data файлы** (рекомендуется):
-    - `images: UploadFile[] | null` — файлы изображений
-    - `image_is_main: str[] | null` — флаги главного изображения (true/false/1/0)
-    - `image_ordering: str[] | null` — порядковые номера (int)
-    - Пример:
-      ```
-      images=[img1.jpg, img2.jpg]
-      image_is_main=["true", "false"]
-      image_ordering=["0", "1"]
-      ```
-  - **Вариант 2: Загрузка через JSON (base64)**:
-    - `images_json: str | null` — JSON-массив изображений:
-      ```json
-      [
-        {"image": "data:image/jpeg;base64,/9j/...", "is_main": true, "ordering": 0},
-        {"image": "data:image/jpeg;base64,/9j/...", "is_main": false, "ordering": 1}
-      ]
-      ```
-      Каждый элемент массива содержит:
-      - `image`: изображение в формате base64 (data:image/jpeg;base64,...)
-      - `is_main`: флаг главного изображения (true/false/1/0)
-      - `ordering`: порядок сортировки (int)
+  - `images_json: str | null` — JSON-массив изображений:
+    ```json
+    [
+      {"upload_id": 1, "is_main": true, "ordering": 0},
+      {"upload_id": 2, "is_main": false, "ordering": 1}
+    ]
+    ```
+    Каждый элемент массива содержит:
+    - `upload_id`: ID предварительно загруженного изображения через UploadHistory
+    - `is_main`: флаг главного изображения (true/false)
+    - `ordering`: порядок сортировки (int)
 
 - Успешный ответ (`200 OK`):
 ```json
@@ -683,11 +769,28 @@
     ],
     "attributes": [
       {
+        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
       }
-    ]
+    ],
+    "category": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "supplier": {
+      "id": int,
+      "name": str,
+      "contact_email": str | null,
+      "phone": str | null
+    } | null,
+    "product_type": {
+      "id": int,
+      "name": str,
+      "parent_id": int | null
+    } | null
   }
 }
 ```
@@ -709,27 +812,27 @@
       ```json
       [
         {"action": "pass", "upload_id": 1, "is_main": true, "ordering": 0},
-        {"action": "create", "is_main": false, "ordering": 1}
+        {"action": "create", "upload_id": 2, "is_main": false, "ordering": 1},
+        {"action": "delete", "upload_id": 3},
+        {"action": "update", "upload_id": 4, "is_main": true, "ordering": 0}
       ]
       ```
-    - `images: UploadFile[] | null` — файлы для операций `create` (опционально)
-    - `image_is_main: str[] | null` — флаги is_main для загружаемых файлов
 
   **Формат `images_json`** (массив операций):
   ```json
   [
     {"action": "pass", "upload_id": 1, "is_main": true, "ordering": 0},
-    {"action": "create", "is_main": false, "ordering": 1}
+    {"action": "create", "upload_id": 2, "is_main": false, "ordering": 1},
+    {"action": "delete", "upload_id": 3},
+    {"action": "update", "upload_id": 4, "is_main": true, "ordering": 0}
   ]
   ```
 
   **Действия:**
-  - `create` — добавить изображение (файл передаётся в `images`)
-  - `pass` — сохранить существующее изображение (можно обновить `is_main` и `ordering`)
-
-  **Примечание:**
-  - Поле `ordering` является опциональным
-  - Если первое изображение не помечено как `is_main=true`, оно автоматически становится главным
+  - `create` — добавить изображение (требуется `upload_id`)
+  - `update` — обновить изображение (требуется `upload_id`)
+  - `delete` — удалить изображение (требуется `upload_id`)
+  - `pass` — сохранить существующее изображение (требуется `upload_id`, можно обновить `is_main` и `ordering`)
 
 - Успешный ответ (`200 OK`):
 ```json
@@ -745,6 +848,7 @@
     "product_type_id": int | null,
     "images": [
       {
+        "upload_id": int,
         "image_url": str,
         "is_main": bool,
         "ordering": int
@@ -752,11 +856,28 @@
     ],
     "attributes": [
       {
+        "id": int,
         "name": str,
         "value": str,
         "is_filterable": bool
       }
-    ]
+    ],
+    "category": {
+      "id": int,
+      "name": str,
+      "description": str | null
+    } | null,
+    "supplier": {
+      "id": int,
+      "name": str,
+      "contact_email": str | null,
+      "phone": str | null
+    } | null,
+    "product_type": {
+      "id": int,
+      "name": str,
+      "parent_id": int | null
+    } | null
   }
 }
 ```
@@ -805,7 +926,7 @@
 
 ## Типы продуктов
 
-### 28) GET `/product/type/{product_type_id}`
+### 28) GET `/type/{product_type_id}`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
@@ -822,7 +943,7 @@
 }
 ```
 
-### 29) GET `/product/type`
+### 29) GET `/type`
 - Метод: `GET`
 - Доступ: публичный (без токена)
 - Параметры:
@@ -847,7 +968,7 @@
 }
 ```
 
-### 30) POST `/product/type`
+### 30) POST `/type`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `product_type:create`
 - Параметры:
@@ -866,7 +987,7 @@
 }
 ```
 
-### 31) PUT `/product/type/{product_type_id}`
+### 31) PUT `/type/{product_type_id}`
 - Метод: `PUT`
 - Доступ: `Требуемое право` = `product_type:update`
 - Параметры:
@@ -886,7 +1007,7 @@
 }
 ```
 
-### 32) DELETE `/product/type/{product_type_id}`
+### 32) DELETE `/type/{product_type_id}`
 - Метод: `DELETE`
 - Доступ: `Требуемое право` = `product_type:delete`
 - Параметры:
@@ -896,7 +1017,7 @@
 { "success": true, "data": { "deleted": true } }
 ```
 
-### 33) GET `/product/admin/type/audit`
+### 33) GET `/type/admin/audit`
 - Метод: `GET`
 - Доступ: `Требуемое право` = `product_type:audit`
 - Параметры:
@@ -930,7 +1051,7 @@
 
 ## Атрибуты продуктов
 
-### 34) POST `/product/attribute`
+### 34) POST `/attribute`
 - Метод: `POST`
 - Доступ: `Требуемое право` = `product_attribute:create`
 - Параметры:
@@ -951,7 +1072,7 @@
 }
 ```
 
-### 35) PUT `/product/attribute/{attribute_id}`
+### 35) PUT `/attribute/{attribute_id}`
 - Метод: `PUT`
 - Доступ: `Требуемое право` = `product_attribute:update`
 - Параметры:
@@ -973,7 +1094,7 @@
 }
 ```
 
-### 36) DELETE `/product/attribute/{attribute_id}`
+### 36) DELETE `/attribute/{attribute_id}`
 - Метод: `DELETE`
 - Доступ: `Требуемое право` = `product_attribute:delete`
 - Параметры:
@@ -1024,7 +1145,7 @@ GET /product?attributes={"RAM": "8 GB", "Color": "Black"}
 - **Поставщики**: `GET /supplier?name=Поставка`
 - **Категории**: `GET /category?name=Смарт`
 - **Товары**: `GET /product?name=iPhone`
-- **Типы продуктов**: `GET /product/type?name=Smart`
+- **Типы продуктов**: `GET /type?name=Smart`
 
 Поиск реализован через SQL `ILIKE '%значение%'` и поддерживает:
 - Регистронезависимый поиск (case-insensitive)

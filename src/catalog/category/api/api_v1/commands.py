@@ -108,10 +108,17 @@ async def _build_images_dto(
                             "manufacturer_id": 3,
                             "images": [
                                 {
+                                    "upload_id": 10,
                                     "ordering": 0,
                                     "image_url": "https://cdn.example.com/category/smartphones-main.jpg",
                                 }
                             ],
+                            "parent": None,
+                            "manufacturer": {
+                                "id": 3,
+                                "name": "Acme Devices",
+                                "description": "Мировой производитель электроники"
+                            },
                         },
                     }
                 }
@@ -194,10 +201,17 @@ async def create(
                             "manufacturer_id": 3,
                             "images": [
                                 {
+                                    "upload_id": 10,
                                     "ordering": 0,
                                     "image_url": "https://cdn.example.com/category/smartphones-updated.jpg",
                                 }
                             ],
+                            "parent": None,
+                            "manufacturer": {
+                                "id": 3,
+                                "name": "Acme Devices",
+                                "description": "Мировой производитель электроники"
+                            },
                         },
                     }
                 }

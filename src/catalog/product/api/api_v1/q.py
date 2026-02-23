@@ -44,10 +44,33 @@ product_q_router = APIRouter(
                                     "category_id": 101,
                                     "supplier_id": 210,
                                     "product_type_id": 5,
-                                    "images": [],
-                                    "attributes": [
-                                        {"name": "RAM", "value": "6 GB", "is_filterable": True}
+                                    "images": [
+                                        {
+                                            "upload_id": 2,
+                                            "image_url": "https://cdn.example.com/product/smartphone-x-lite.jpg",
+                                            "is_main": True,
+                                            "ordering": 0
+                                        }
                                     ],
+                                    "attributes": [
+                                        {"id": 10, "name": "RAM", "value": "6 GB", "is_filterable": True}
+                                    ],
+                                    "category": {
+                                        "id": 101,
+                                        "name": "Смартфоны",
+                                        "description": "Мобильные устройства"
+                                    },
+                                    "supplier": {
+                                        "id": 210,
+                                        "name": "ООО Поставка Плюс",
+                                        "contact_email": "sales@supply-plus.example",
+                                        "phone": "+7-999-123-45-67"
+                                    },
+                                    "product_type": {
+                                        "id": 5,
+                                        "name": "Смартфоны",
+                                        "parent_id": None
+                                    }
                                 }
                             ],
                         },
@@ -104,13 +127,31 @@ async def related_products(
                             "product_type_id": 5,
                             "images": [
                                 {
+                                    "upload_id": 1,
                                     "image_url": "https://cdn.example.com/product/smartphone-x-main.jpg",
                                     "is_main": True,
+                                    "ordering": 0
                                 }
                             ],
                             "attributes": [
-                                {"name": "RAM", "value": "8 GB", "is_filterable": True}
+                                {"id": 10, "name": "RAM", "value": "8 GB", "is_filterable": True}
                             ],
+                            "category": {
+                                "id": 101,
+                                "name": "Смартфоны",
+                                "description": "Мобильные устройства"
+                            },
+                            "supplier": {
+                                "id": 210,
+                                "name": "ООО Поставка Плюс",
+                                "contact_email": "sales@supply-plus.example",
+                                "phone": "+7-999-123-45-67"
+                            },
+                            "product_type": {
+                                "id": 5,
+                                "name": "Смартфоны",
+                                "parent_id": None
+                            }
                         },
                     }
                 }
@@ -165,8 +206,33 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
                                     "category_id": 101,
                                     "supplier_id": 210,
                                     "product_type_id": 5,
-                                    "images": [],
-                                    "attributes": [],
+                                    "images": [
+                                        {
+                                            "upload_id": 1,
+                                            "image_url": "https://cdn.example.com/product/smartphone-x.jpg",
+                                            "is_main": True,
+                                            "ordering": 0
+                                        }
+                                    ],
+                                    "attributes": [
+                                        {"id": 10, "name": "RAM", "value": "8 GB", "is_filterable": True}
+                                    ],
+                                    "category": {
+                                        "id": 101,
+                                        "name": "Смартфоны",
+                                        "description": "Мобильные устройства"
+                                    },
+                                    "supplier": {
+                                        "id": 210,
+                                        "name": "ООО Поставка Плюс",
+                                        "contact_email": "sales@supply-plus.example",
+                                        "phone": "+7-999-123-45-67"
+                                    },
+                                    "product_type": {
+                                        "id": 5,
+                                        "name": "Смартфоны",
+                                        "parent_id": None
+                                    }
                                 },
                                 {
                                     "id": 3002,
@@ -176,8 +242,33 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
                                     "category_id": 101,
                                     "supplier_id": 210,
                                     "product_type_id": 5,
-                                    "images": [],
-                                    "attributes": [],
+                                    "images": [
+                                        {
+                                            "upload_id": 2,
+                                            "image_url": "https://cdn.example.com/product/smartphone-x-lite.jpg",
+                                            "is_main": True,
+                                            "ordering": 0
+                                        }
+                                    ],
+                                    "attributes": [
+                                        {"id": 10, "name": "RAM", "value": "6 GB", "is_filterable": True}
+                                    ],
+                                    "category": {
+                                        "id": 101,
+                                        "name": "Смартфоны",
+                                        "description": "Мобильные устройства"
+                                    },
+                                    "supplier": {
+                                        "id": 210,
+                                        "name": "ООО Поставка Плюс",
+                                        "contact_email": "sales@supply-plus.example",
+                                        "phone": "+7-999-123-45-67"
+                                    },
+                                    "product_type": {
+                                        "id": 5,
+                                        "name": "Смартфоны",
+                                        "parent_id": None
+                                    }
                                 },
                             ],
                         },

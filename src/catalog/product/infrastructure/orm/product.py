@@ -81,7 +81,6 @@ class SqlAlchemyProductRepository(ProductRepository):
         self.db.add(model)
         await self.db.flush()
 
-        new_image_models: list[ProductImage] = []
         for image in aggregate.images:
             image_model = ProductImage(
                 product_id=model.id,
@@ -90,15 +89,11 @@ class SqlAlchemyProductRepository(ProductRepository):
                 ordering=image.ordering,
             )
             self.db.add(image_model)
-            new_image_models.append(image_model)
 
         await self._replace_attributes(model.id, aggregate.attributes)
         await self.db.flush()
 
         aggregate._set_id(model.id)
-
-        for idx, image in enumerate(aggregate.images):
-            image.image_id = new_image_models[idx].id
 
         return aggregate
 
@@ -131,22 +126,33 @@ class SqlAlchemyProductRepository(ProductRepository):
         """
         Частичное обновление изображений товара.
 
-        Изображения могут быть:
-        - С image_id - существующие записи в product_images (pass/update)
-        - Без image_id - новые изображения для создания
+        Изображения определяются по upload_id:
+        - upload_id существует в БД - обновить/сохранить запись
+        - upload_id не существует в БД - создать новую запись
 
         При удалении записи из product_images файл в S3 НЕ удаляется.
         """
-        existing_ids: set[int] = set()
+        existing_upload_ids: set[int] = set()
         new_images_indices: list[int] = []
-        # image_id -> (upload_id, is_main, ordering | None)
-        existing_image_updates: dict[int, tuple[int, bool, Optional[int]]] = {}
+        # upload_id -> (is_main, ordering | None)
+        existing_image_updates: dict[int, tuple[bool, Optional[int]]] = {}
 
         for idx, image in enumerate(images):
-            if image.image_id is not None:
-                existing_ids.add(image.image_id)
-                existing_image_updates[image.image_id] = (
-                    image.upload_id,
+            if image.upload_id in existing_upload_ids:
+                # Дубликат upload_id - пропускаем
+                continue
+
+            # Проверяем, существует ли уже запись с этим upload_id для этого товара
+            stmt = select(ProductImage).where(
+                ProductImage.product_id == product_id,
+                ProductImage.upload_id == image.upload_id,
+            )
+            result = await self.db.execute(stmt)
+            existing = result.scalar_one_or_none()
+
+            if existing:
+                existing_upload_ids.add(image.upload_id)
+                existing_image_updates[image.upload_id] = (
                     image.is_main,
                     image.ordering if image.ordering is not None else None
                 )
@@ -159,12 +165,11 @@ class SqlAlchemyProductRepository(ProductRepository):
         all_existing_images = list(result.scalars().all())
 
         for image_model in all_existing_images:
-            if image_model.id not in existing_ids:
+            if image_model.upload_id not in existing_upload_ids:
                 # Удаляем только запись из БД, файл в S3 остаётся
                 await self.db.delete(image_model)
-            elif image_model.id in existing_image_updates:
-                upload_id, is_main, ordering_value = existing_image_updates[image_model.id]
-                image_model.upload_id = upload_id
+            elif image_model.upload_id in existing_image_updates:
+                is_main, ordering_value = existing_image_updates[image_model.upload_id]
                 image_model.is_main = is_main
                 if ordering_value is not None:
                     image_model.ordering = ordering_value
@@ -182,9 +187,6 @@ class SqlAlchemyProductRepository(ProductRepository):
             new_image_models.append(image_model)
 
         await self.db.flush()
-
-        for idx, image_idx in enumerate(new_images_indices):
-            images[image_idx].image_id = new_image_models[idx].id
 
     async def delete(self, product_id: int) -> bool:
         model = await self.db.get(Product, product_id)
@@ -316,7 +318,6 @@ class SqlAlchemyProductRepository(ProductRepository):
                 ProductImageAggregate(
                     upload_id=image.upload_id,
                     is_main=image.is_main,
-                    image_id=image.id,
                     ordering=image.ordering,
                     object_key=image.upload.file_path if image.upload else None,
                 )
