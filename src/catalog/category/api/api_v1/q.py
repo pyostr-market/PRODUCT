@@ -39,8 +39,6 @@ category_q_router = APIRouter(
                             "id": 101,
                             "name": "Смартфоны",
                             "description": "Смартфоны и аксессуары",
-                            "parent_id": None,
-                            "manufacturer_id": 3,
                             "images": [
                                 {
                                     "upload_id": 10,
@@ -99,8 +97,6 @@ async def get_by_id(
                                     "id": 101,
                                     "name": "Смартфоны",
                                     "description": "Смартфоны и аксессуары",
-                                    "parent_id": None,
-                                    "manufacturer_id": 3,
                                     "images": [
                                         {
                                             "upload_id": 10,
@@ -119,8 +115,6 @@ async def get_by_id(
                                     "id": 102,
                                     "name": "Планшеты",
                                     "description": "Планшеты всех брендов",
-                                    "parent_id": None,
-                                    "manufacturer_id": 3,
                                     "images": [
                                         {
                                             "upload_id": 11,

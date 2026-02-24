@@ -117,6 +117,7 @@ container.register(
         audit_repository=scope.resolve(ProductAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        db=db,
     ),
 )
 
@@ -149,6 +150,7 @@ container.register(
         audit_repository=scope.resolve(ProductAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        db=db,
     ),
 )
 

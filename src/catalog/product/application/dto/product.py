@@ -70,9 +70,6 @@ class ProductReadDTO:
     name: str
     description: Optional[str]
     price: Decimal
-    category_id: Optional[int]
-    supplier_id: Optional[int]
-    product_type_id: Optional[int]
     images: list[ProductImageReadDTO]
     attributes: list[ProductAttributeReadDTO]
     category: Optional[CategoryAggregate] = None

@@ -60,8 +60,6 @@ class CategoryReadSchema(BaseModel):
     id: int
     name: str
     description: Optional[str]
-    parent_id: Optional[int]
-    manufacturer_id: Optional[int]
     images: List[CategoryImageReadSchema]
     parent: Optional[CategoryNestedSchema] = None
     manufacturer: Optional[ManufacturerNestedSchema] = None

@@ -337,7 +337,7 @@ async def test_product_type_search_with_parent(authorized_client, client):
 
     assert data["total"] == 1
     assert data["items"][0]["name"] == "Phones"
-    assert data["items"][0]["parent_id"] == parent_id
+    assert data["items"][0]["parent"]["id"] == parent_id
 
 
 # =========================================================
@@ -361,4 +361,4 @@ async def test_product_type_search_nested_hierarchy(authorized_client, client):
 
     assert data["total"] == 1
     assert data["items"][0]["name"] == "Mobile"
-    assert data["items"][0]["parent_id"] == level1.json()["data"]["id"]
+    assert data["items"][0]["parent"]["id"] == level1.json()["data"]["id"]

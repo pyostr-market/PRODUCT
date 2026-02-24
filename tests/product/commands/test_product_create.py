@@ -278,6 +278,7 @@ async def test_create_product_200_with_category(authorized_client, image_storage
     assert body["success"] is True
 
     product = ProductReadSchema(**body["data"])
-    assert product.category_id == category_id
+    assert product.category is not None
+    assert product.category.id == category_id
     assert len(product.images) == 1
     assert product.images[0].upload_id == upload_id

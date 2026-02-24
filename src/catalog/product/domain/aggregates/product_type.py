@@ -11,6 +11,7 @@ class ProductTypeAggregate:
     name: str
     parent_id: Optional[int] = None
     product_type_id: Optional[int] = None
+    parent: Optional["ProductTypeAggregate"] = None
 
     def __post_init__(self):
         if not self.name or len(self.name.strip()) < 2:

@@ -4,6 +4,12 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
+class ProductTypeNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+
+
 class ProductTypeCreateSchema(BaseModel):
     name: str
     parent_id: Optional[int] = None
@@ -18,7 +24,7 @@ class ProductTypeReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
-    parent_id: Optional[int]
+    parent: Optional[ProductTypeNestedSchema] = None
 
 
 class ProductTypeListResponse(BaseModel):

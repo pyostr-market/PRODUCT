@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
 from src.catalog.category.application.dto.category import (
@@ -6,7 +7,11 @@ from src.catalog.category.application.dto.category import (
     CategoryReadDTO,
     CategoryUpdateDTO,
 )
-from src.catalog.category.domain.aggregates.category import CategoryImageAggregate
+from src.catalog.category.domain.aggregates.category import (
+    CategoryAggregate,
+    CategoryImageAggregate,
+)
+from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
 from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
@@ -129,12 +134,36 @@ class UpdateCategoryCommand:
                         )
                     )
 
+                # Загружаем данные для parent и manufacturer
+                parent_dto = None
+                if aggregate.parent_id:
+                    parent_agg = await self.repository.get(aggregate.parent_id)
+                    if parent_agg:
+                        parent_dto = CategoryAggregate(
+                            category_id=parent_agg.id,
+                            name=parent_agg.name,
+                            description=parent_agg.description,
+                            parent_id=parent_agg.parent_id,
+                            manufacturer_id=parent_agg.manufacturer_id,
+                        )
+
+                manufacturer_dto = None
+                if aggregate.manufacturer_id:
+                    from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
+                    stmt = select(Manufacturer).where(Manufacturer.id == aggregate.manufacturer_id)
+                    result = await self.db.execute(stmt)
+                    manufacturer_model = result.scalar_one_or_none()
+                    if manufacturer_model:
+                        manufacturer_dto = ManufacturerAggregate(
+                            manufacturer_id=manufacturer_model.id,
+                            name=manufacturer_model.name,
+                            description=manufacturer_model.description,
+                        )
+
                 result = CategoryReadDTO(
                     id=aggregate.id,
                     name=aggregate.name,
                     description=aggregate.description,
-                    parent_id=aggregate.parent_id,
-                    manufacturer_id=aggregate.manufacturer_id,
                     images=[
                         CategoryImageReadDTO(
                             upload_id=image.upload_id,
@@ -144,6 +173,8 @@ class UpdateCategoryCommand:
                         )
                         for image in sorted(aggregate.images, key=lambda i: i.ordering)
                     ],
+                    parent=parent_dto,
+                    manufacturer=manufacturer_dto,
                 )
         except Exception:
             for key in new_image_keys:

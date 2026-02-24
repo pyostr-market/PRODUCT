@@ -41,9 +41,6 @@ product_q_router = APIRouter(
                                     "name": "Смартфон X Lite",
                                     "description": "Более доступная версия",
                                     "price": "39990.00",
-                                    "category_id": 101,
-                                    "supplier_id": 210,
-                                    "product_type_id": 5,
                                     "images": [
                                         {
                                             "upload_id": 2,
@@ -69,7 +66,7 @@ product_q_router = APIRouter(
                                     "product_type": {
                                         "id": 5,
                                         "name": "Смартфоны",
-                                        "parent_id": None
+                                        "parent": None
                                     }
                                 }
                             ],
@@ -122,9 +119,6 @@ async def related_products(
                             "name": "Смартфон X",
                             "description": "Флагманская модель",
                             "price": "59990.00",
-                            "category_id": 101,
-                            "supplier_id": 210,
-                            "product_type_id": 5,
                             "images": [
                                 {
                                     "upload_id": 1,
@@ -150,7 +144,7 @@ async def related_products(
                             "product_type": {
                                 "id": 5,
                                 "name": "Смартфоны",
-                                "parent_id": None
+                                "parent": None
                             }
                         },
                     }
@@ -203,9 +197,6 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
                                     "name": "Смартфон X",
                                     "description": "Флагманская модель",
                                     "price": "59990.00",
-                                    "category_id": 101,
-                                    "supplier_id": 210,
-                                    "product_type_id": 5,
                                     "images": [
                                         {
                                             "upload_id": 1,
@@ -231,7 +222,7 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
                                     "product_type": {
                                         "id": 5,
                                         "name": "Смартфоны",
-                                        "parent_id": None
+                                        "parent": None
                                     }
                                 },
                                 {
@@ -239,9 +230,6 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
                                     "name": "Смартфон X Lite",
                                     "description": "Более доступная версия",
                                     "price": "39990.00",
-                                    "category_id": 101,
-                                    "supplier_id": 210,
-                                    "product_type_id": 5,
                                     "images": [
                                         {
                                             "upload_id": 2,
@@ -267,7 +255,7 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
                                     "product_type": {
                                         "id": 5,
                                         "name": "Смартфоны",
-                                        "parent_id": None
+                                        "parent": None
                                     }
                                 },
                             ],
@@ -349,7 +337,7 @@ product_type_q_router = APIRouter(
                         "data": {
                             "id": 5,
                             "name": "Смартфоны",
-                            "parent_id": None,
+                            "parent": None,
                         },
                     }
                 }
@@ -401,12 +389,15 @@ async def get_product_type_by_id(
                                 {
                                     "id": 5,
                                     "name": "Смартфоны",
-                                    "parent_id": None,
+                                    "parent": None,
                                 },
                                 {
                                     "id": 6,
                                     "name": "Планшеты",
-                                    "parent_id": 5,
+                                    "parent": {
+                                        "id": 5,
+                                        "name": "Смартфоны"
+                                    },
                                 },
                             ],
                         },

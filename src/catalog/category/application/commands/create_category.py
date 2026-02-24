@@ -11,6 +11,7 @@ from src.catalog.category.domain.aggregates.category import (
     CategoryAggregate,
     CategoryImageAggregate,
 )
+from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
@@ -115,12 +116,36 @@ class CreateCategoryCommand:
                     )
                 )
 
+                # Загружаем данные для parent и manufacturer
+                parent_dto = None
+                if aggregate.parent_id:
+                    parent_agg = await self.repository.get(aggregate.parent_id)
+                    if parent_agg:
+                        parent_dto = CategoryAggregate(
+                            category_id=parent_agg.id,
+                            name=parent_agg.name,
+                            description=parent_agg.description,
+                            parent_id=parent_agg.parent_id,
+                            manufacturer_id=parent_agg.manufacturer_id,
+                        )
+
+                manufacturer_dto = None
+                if aggregate.manufacturer_id:
+                    from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
+                    stmt = select(Manufacturer).where(Manufacturer.id == aggregate.manufacturer_id)
+                    result = await self.db.execute(stmt)
+                    manufacturer_model = result.scalar_one_or_none()
+                    if manufacturer_model:
+                        manufacturer_dto = ManufacturerAggregate(
+                            manufacturer_id=manufacturer_model.id,
+                            name=manufacturer_model.name,
+                            description=manufacturer_model.description,
+                        )
+
                 result = CategoryReadDTO(
                     id=aggregate.id,
                     name=aggregate.name,
                     description=aggregate.description,
-                    parent_id=aggregate.parent_id,
-                    manufacturer_id=aggregate.manufacturer_id,
                     images=[
                         CategoryImageReadDTO(
                             ordering=image.ordering,
@@ -130,6 +155,8 @@ class CreateCategoryCommand:
                         )
                         for image in sorted(aggregate.images, key=lambda i: i.ordering)
                     ],
+                    parent=parent_dto,
+                    manufacturer=manufacturer_dto,
                 )
         except Exception:
             raise
@@ -147,8 +174,8 @@ class CreateCategoryCommand:
                         "fields": {
                             "name": result.name,
                             "description": result.description,
-                            "parent_id": result.parent_id,
-                            "manufacturer_id": result.manufacturer_id,
+                            "parent_id": parent_dto.id if parent_dto else None,
+                            "manufacturer_id": manufacturer_dto.id if manufacturer_dto else None,
                         },
                     },
                 ),

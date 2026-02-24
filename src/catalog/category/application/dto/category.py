@@ -26,8 +26,6 @@ class CategoryReadDTO:
     id: int
     name: str
     description: Optional[str]
-    parent_id: Optional[int]
-    manufacturer_id: Optional[int]
     images: list[CategoryImageReadDTO]
     parent: Optional[CategoryAggregate] = None
     manufacturer: Optional[ManufacturerAggregate] = None

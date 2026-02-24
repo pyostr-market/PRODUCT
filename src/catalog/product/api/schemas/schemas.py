@@ -24,7 +24,7 @@ class ProductTypeNestedSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
-    parent_id: Optional[int] = None
+    parent: Optional["ProductTypeNestedSchema"] = None
 
 
 class ProductImageReadSchema(BaseModel):
@@ -116,9 +116,6 @@ class ProductReadSchema(BaseModel):
     name: str
     description: Optional[str]
     price: Decimal
-    category_id: Optional[int]
-    supplier_id: Optional[int]
-    product_type_id: Optional[int]
     images: List[ProductImageReadSchema]
     attributes: List[ProductAttributeReadSchema]
     category: Optional[CategoryNestedSchema] = None

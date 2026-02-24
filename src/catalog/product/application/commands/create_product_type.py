@@ -1,3 +1,5 @@
+from sqlalchemy import select
+
 from src.catalog.product.application.dto.audit import ProductTypeAuditDTO
 from src.catalog.product.application.dto.product_type import (
     ProductTypeCreateDTO,
@@ -10,11 +12,12 @@ from src.core.events import AsyncEventBus, build_event
 
 class CreateProductTypeCommand:
 
-    def __init__(self, repository, audit_repository, uow, event_bus: AsyncEventBus):
+    def __init__(self, repository, audit_repository, uow, event_bus: AsyncEventBus, db):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.event_bus = event_bus
+        self.db = db
 
     async def execute(
         self,
@@ -44,10 +47,24 @@ class CreateProductTypeCommand:
                 )
             )
 
+            # Загружаем данные для parent
+            parent_dto = None
+            if aggregate.parent_id:
+                from src.catalog.product.infrastructure.models.product_type import ProductType
+                stmt = select(ProductType).where(ProductType.id == aggregate.parent_id)
+                result = await self.db.execute(stmt)
+                parent_model = result.scalar_one_or_none()
+                if parent_model:
+                    parent_dto = ProductTypeAggregate(
+                        product_type_id=parent_model.id,
+                        name=parent_model.name,
+                        parent_id=parent_model.parent_id,
+                    )
+
             result = ProductTypeReadDTO(
                 id=aggregate.id,
                 name=aggregate.name,
-                parent_id=aggregate.parent_id,
+                parent=parent_dto,
             )
 
         self.event_bus.publish_nowait(
@@ -61,7 +78,7 @@ class CreateProductTypeCommand:
                     "product_type_id": result.id,
                     "fields": {
                         "name": result.name,
-                        "parent_id": result.parent_id,
+                        "parent_id": parent_dto.id if parent_dto else None,
                     },
                 },
             )

@@ -344,8 +344,6 @@
     "id": int,
     "name": str,
     "description": str | null,
-    "parent_id": int | null,
-    "manufacturer_id": int | null,
     "images": [
       {
         "upload_id": int,
@@ -386,8 +384,6 @@
         "id": int,
         "name": str,
         "description": str | null,
-        "parent_id": int | null,
-        "manufacturer_id": int | null,
         "images": [
           {
             "upload_id": int,
@@ -431,8 +427,6 @@
     "id": int,
     "name": str,
     "description": str | null,
-    "parent_id": int | null,
-    "manufacturer_id": int | null,
     "images": [
       {
         "upload_id": int,
@@ -475,8 +469,6 @@
     "id": int,
     "name": str,
     "description": str | null,
-    "parent_id": int | null,
-    "manufacturer_id": int | null,
     "images": [
       {
         "upload_id": int,
@@ -561,9 +553,6 @@
         "name": str,
         "description": str | null,
         "price": number,
-        "category_id": int | null,
-        "supplier_id": int | null,
-        "product_type_id": int | null,
         "images": [
           {
             "upload_id": int,
@@ -594,7 +583,10 @@
         "product_type": {
           "id": int,
           "name": str,
-          "parent_id": int | null
+          "parent": {
+            "id": int,
+            "name": str
+          } | null
         } | null
       }
     ]
@@ -616,9 +608,6 @@
     "name": str,
     "description": str | null,
     "price": number,
-    "category_id": int | null,
-    "supplier_id": int | null,
-    "product_type_id": int | null,
     "images": [
       {
         "upload_id": int,
@@ -628,6 +617,7 @@
       }
     ],
     "attributes": [
+      {
         "id": int,
         "name": str,
         "value": str,
@@ -648,7 +638,10 @@
     "product_type": {
       "id": int,
       "name": str,
-      "parent_id": int | null
+      "parent": {
+        "id": int,
+        "name": str
+      } | null
     } | null
   }
 }
@@ -680,9 +673,6 @@
         "name": str,
         "description": str | null,
         "price": number,
-        "category_id": int | null,
-        "supplier_id": int | null,
-        "product_type_id": int | null,
         "images": [
           {
             "upload_id": int,
@@ -713,7 +703,10 @@
         "product_type": {
           "id": int,
           "name": str,
-          "parent_id": int | null
+          "parent": {
+            "id": int,
+            "name": str
+          } | null
         } | null
       }
     ]
@@ -756,9 +749,6 @@
     "name": str,
     "description": str | null,
     "price": number,
-    "category_id": int | null,
-    "supplier_id": int | null,
-    "product_type_id": int | null,
     "images": [
       {
         "upload_id": int,
@@ -789,7 +779,10 @@
     "product_type": {
       "id": int,
       "name": str,
-      "parent_id": int | null
+      "parent": {
+        "id": int,
+        "name": str
+      } | null
     } | null
   }
 }
@@ -843,9 +836,6 @@
     "name": str,
     "description": str | null,
     "price": number,
-    "category_id": int | null,
-    "supplier_id": int | null,
-    "product_type_id": int | null,
     "images": [
       {
         "upload_id": int,
@@ -876,7 +866,10 @@
     "product_type": {
       "id": int,
       "name": str,
-      "parent_id": int | null
+      "parent": {
+        "id": int,
+        "name": str
+      } | null
     } | null
   }
 }
@@ -938,7 +931,10 @@
   "data": {
     "id": int,
     "name": str,
-    "parent_id": int | null
+    "parent": {
+      "id": int,
+      "name": str
+    } | null
   }
 }
 ```
@@ -961,7 +957,10 @@
       {
         "id": int,
         "name": str,
-        "parent_id": int | null
+        "parent": {
+          "id": int,
+          "name": str
+        } | null
       }
     ]
   }
@@ -982,7 +981,10 @@
   "data": {
     "id": int,
     "name": str,
-    "parent_id": int | null
+    "parent": {
+      "id": int,
+      "name": str
+    } | null
   }
 }
 ```
@@ -1002,7 +1004,10 @@
   "data": {
     "id": int,
     "name": str,
-    "parent_id": int | null
+    "parent": {
+      "id": int,
+      "name": str
+    } | null
   }
 }
 ```

@@ -141,7 +141,8 @@ async def test_create_product_type_with_parent(authorized_client):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["data"]["parent_id"] == parent_id
+    assert body["data"]["parent"] is not None
+    assert body["data"]["parent"]["id"] == parent_id
 
 
 @pytest.mark.asyncio

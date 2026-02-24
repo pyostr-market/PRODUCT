@@ -50,10 +50,18 @@ class ProductReadRepository:
 
         product_type_dto = None
         if model.product_type:
+            parent_dto = None
+            if model.product_type.parent:
+                parent_dto = ProductTypeAggregate(
+                    product_type_id=model.product_type.parent.id,
+                    name=model.product_type.parent.name,
+                    parent_id=model.product_type.parent.parent_id,
+                )
             product_type_dto = ProductTypeAggregate(
                 name=model.product_type.name,
                 parent_id=model.product_type.parent_id,
                 product_type_id=model.product_type.id,
+                parent=parent_dto,
             )
 
         return ProductReadDTO(
@@ -61,9 +69,6 @@ class ProductReadRepository:
             name=model.name,
             description=model.description,
             price=model.price,
-            category_id=model.category_id,
-            supplier_id=model.supplier_id,
-            product_type_id=model.product_type_id,
             images=[
                 ProductImageReadDTO(
                     image_key=image.upload.file_path,
@@ -96,7 +101,7 @@ class ProductReadRepository:
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type),
+                selectinload(Product.product_type).selectinload(ProductType.parent),
             )
             .where(Product.id == product_id)
         )
@@ -116,7 +121,7 @@ class ProductReadRepository:
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type),
+                selectinload(Product.product_type).selectinload(ProductType.parent),
             )
             .where(Product.name == name)
         )
@@ -145,7 +150,7 @@ class ProductReadRepository:
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type),
+                selectinload(Product.product_type).selectinload(ProductType.parent),
             )
         )
         count_stmt = select(func.count()).select_from(Product)

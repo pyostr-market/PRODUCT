@@ -45,8 +45,6 @@ class CategoryReadRepository:
             id=model.id,
             name=model.name,
             description=model.description,
-            parent_id=model.parent_id,
-            manufacturer_id=model.manufacturer_id,
             images=[
                 CategoryImageReadDTO(
                     ordering=image.ordering,

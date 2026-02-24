@@ -1,12 +1,14 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
+
 
 @dataclass
 class ProductTypeReadDTO:
     id: int
     name: str
-    parent_id: Optional[int] = None
+    parent: Optional[ProductTypeAggregate] = None
 
 
 @dataclass
