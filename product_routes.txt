@@ -416,9 +416,16 @@
     - `description: str | null`
     - `parent_id: int | null`
     - `manufacturer_id: int | null`
-    - `images: UploadFile[]` (обяз.) — файлы изображений
-    - `orderings: int[]` (обяз.) — порядковые номера для изображений
-- Примечание: количество `images` и `orderings` должно совпадать.
+    - `images_json: str | null` — JSON-массив изображений:
+      ```json
+      [
+        {"upload_id": 1, "ordering": 0},
+        {"upload_id": 2, "ordering": 1}
+      ]
+      ```
+      Каждый элемент массива содержит:
+      - `upload_id`: ID предварительно загруженного изображения через UploadHistory
+      - `ordering`: порядок сортировки (int)
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -458,9 +465,32 @@
     - `description: str | null`
     - `parent_id: int | null`
     - `manufacturer_id: int | null`
-    - `images: UploadFile[] | null` — файлы изображений для замены
-    - `orderings: int[] | null` — порядковые номера для изображений
-- Примечание: если передан один из `images/orderings`, второй тоже обязателен.
+    - `images_json: str | null` — JSON-массив операций с изображениями:
+      ```json
+      [
+        {"action": "pass", "upload_id": 1, "ordering": 0},
+        {"action": "create", "upload_id": 2, "ordering": 1},
+        {"action": "delete", "upload_id": 3},
+        {"action": "update", "upload_id": 4, "ordering": 0}
+      ]
+      ```
+
+  **Формат `images_json`** (массив операций):
+  ```json
+  [
+    {"action": "pass", "upload_id": 1, "ordering": 0},
+    {"action": "create", "upload_id": 2, "ordering": 1},
+    {"action": "delete", "upload_id": 3},
+    {"action": "update", "upload_id": 4, "ordering": 0}
+  ]
+  ```
+
+  **Действия:**
+  - `create` — добавить изображение (требуется `upload_id`)
+  - `update` — обновить изображение (требуется `upload_id`)
+  - `delete` — удалить изображение (требуется `upload_id`)
+  - `pass` — сохранить существующее изображение (требуется `upload_id`, можно обновить `ordering`)
+
 - Успешный ответ (`200 OK`):
 ```json
 {

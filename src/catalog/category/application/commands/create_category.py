@@ -17,7 +17,6 @@ from src.catalog.manufacturer.domain.aggregates.manufacturer import (
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
-from src.core.services.images.storage import guess_content_type
 from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
@@ -47,46 +46,22 @@ class CreateCategoryCommand:
         uploaded_images: list[CategoryImageAggregate] = []
 
         for image in dto.images:
-            if image.upload_id:
-                # Используем предварительно загруженное изображение
-                stmt = select(UploadHistory).where(UploadHistory.id == image.upload_id)
-                result = await self.db.execute(stmt)
-                upload_record = result.scalar_one_or_none()
-                
-                if not upload_record:
-                    from src.catalog.category.domain.exceptions import (
-                        CategoryInvalidImage,
-                    )
-                    raise CategoryInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
-                
-                uploaded_images.append(CategoryImageAggregate(
-                    upload_id=upload_record.id,
-                    ordering=image.ordering,
-                    object_key=upload_record.file_path,
-                ))
-            elif image.image:
-                # Загружаем изображение напрямую
-                image_key = self.image_storage.build_key(folder="categories", filename=image.image_name)
-                content_type = guess_content_type(image.image_name)
-                await self.image_storage.upload_bytes(data=image.image, key=image_key, content_type=content_type)
+            # Используем предварительно загруженное изображение
+            stmt = select(UploadHistory).where(UploadHistory.id == image.upload_id)
+            result = await self.db.execute(stmt)
+            upload_record = result.scalar_one_or_none()
 
-                # Создаём запись в UploadHistory
-                upload_record = UploadHistory(
-                    user_id=None,
-                    file_path=image_key,
-                    folder="categories",
-                    content_type=content_type,
-                    original_filename=image.image_name,
-                    file_size=len(image.image),
+            if not upload_record:
+                from src.catalog.category.domain.exceptions import (
+                    CategoryInvalidImage,
                 )
-                self.db.add(upload_record)
-                await self.db.flush()
+                raise CategoryInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
 
-                uploaded_images.append(CategoryImageAggregate(
-                    upload_id=upload_record.id,
-                    ordering=image.ordering,
-                    object_key=image_key,
-                ))
+            uploaded_images.append(CategoryImageAggregate(
+                upload_id=upload_record.id,
+                ordering=image.ordering,
+                object_key=upload_record.file_path,
+            ))
 
         try:
             async with self.uow:

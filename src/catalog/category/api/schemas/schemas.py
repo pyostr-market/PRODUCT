@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -33,9 +33,14 @@ class CategoryImageReferenceSchema(BaseModel):
     ordering: int = 0
 
 
-class CategoryImageSchema(BaseModel):
-    upload_id: int  # ID загруженного изображения из UploadHistory
-    ordering: int = 0
+class CategoryImageActionSchema(BaseModel):
+    """Операция с изображением при обновлении категории."""
+    model_config = ConfigDict(from_attributes=True)
+
+    action: Literal["create", "update", "pass", "delete"]
+    upload_id: Optional[int] = None  # ID изображения из UploadHistory
+    image_url: Optional[str] = None  # URL изображения (альтернатива upload_id)
+    ordering: Optional[int] = None
 
 
 class CategoryCreateSchema(BaseModel):
@@ -51,7 +56,7 @@ class CategoryUpdateSchema(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
-    images: Optional[List[CategoryImageReferenceSchema]] = None
+    images: Optional[List[CategoryImageActionSchema]] = None
 
 
 class CategoryReadSchema(BaseModel):

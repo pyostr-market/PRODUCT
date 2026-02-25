@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Literal, Optional
 
 from src.catalog.category.domain.aggregates.category import CategoryAggregate
 from src.catalog.manufacturer.domain.aggregates.manufacturer import (
@@ -17,10 +17,17 @@ class CategoryImageReadDTO:
 
 @dataclass
 class CategoryImageInputDTO:
-    upload_id: Optional[int] = None  # ID загруженного изображения из UploadHistory
-    image: Optional[bytes] = None  # Байты изображения (для загрузки напрямую)
-    image_name: Optional[str] = None  # Имя файла
+    upload_id: int  # ID загруженного изображения из UploadHistory
     ordering: int = 0
+
+
+@dataclass
+class CategoryImageOperationDTO:
+    """Операция с изображением при обновлении категории."""
+    action: Literal["create", "update", "pass", "delete"]
+    upload_id: Optional[int] = None  # ID изображения из UploadHistory
+    image_url: Optional[str] = None  # URL изображения (альтернатива upload_id)
+    ordering: Optional[int] = None
 
 
 @dataclass
@@ -48,4 +55,4 @@ class CategoryUpdateDTO:
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
-    images: Optional[list[CategoryImageInputDTO]] = None
+    images: Optional[list[CategoryImageOperationDTO]] = None

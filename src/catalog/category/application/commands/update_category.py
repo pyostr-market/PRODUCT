@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
 from src.catalog.category.application.dto.category import (
+    CategoryImageOperationDTO,
     CategoryImageReadDTO,
     CategoryReadDTO,
     CategoryUpdateDTO,
@@ -18,7 +19,6 @@ from src.catalog.manufacturer.domain.aggregates.manufacturer import (
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
-from src.core.services.images.storage import guess_content_type
 from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
@@ -77,39 +77,54 @@ class UpdateCategoryCommand:
                 )
 
                 if dto.images is not None:
-                    uploaded_images: list[CategoryImageAggregate] = []
-                    new_upload_ids: list[int] = []
-                    for image in dto.images:
-                        new_image_key = self.image_storage.build_key(folder="categories", filename=image.image_name)
-                        content_type = guess_content_type(image.image_name)
-                        await self.image_storage.upload_bytes(
-                            data=image.image,
-                            key=new_image_key,
-                            content_type=content_type,
-                        )
-                        new_image_keys.append(new_image_key)
-                        
-                        # Создаём запись в UploadHistory
-                        upload_record = UploadHistory(
-                            user_id=None,
-                            file_path=new_image_key,
-                            folder="categories",
-                            content_type=content_type,
-                            original_filename=image.image_name,
-                            file_size=len(image.image),
-                        )
-                        self.db.add(upload_record)
-                        await self.db.flush()
-                        new_upload_ids.append(upload_record.id)
-                        
-                        uploaded_images.append(
-                            CategoryImageAggregate(
-                                upload_id=upload_record.id,
-                                object_key=new_image_key,
-                                ordering=image.ordering,
-                            )
-                        )
-                    aggregate.replace_images(uploaded_images)
+                    # Обрабатываем операции с изображениями
+                    final_images: list[CategoryImageAggregate] = list(aggregate.images)
+                    
+                    for op in dto.images:
+                        if op.action == "delete":
+                            # Удаляем изображение из списка
+                            if op.upload_id:
+                                final_images = [
+                                    img for img in final_images 
+                                    if img.upload_id != op.upload_id
+                                ]
+                        elif op.action == "create":
+                            # Добавляем новое изображение
+                            if op.upload_id:
+                                stmt = select(UploadHistory).where(UploadHistory.id == op.upload_id)
+                                result = await self.db.execute(stmt)
+                                upload_record = result.scalar_one_or_none()
+                                
+                                if not upload_record:
+                                    from src.catalog.category.domain.exceptions import CategoryInvalidImage
+                                    raise CategoryInvalidImage(
+                                        details={"reason": "upload_not_found", "upload_id": op.upload_id}
+                                    )
+                                
+                                final_images.append(CategoryImageAggregate(
+                                    upload_id=upload_record.id,
+                                    object_key=upload_record.file_path,
+                                    ordering=op.ordering or len(final_images),
+                                ))
+                                new_image_keys.append(upload_record.file_path)
+                        elif op.action == "update":
+                            # Обновляем существующее изображение
+                            if op.upload_id:
+                                for img in final_images:
+                                    if img.upload_id == op.upload_id:
+                                        if op.ordering is not None:
+                                            img.ordering = op.ordering
+                                        break
+                        elif op.action == "pass":
+                            # Сохраняем изображение, возможно обновляем ordering
+                            if op.upload_id:
+                                for img in final_images:
+                                    if img.upload_id == op.upload_id:
+                                        if op.ordering is not None:
+                                            img.ordering = op.ordering
+                                        break
+                    
+                    aggregate.replace_images(final_images)
 
                 await self.repository.update(aggregate)
 

@@ -1,19 +1,17 @@
-from typing import Annotated
+import json
+from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.category.api.schemas.schemas import CategoryReadSchema
 from src.catalog.category.application.dto.category import (
     CategoryCreateDTO,
     CategoryImageInputDTO,
+    CategoryImageOperationDTO,
     CategoryUpdateDTO,
 )
 from src.catalog.category.composition import CategoryComposition
-from src.catalog.category.domain.exceptions import (
-    CategoryImagesOrderingMismatch,
-    CategoryInvalidImage,
-)
 from src.core.api.normalizers import normalize_optional_fk
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import get_current_user, require_permissions
@@ -25,56 +23,108 @@ category_commands_router = APIRouter(
 )
 
 
-def _is_image_bytes(data: bytes) -> bool:
-    if not data:
-        return False
+def _parse_images_json(images_json: str | None) -> list[CategoryImageInputDTO]:
+    """
+    Парсинг JSON массива изображений для создания категории.
 
-    if data.startswith(b"\xff\xd8\xff"):
-        return True  # JPEG
-    if data.startswith(b"\x89PNG\r\n\x1a\n"):
-        return True  # PNG
-    if data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
-        return True  # GIF
-    if data.startswith(b"BM"):
-        return True  # BMP
-    if data.startswith(b"RIFF") and len(data) >= 12 and data[8:12] == b"WEBP":
-        return True  # WEBP
-    return False
+    Формат images_json:
+    ```json
+    [
+      {"upload_id": 1, "ordering": 0},
+      {"upload_id": 2, "ordering": 1}
+    ]
+    ```
+    """
+    if not images_json:
+        return []
 
+    try:
+        payload = json.loads(images_json)
+    except json.JSONDecodeError as exc:
+        from src.catalog.category.domain.exceptions import CategoryInvalidImage
+        raise CategoryInvalidImage(details={"reason": "invalid_images_json", "error": str(exc)})
 
-async def _build_images_dto(
-    images: list[UploadFile],
-    orderings: list[int],
-) -> list[CategoryImageInputDTO]:
-    if len(images) != len(orderings):
-        raise CategoryImagesOrderingMismatch(
-            details={"images_count": len(images), "orderings_count": len(orderings)}
-        )
+    if not isinstance(payload, list):
+        from src.catalog.category.domain.exceptions import CategoryInvalidImage
+        raise CategoryInvalidImage(details={"reason": "images_must_be_list"})
 
-    mapped: list[CategoryImageInputDTO] = []
+    mapped = []
+    for idx, item in enumerate(payload):
+        if not isinstance(item, dict):
+            from src.catalog.category.domain.exceptions import CategoryInvalidImage
+            raise CategoryInvalidImage(details={"reason": "image_item_must_be_object"})
 
-    for image_file, ordering in zip(images, orderings):
-        payload = await image_file.read()
+        upload_id = item.get("upload_id")
+        if not upload_id:
+            from src.catalog.category.domain.exceptions import CategoryInvalidImage
+            raise CategoryInvalidImage(details={"reason": "missing_upload_id", "index": idx})
 
-        if image_file.content_type and not image_file.content_type.startswith("image/"):
-            raise CategoryInvalidImage(
-                details={"filename": image_file.filename, "content_type": image_file.content_type}
-            )
+        try:
+            upload_id = int(upload_id)
+        except (ValueError, TypeError):
+            from src.catalog.category.domain.exceptions import CategoryInvalidImage
+            raise CategoryInvalidImage(details={"reason": "upload_id_must_be_int", "index": idx})
 
-        if not _is_image_bytes(payload):
-            raise CategoryInvalidImage(
-                details={"filename": image_file.filename, "reason": "unsupported_or_invalid_binary"}
-            )
+        ordering = item.get("ordering", idx)
+        if isinstance(ordering, str):
+            try:
+                ordering = int(ordering)
+            except ValueError:
+                ordering = idx
 
         mapped.append(
             CategoryImageInputDTO(
-                image=payload,
-                image_name=image_file.filename or "test.jpg",
+                upload_id=upload_id,
                 ordering=ordering,
             )
         )
 
     return mapped
+
+
+async def _build_image_operations_dto(
+    images_json: str | None,
+) -> list[CategoryImageOperationDTO] | None:
+    """
+    Построение DTO для операций с изображениями при обновлении категории.
+
+    images_json - JSON-список операций {action, upload_id, ordering}
+    """
+    if not images_json:
+        return None
+
+    try:
+        payload = json.loads(images_json)
+    except json.JSONDecodeError as exc:
+        from src.catalog.category.domain.exceptions import CategoryInvalidImage
+        raise CategoryInvalidImage(details={"reason": "invalid_images_json", "error": str(exc)})
+
+    if not isinstance(payload, list):
+        from src.catalog.category.domain.exceptions import CategoryInvalidImage
+        raise CategoryInvalidImage(details={"reason": "images_must_be_list"})
+
+    operations: list[CategoryImageOperationDTO] = []
+
+    for item in payload:
+        if not isinstance(item, dict):
+            from src.catalog.category.domain.exceptions import CategoryInvalidImage
+            raise CategoryInvalidImage(details={"reason": "image_operation_must_be_object"})
+
+        action = item.get("action")
+        if action not in ("create", "delete", "pass", "update"):
+            from src.catalog.category.domain.exceptions import CategoryInvalidImage
+            raise CategoryInvalidImage(details={"reason": "invalid_action", "action": action})
+
+        op = CategoryImageOperationDTO(
+            action=action,
+            upload_id=item.get("upload_id"),
+            image_url=item.get("image_url"),
+            ordering=item.get("ordering"),
+        )
+
+        operations.append(op)
+
+    return operations if operations else None
 
 
 @category_commands_router.post(
@@ -91,6 +141,18 @@ async def _build_images_dto(
     - Инициализация новой ветки каталога.
     - Создание категории с привязкой к производителю.
     - Загрузка набора изображений с явным порядком отображения.
+
+    **Формат `images_json`** (массив объектов с upload_id):
+    ```json
+    [
+      {"upload_id": 1, "ordering": 0},
+      {"upload_id": 2, "ordering": 1}
+    ]
+    ```
+
+    Каждый элемент массива содержит:
+    - `upload_id`: ID предварительно загруженного изображения через UploadHistory
+    - `ordering`: порядок сортировки (int)
     """,
     response_description="Созданная категория в стандартной обёртке API",
     responses={
@@ -125,7 +187,7 @@ async def _build_images_dto(
             },
         },
         400: {
-            "description": "Некорректный файл изображения или некорректные входные данные",
+            "description": "Некорректный JSON изображений или некорректные входные данные",
             "content": {
                 "application/json": {
                     "example": {
@@ -134,8 +196,7 @@ async def _build_images_dto(
                             "code": "category_invalid_image",
                             "message": "Некорректный файл изображения категории",
                             "details": {
-                                "filename": "manual.pdf",
-                                "content_type": "application/pdf",
+                                "reason": "invalid_images_json",
                             },
                         },
                     }
@@ -148,15 +209,14 @@ async def _build_images_dto(
 )
 async def create(
     name: Annotated[str, Form(...)],
-    images: Annotated[list[UploadFile], File(...)],
-    orderings: Annotated[list[int], Form(...)],
+    images_json: Annotated[str | None, Form()] = None,
     description: Annotated[str | None, Form()] = None,
     parent_id: Annotated[int | None, Form()] = None,
     manufacturer_id: Annotated[int | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    images_dto = await _build_images_dto(images, orderings)
+    images_dto = _parse_images_json(images_json) if images_json else []
     commands = CategoryComposition.build_create_command(db)
     dto = await commands.execute(
         CategoryCreateDTO(
@@ -184,6 +244,24 @@ async def create(
     - Переименование или смена описания категории.
     - Перепривязка к родительской категории или производителю.
     - Полная замена набора изображений категории.
+
+    Работа с изображениями:
+    - Изображения передаются через `images_json` (JSON-массив операций).
+    - Каждая операция имеет поле `action`: `create`, `update`, `delete`, `pass`.
+    - `create` — добавить изображение (требуется `upload_id`).
+    - `update` — обновить изображение (требуется `upload_id`).
+    - `delete` — удалить изображение (требуется `upload_id`).
+    - `pass` — сохранить существующее изображение (требуется `upload_id`).
+
+    Пример `images_json`:
+    ```json
+    [
+      {"action": "pass", "upload_id": 123, "ordering": 0},
+      {"action": "update", "upload_id": 124, "ordering": 1},
+      {"action": "delete", "upload_id": 456},
+      {"action": "create", "upload_id": 789, "ordering": 2}
+    ]
+    ```
     """,
     response_description="Обновлённая категория в стандартной обёртке API",
     responses={
@@ -218,15 +296,15 @@ async def create(
             },
         },
         400: {
-            "description": "Переданы некорректные данные (например, images без orderings)",
+            "description": "Переданы некорректные данные (например, invalid JSON)",
             "content": {
                 "application/json": {
                     "example": {
                         "success": False,
                         "error": {
-                            "code": "category_images_ordering_mismatch",
-                            "message": "Количество изображений не совпадает с количеством orderings",
-                            "details": {"images_count": 2, "orderings_count": 1},
+                            "code": "category_invalid_image",
+                            "message": "Некорректный файл изображения категории",
+                            "details": {"reason": "invalid_images_json"},
                         },
                     }
                 }
@@ -243,20 +321,11 @@ async def update(
     description: Annotated[str | None, Form()] = None,
     parent_id: Annotated[int | None, Form()] = None,
     manufacturer_id: Annotated[int | None, Form()] = None,
-    images: Annotated[list[UploadFile] | None, File()] = None,
-    orderings: Annotated[list[int] | None, Form()] = None,
+    images_json: Annotated[str | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    if (images is None) != (orderings is None):
-        raise CategoryImagesOrderingMismatch(
-            msg="Для обновления изображений нужно передать и images, и orderings",
-            details={"images_is_none": images is None, "orderings_is_none": orderings is None},
-        )
-
-    images_dto = None
-    if images is not None and orderings is not None:
-        images_dto = await _build_images_dto(images, orderings)
+    images_dto = await _build_image_operations_dto(images_json) if images_json else None
 
     commands = CategoryComposition.build_update_command(db)
     dto = await commands.execute(
