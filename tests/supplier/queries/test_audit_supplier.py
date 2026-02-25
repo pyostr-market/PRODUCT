@@ -161,9 +161,9 @@ async def test_audit_403_without_permission():
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
     from src.core.auth.dependencies import get_current_user
+    from src.core.auth.schemas.user import TokenSchema, User
     from src.core.db.database import get_db
     from src.mount import app
-    from src.core.auth.schemas.user import TokenSchema, User
 
     # Пользователь без supplier:audit
     user = User(

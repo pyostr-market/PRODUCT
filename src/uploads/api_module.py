@@ -27,6 +27,7 @@ class UploadsApiModule(ApiModule):
     def router(self):
         if self._router is None:
             from fastapi import APIRouter
+
             from src.uploads.api.api_v1.upload_api import upload_router
             self._router = APIRouter(prefix="/upload", tags=["Загрузка файлов"])
             self._router.include_router(upload_router)

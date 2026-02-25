@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.catalog.category.domain.aggregates.category import CategoryAggregate
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 
 
 @dataclass

@@ -1,6 +1,10 @@
 from abc import ABC
 
-from src.catalog.product.application.dto.audit import ProductAuditDTO, ProductAttributeAuditDTO, ProductTypeAuditDTO
+from src.catalog.product.application.dto.audit import (
+    ProductAttributeAuditDTO,
+    ProductAuditDTO,
+    ProductTypeAuditDTO,
+)
 
 
 class ProductAuditRepository(ABC):

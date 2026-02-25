@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.domain.exceptions import ProductNameTooShort
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate

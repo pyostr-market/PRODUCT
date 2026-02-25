@@ -4,7 +4,10 @@ from src.catalog.product.application.dto.product import ProductReadDTO
 from src.catalog.product.application.read_models.product_read_repository import (
     ProductReadRepository,
 )
-from src.catalog.product.domain.exceptions import ProductNotFound, ProductRelatedLookupRequired
+from src.catalog.product.domain.exceptions import (
+    ProductNotFound,
+    ProductRelatedLookupRequired,
+)
 from src.catalog.product.domain.repository.product import ProductRepository
 from src.core.services.images import ImageStorageService
 

@@ -6,7 +6,9 @@ from sqlalchemy.orm import selectinload
 
 from src.catalog.category.domain.aggregates.category import CategoryAggregate
 from src.catalog.category.infrastructure.models.categories import Category
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 from src.catalog.product.domain.aggregates.product import (
     ProductAggregate,
     ProductAttributeAggregate,
@@ -17,7 +19,9 @@ from src.catalog.product.domain.exceptions import ProductNotFound
 from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.infrastructure.models.product import Product
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
-from src.catalog.product.infrastructure.models.product_attribute_value import ProductAttributeValue
+from src.catalog.product.infrastructure.models.product_attribute_value import (
+    ProductAttributeValue,
+)
 from src.catalog.product.infrastructure.models.product_image import ProductImage
 from src.catalog.product.infrastructure.models.product_type import ProductType
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate

@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
-
 from src.catalog.category.domain.exceptions import CategoryNameTooShort
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 
 if TYPE_CHECKING:
     from src.catalog.category.domain.aggregates.category import CategoryAggregate

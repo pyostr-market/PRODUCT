@@ -50,7 +50,9 @@ class CreateProductTypeCommand:
             # Загружаем данные для parent
             parent_dto = None
             if aggregate.parent_id:
-                from src.catalog.product.infrastructure.models.product_type import ProductType
+                from src.catalog.product.infrastructure.models.product_type import (
+                    ProductType,
+                )
                 stmt = select(ProductType).where(ProductType.id == aggregate.parent_id)
                 result = await self.db.execute(stmt)
                 parent_model = result.scalar_one_or_none()

@@ -12,7 +12,9 @@ from src.catalog.category.domain.exceptions import CategoryNotFound
 from src.catalog.category.domain.repository.category import CategoryRepository
 from src.catalog.category.infrastructure.models.categories import Category
 from src.catalog.category.infrastructure.models.category_image import CategoryImage
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
 
 

@@ -50,3 +50,10 @@ class Category(TimestampMixin, Base):
         "Product",
         back_populates="category",
     )
+
+    category_pricing_policy = relationship(
+        "CategoryPricingPolicy",
+        back_populates="category",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

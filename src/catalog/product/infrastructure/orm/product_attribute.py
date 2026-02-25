@@ -5,7 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.product.domain.aggregates.product import ProductAttributeAggregate
 from src.catalog.product.domain.exceptions import ProductAttributeNotFound
-from src.catalog.product.domain.repository.product_attribute import ProductAttributeRepository
+from src.catalog.product.domain.repository.product_attribute import (
+    ProductAttributeRepository,
+)
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
 
 

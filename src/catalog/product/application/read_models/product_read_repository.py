@@ -14,7 +14,9 @@ from src.catalog.product.application.dto.product import (
 from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.infrastructure.models.product import Product
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
-from src.catalog.product.infrastructure.models.product_attribute_value import ProductAttributeValue
+from src.catalog.product.infrastructure.models.product_attribute_value import (
+    ProductAttributeValue,
+)
 from src.catalog.product.infrastructure.models.product_image import ProductImage
 from src.catalog.product.infrastructure.models.product_type import ProductType
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate

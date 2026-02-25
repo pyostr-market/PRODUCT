@@ -1,7 +1,11 @@
-from src.catalog.product.application.dto.audit import ProductAuditDTO, ProductAttributeAuditDTO, ProductTypeAuditDTO
+from src.catalog.product.application.dto.audit import (
+    ProductAttributeAuditDTO,
+    ProductAuditDTO,
+    ProductTypeAuditDTO,
+)
 from src.catalog.product.infrastructure.models.product_audit_logs import (
-    ProductAuditLog,
     ProductAttributeAuditLog,
+    ProductAuditLog,
     ProductTypeAuditLog,
 )
 

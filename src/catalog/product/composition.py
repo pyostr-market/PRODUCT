@@ -1,17 +1,37 @@
 from src.catalog.product.application.commands.create_product import CreateProductCommand
-from src.catalog.product.application.commands.create_product_attribute import CreateProductAttributeCommand
-from src.catalog.product.application.commands.create_product_type import CreateProductTypeCommand
+from src.catalog.product.application.commands.create_product_attribute import (
+    CreateProductAttributeCommand,
+)
+from src.catalog.product.application.commands.create_product_type import (
+    CreateProductTypeCommand,
+)
 from src.catalog.product.application.commands.delete_product import DeleteProductCommand
-from src.catalog.product.application.commands.delete_product_attribute import DeleteProductAttributeCommand
-from src.catalog.product.application.commands.delete_product_type import DeleteProductTypeCommand
+from src.catalog.product.application.commands.delete_product_attribute import (
+    DeleteProductAttributeCommand,
+)
+from src.catalog.product.application.commands.delete_product_type import (
+    DeleteProductTypeCommand,
+)
 from src.catalog.product.application.commands.update_product import UpdateProductCommand
-from src.catalog.product.application.commands.update_product_attribute import UpdateProductAttributeCommand
-from src.catalog.product.application.commands.update_product_type import UpdateProductTypeCommand
-from src.catalog.product.application.queries.product_admin_queries import ProductAdminQueries
+from src.catalog.product.application.commands.update_product_attribute import (
+    UpdateProductAttributeCommand,
+)
+from src.catalog.product.application.commands.update_product_type import (
+    UpdateProductTypeCommand,
+)
+from src.catalog.product.application.queries.product_admin_queries import (
+    ProductAdminQueries,
+)
+from src.catalog.product.application.queries.product_attribute_queries import (
+    ProductAttributeQueries,
+)
 from src.catalog.product.application.queries.product_queries import ProductQueries
-from src.catalog.product.application.queries.product_type_admin_queries import ProductTypeAdminQueries
-from src.catalog.product.application.queries.product_type_queries import ProductTypeQueries
-from src.catalog.product.application.queries.product_attribute_queries import ProductAttributeQueries
+from src.catalog.product.application.queries.product_type_admin_queries import (
+    ProductTypeAdminQueries,
+)
+from src.catalog.product.application.queries.product_type_queries import (
+    ProductTypeQueries,
+)
 from src.catalog.product.container import container
 
 

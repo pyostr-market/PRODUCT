@@ -11,7 +11,9 @@ from src.catalog.category.application.dto.category import (
 from src.catalog.category.domain.aggregates.category import CategoryAggregate
 from src.catalog.category.infrastructure.models.categories import Category
 from src.catalog.category.infrastructure.models.category_image import CategoryImage
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
 from src.core.services.images.storage import S3ImageStorageService
 

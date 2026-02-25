@@ -3,8 +3,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.api.schemas.audit import ProductAuditListResponse, ProductAuditReadSchema
-from src.catalog.product.api.schemas.product_type import ProductTypeAuditListResponse, ProductTypeAuditReadSchema
+from src.catalog.product.api.schemas.audit import (
+    ProductAuditListResponse,
+    ProductAuditReadSchema,
+)
+from src.catalog.product.api.schemas.product_type import (
+    ProductTypeAuditListResponse,
+    ProductTypeAuditReadSchema,
+)
 from src.catalog.product.composition import ProductComposition
 from src.core.api.responses import api_response
 from src.core.auth.dependencies import require_permissions

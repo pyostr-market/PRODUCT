@@ -1,9 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.services.images.storage import S3ImageStorageService
-from src.uploads.application.read_models.upload_read_repository import UploadHistoryReadRepository
+from src.uploads.application.read_models.upload_read_repository import (
+    UploadHistoryReadRepository,
+)
 from src.uploads.application.upload_service import UploadService
-from src.uploads.infrastructure.orm.upload_history import SqlAlchemyUploadHistoryRepository
+from src.uploads.infrastructure.orm.upload_history import (
+    SqlAlchemyUploadHistoryRepository,
+)
 
 
 class UploadsComposition:

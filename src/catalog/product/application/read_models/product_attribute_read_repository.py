@@ -3,7 +3,9 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.application.dto.product_attribute import ProductAttributeReadDTO
+from src.catalog.product.application.dto.product_attribute import (
+    ProductAttributeReadDTO,
+)
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
 
 

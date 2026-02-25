@@ -1,5 +1,5 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
 from src.catalog.category.application.dto.category import (
@@ -11,7 +11,9 @@ from src.catalog.category.domain.aggregates.category import (
     CategoryAggregate,
     CategoryImageAggregate,
 )
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
@@ -52,7 +54,9 @@ class CreateCategoryCommand:
                 upload_record = result.scalar_one_or_none()
                 
                 if not upload_record:
-                    from src.catalog.category.domain.exceptions import CategoryInvalidImage
+                    from src.catalog.category.domain.exceptions import (
+                        CategoryInvalidImage,
+                    )
                     raise CategoryInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
                 
                 uploaded_images.append(CategoryImageAggregate(
@@ -131,7 +135,9 @@ class CreateCategoryCommand:
 
                 manufacturer_dto = None
                 if aggregate.manufacturer_id:
-                    from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
+                    from src.catalog.manufacturer.infrastructure.models.manufacturer import (
+                        Manufacturer,
+                    )
                     stmt = select(Manufacturer).where(Manufacturer.id == aggregate.manufacturer_id)
                     result = await self.db.execute(stmt)
                     manufacturer_model = result.scalar_one_or_none()

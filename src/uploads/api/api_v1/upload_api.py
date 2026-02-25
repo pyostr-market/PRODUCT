@@ -7,7 +7,10 @@ from src.core.api.responses import api_response
 from src.core.auth.dependencies import get_current_user
 from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
-from src.uploads.api.schemas.schemas import UploadHistoryReadSchema, UploadResponseSchema
+from src.uploads.api.schemas.schemas import (
+    UploadHistoryReadSchema,
+    UploadResponseSchema,
+)
 from src.uploads.application.upload_service import UploadService
 from src.uploads.composition import UploadsComposition
 

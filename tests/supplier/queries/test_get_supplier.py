@@ -95,7 +95,9 @@ async def test_get_supplier_403_no_permission():
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             # Создаём поставщика через прямой доступ к БД (минуя API)
             async with async_session() as session:
-                from src.catalog.suppliers.infrastructure.models.supplier import Supplier
+                from src.catalog.suppliers.infrastructure.models.supplier import (
+                    Supplier,
+                )
 
                 supplier = Supplier(
                     name="Permission Test",

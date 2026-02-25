@@ -973,7 +973,7 @@
 - Параметры:
   - Body (JSON):
     - `name: str` (обяз.)
-    - `parent_id: int | null`
+    - `parent_id: int | null` — ID родительского типа (для создания иерархии)
 - Успешный ответ (`200 OK`):
 ```json
 {
@@ -996,7 +996,7 @@
   - Path: `product_type_id: int` (обяз.)
   - Body (JSON):
     - `name: str | null`
-    - `parent_id: int | null`
+    - `parent_id: int | null` — ID родительского типа (для изменения иерархии)
 - Успешный ответ (`200 OK`):
 ```json
 {

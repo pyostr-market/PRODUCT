@@ -1,8 +1,14 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.api.schemas.product_type import ProductTypeListResponse, ProductTypeReadSchema
-from src.catalog.product.api.schemas.schemas import ProductListResponse, ProductReadSchema
+from src.catalog.product.api.schemas.product_type import (
+    ProductTypeListResponse,
+    ProductTypeReadSchema,
+)
+from src.catalog.product.api.schemas.schemas import (
+    ProductListResponse,
+    ProductReadSchema,
+)
 from src.catalog.product.composition import ProductComposition
 from src.core.api.responses import api_response
 from src.core.db.database import get_db

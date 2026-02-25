@@ -3,7 +3,9 @@ from typing import Optional
 
 from src.core.services.images import ImageStorageService
 from src.uploads.application.dto.upload import UploadCreateDTO, UploadHistoryReadDTO
-from src.uploads.application.read_models.upload_read_repository import UploadHistoryReadRepository
+from src.uploads.application.read_models.upload_read_repository import (
+    UploadHistoryReadRepository,
+)
 from src.uploads.domain.aggregates.upload_history import UploadHistoryAggregate
 from src.uploads.domain.repository.upload_history import UploadHistoryRepository
 
