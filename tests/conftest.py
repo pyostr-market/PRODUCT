@@ -40,6 +40,7 @@ def authorized_user():
         'category:create',
         'category:update',
         'category:delete',
+        'category_pricing_policy:audit',
         'category_pricing_policy:view',
         'category_pricing_policy:create',
         'category_pricing_policy:update',
@@ -207,6 +208,8 @@ async def cleanup_test_data(engine, image_storage_mock):
 
     # Очищаем данные ПЕРЕД каждым тестом
     async with engine.begin() as conn:
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policy_audit_logs CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_audit_logs CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policies CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attribute_values CASCADE"))

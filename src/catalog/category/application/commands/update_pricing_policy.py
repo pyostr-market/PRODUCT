@@ -4,10 +4,16 @@ from src.catalog.category.application.dto.pricing_policy import (
     CategoryPricingPolicyReadDTO,
     CategoryPricingPolicyUpdateDTO,
 )
+from src.catalog.category.application.dto.pricing_policy_audit import (
+    CategoryPricingPolicyAuditDTO,
+)
 from src.catalog.category.domain.exceptions import (
     CategoryPricingPolicyAlreadyExists,
     CategoryPricingPolicyInvalidRateValue,
     CategoryPricingPolicyNotFound,
+)
+from src.catalog.category.domain.repository.pricing_policy_audit import (
+    CategoryPricingPolicyAuditRepository,
 )
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
@@ -15,10 +21,17 @@ from src.core.events import AsyncEventBus, build_event
 
 class UpdateCategoryPricingPolicyCommand:
 
-    def __init__(self, repository, uow, event_bus: AsyncEventBus):
+    def __init__(
+        self,
+        repository,
+        uow,
+        event_bus: AsyncEventBus,
+        audit_repository: CategoryPricingPolicyAuditRepository,
+    ):
         self.repository = repository
         self.uow = uow
         self.event_bus = event_bus
+        self.audit_repository = audit_repository
 
     async def execute(
         self,
@@ -85,6 +98,18 @@ class UpdateCategoryPricingPolicyCommand:
                 "discount_percent": str(aggregate.discount_percent) if aggregate.discount_percent else None,
                 "tax_rate": str(aggregate.tax_rate),
             }
+
+            # Логируем аудит
+            await self.audit_repository.log(
+                CategoryPricingPolicyAuditDTO(
+                    pricing_policy_id=aggregate.id,
+                    action="update",
+                    old_data=old_data,
+                    new_data=new_data,
+                    user_id=user.id,
+                    fio=user.fio,
+                )
+            )
 
             result = CategoryPricingPolicyReadDTO(
                 id=aggregate.id,

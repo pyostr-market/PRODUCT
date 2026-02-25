@@ -20,6 +20,9 @@ from src.catalog.category.application.queries.category_admin_queries import (
     CategoryAdminQueries,
 )
 from src.catalog.category.application.queries.category_queries import CategoryQueries
+from src.catalog.category.application.queries.pricing_policy_admin_queries import (
+    CategoryPricingPolicyAdminQueries,
+)
 from src.catalog.category.application.queries.pricing_policy_queries import (
     CategoryPricingPolicyQueries,
 )
@@ -75,3 +78,8 @@ class CategoryPricingPolicyComposition:
     def build_queries(db):
         scope = container.create_scope()
         return scope.resolve(CategoryPricingPolicyQueries, db=db)
+
+    @staticmethod
+    def build_admin_queries(db):
+        scope = container.create_scope()
+        return scope.resolve(CategoryPricingPolicyAdminQueries, db=db)

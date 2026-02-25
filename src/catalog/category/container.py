@@ -20,6 +20,9 @@ from src.catalog.category.application.queries.category_admin_queries import (
     CategoryAdminQueries,
 )
 from src.catalog.category.application.queries.category_queries import CategoryQueries
+from src.catalog.category.application.queries.pricing_policy_admin_queries import (
+    CategoryPricingPolicyAdminQueries,
+)
 from src.catalog.category.application.queries.pricing_policy_queries import (
     CategoryPricingPolicyQueries,
 )
@@ -34,6 +37,9 @@ from src.catalog.category.domain.repository.category import CategoryRepository
 from src.catalog.category.domain.repository.pricing_policy import (
     CategoryPricingPolicyRepository,
 )
+from src.catalog.category.domain.repository.pricing_policy_audit import (
+    CategoryPricingPolicyAuditRepository,
+)
 from src.catalog.category.infrastructure.orm.category import (
     SqlAlchemyCategoryRepository,
 )
@@ -42,6 +48,9 @@ from src.catalog.category.infrastructure.orm.category_audit import (
 )
 from src.catalog.category.infrastructure.orm.pricing_policy import (
     SqlAlchemyCategoryPricingPolicyRepository,
+)
+from src.catalog.category.infrastructure.orm.pricing_policy_audit import (
+    SqlAlchemyCategoryPricingPolicyAuditRepository,
 )
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
@@ -155,6 +164,7 @@ container.register(
         repository=scope.resolve(CategoryPricingPolicyRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        audit_repository=scope.resolve(CategoryPricingPolicyAuditRepository, db=db),
     ),
 )
 
@@ -164,6 +174,7 @@ container.register(
         repository=scope.resolve(CategoryPricingPolicyRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        audit_repository=scope.resolve(CategoryPricingPolicyAuditRepository, db=db),
     ),
 )
 
@@ -173,5 +184,20 @@ container.register(
         repository=scope.resolve(CategoryPricingPolicyRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        audit_repository=scope.resolve(CategoryPricingPolicyAuditRepository, db=db),
     ),
+)
+
+# ----------------------------
+# Category Pricing Policy Audit
+# ----------------------------
+
+container.register(
+    CategoryPricingPolicyAuditRepository,
+    lambda scope, db: SqlAlchemyCategoryPricingPolicyAuditRepository(db),
+)
+
+container.register(
+    CategoryPricingPolicyAdminQueries,
+    lambda scope, db: CategoryPricingPolicyAdminQueries(db),
 )
