@@ -1,26 +1,47 @@
 from src.catalog.category.application.commands.create_category import (
     CreateCategoryCommand,
 )
+from src.catalog.category.application.commands.create_pricing_policy import (
+    CreateCategoryPricingPolicyCommand,
+)
 from src.catalog.category.application.commands.delete_category import (
     DeleteCategoryCommand,
 )
+from src.catalog.category.application.commands.delete_pricing_policy import (
+    DeleteCategoryPricingPolicyCommand,
+)
 from src.catalog.category.application.commands.update_category import (
     UpdateCategoryCommand,
+)
+from src.catalog.category.application.commands.update_pricing_policy import (
+    UpdateCategoryPricingPolicyCommand,
 )
 from src.catalog.category.application.queries.category_admin_queries import (
     CategoryAdminQueries,
 )
 from src.catalog.category.application.queries.category_queries import CategoryQueries
+from src.catalog.category.application.queries.pricing_policy_queries import (
+    CategoryPricingPolicyQueries,
+)
 from src.catalog.category.application.read_models.category_read_repository import (
     CategoryReadRepository,
 )
+from src.catalog.category.application.read_models.pricing_policy_read_repository import (
+    CategoryPricingPolicyReadRepository,
+)
 from src.catalog.category.domain.repository.audit import CategoryAuditRepository
 from src.catalog.category.domain.repository.category import CategoryRepository
+from src.catalog.category.domain.repository.pricing_policy import (
+    CategoryPricingPolicyRepository,
+)
 from src.catalog.category.infrastructure.orm.category import (
     SqlAlchemyCategoryRepository,
 )
 from src.catalog.category.infrastructure.orm.category_audit import (
     SqlAlchemyCategoryAuditRepository,
+)
+from src.catalog.category.infrastructure.orm.pricing_policy import (
+    SqlAlchemyCategoryPricingPolicyRepository,
 )
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
@@ -105,4 +126,52 @@ container.register(
 container.register(
     CategoryAdminQueries,
     lambda scope, db: CategoryAdminQueries(db),
+)
+
+# ----------------------------
+# Category Pricing Policy registration
+# ----------------------------
+
+container.register(
+    CategoryPricingPolicyRepository,
+    lambda scope, db: SqlAlchemyCategoryPricingPolicyRepository(db),
+)
+
+container.register(
+    CategoryPricingPolicyReadRepository,
+    lambda scope, db: CategoryPricingPolicyReadRepository(db),
+)
+
+container.register(
+    CategoryPricingPolicyQueries,
+    lambda scope, db: CategoryPricingPolicyQueries(
+        read_repository=scope.resolve(CategoryPricingPolicyReadRepository, db=db),
+    ),
+)
+
+container.register(
+    CreateCategoryPricingPolicyCommand,
+    lambda scope, db: CreateCategoryPricingPolicyCommand(
+        repository=scope.resolve(CategoryPricingPolicyRepository, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
+)
+
+container.register(
+    UpdateCategoryPricingPolicyCommand,
+    lambda scope, db: UpdateCategoryPricingPolicyCommand(
+        repository=scope.resolve(CategoryPricingPolicyRepository, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
+)
+
+container.register(
+    DeleteCategoryPricingPolicyCommand,
+    lambda scope, db: DeleteCategoryPricingPolicyCommand(
+        repository=scope.resolve(CategoryPricingPolicyRepository, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
 )

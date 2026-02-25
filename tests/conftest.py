@@ -40,6 +40,10 @@ def authorized_user():
         'category:create',
         'category:update',
         'category:delete',
+        'category_pricing_policy:view',
+        'category_pricing_policy:create',
+        'category_pricing_policy:update',
+        'category_pricing_policy:delete',
         'product:audit',
         'product:create',
         'product:update',
@@ -200,9 +204,10 @@ async def cleanup_test_data(engine, image_storage_mock):
     """Очистка данных между тестами."""
     # Сбрасываем счётчик изображений
     image_storage_mock.reset()
-    
+
     # Очищаем данные ПЕРЕД каждым тестом
     async with engine.begin() as conn:
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policies CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attribute_values CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attributes CASCADE"))
@@ -211,10 +216,11 @@ async def cleanup_test_data(engine, image_storage_mock):
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM manufacturers CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM suppliers CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_types CASCADE"))
-    
+
     yield
     # Очищаем данные ПОСЛЕ каждого теста (для безопасности)
     # async with engine.begin() as conn:
+    #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policies CASCADE"))
     #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))
     #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attribute_values CASCADE"))
     #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attributes CASCADE"))

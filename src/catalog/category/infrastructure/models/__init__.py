@@ -3,4 +3,9 @@ from .categories import Category
 from .category_image import CategoryImage
 from .categories_pricing import CategoryPricingPolicy
 
-__all__ = ["CategoryAuditLog"]
+__all__ = [
+    "CategoryAuditLog",
+    "Category",
+    "CategoryImage",
+    "CategoryPricingPolicy",
+]

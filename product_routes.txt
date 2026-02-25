@@ -1198,3 +1198,157 @@ GET /category?name=book         # Найдёт: "MacBook", "Notebook"
 ## Примечание по авторизации
 - В этом сервисе нет собственных роутов `/auth/*`.
 - Защищённые роуты ожидают Bearer JWT в `Authorization` и при необходимости проверяют permission через `require_permissions(...)`.
+
+## Тарификация категории
+
+### 37) GET `/category-pricing-policy/{pricing_policy_id}`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `category_pricing_policy:view`
+- Параметры:
+  - Path: `pricing_policy_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "category_id": int,
+    "markup_fixed": number | null,
+    "markup_percent": number | null,
+    "commission_percent": number | null,
+    "discount_percent": number | null,
+    "tax_rate": number
+  }
+}
+```
+- Возможные ошибки:
+  - `403` — Недостаточно прав
+  - `404` — Политика ценообразования не найдена
+
+### 38) GET `/category-pricing-policy/by-category/{category_id}`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `category_pricing_policy:view`
+- Параметры:
+  - Path: `category_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "category_id": int,
+    "markup_fixed": number | null,
+    "markup_percent": number | null,
+    "commission_percent": number | null,
+    "discount_percent": number | null,
+    "tax_rate": number
+  }
+}
+```
+- Возможные ошибки:
+  - `403` — Недостаточно прав
+  - `404` — Политика ценообразования не найдена
+
+### 39) GET `/category-pricing-policy`
+- Метод: `GET`
+- Доступ: `Требуемое право` = `category_pricing_policy:view`
+- Параметры:
+  - Query:
+    - `category_id: int | null` — фильтр по ID категории
+    - `limit: int = 10` (max 100)
+    - `offset: int = 0`
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "total": int,
+    "items": [
+      {
+        "id": int,
+        "category_id": int,
+        "markup_fixed": number | null,
+        "markup_percent": number | null,
+        "commission_percent": number | null,
+        "discount_percent": number | null,
+        "tax_rate": number
+      }
+    ]
+  }
+}
+```
+
+### 40) POST `/category-pricing-policy`
+- Метод: `POST`
+- Доступ: `Требуемое право` = `category_pricing_policy:create`
+- Параметры:
+  - Body (JSON):
+    - `category_id: int` (обяз.) — ID категории (уникальное значение)
+    - `markup_fixed: number | null` — фиксированная наценка
+    - `markup_percent: number | null` — наценка в процентах (0-100)
+    - `commission_percent: number | null` — комиссия маркетплейса в процентах (0-100)
+    - `discount_percent: number | null` — скидка категории в процентах (0-100)
+    - `tax_rate: number = 0.00` — ставка НДС (0-100)
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "category_id": int,
+    "markup_fixed": number | null,
+    "markup_percent": number | null,
+    "commission_percent": number | null,
+    "discount_percent": number | null,
+    "tax_rate": number
+  }
+}
+```
+- Возможные ошибки:
+  - `400` — Некорректные данные (значение вне диапазона 0-100 или категория не найдена)
+  - `403` — Недостаточно прав
+  - `409` — Политика уже существует для этой категории
+
+### 41) PUT `/category-pricing-policy/{pricing_policy_id}`
+- Метод: `PUT`
+- Доступ: `Требуемое право` = `category_pricing_policy:update`
+- Параметры:
+  - Path: `pricing_policy_id: int` (обяз.)
+  - Body (JSON):
+    - `markup_fixed: number | null`
+    - `markup_percent: number | null` (0-100)
+    - `commission_percent: number | null` (0-100)
+    - `discount_percent: number | null` (0-100)
+    - `tax_rate: number | null` (0-100)
+- Успешный ответ (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "id": int,
+    "category_id": int,
+    "markup_fixed": number | null,
+    "markup_percent": number | null,
+    "commission_percent": number | null,
+    "discount_percent": number | null,
+    "tax_rate": number
+  }
+}
+```
+- Возможные ошибки:
+  - `400` — Некорректные данные (значение вне диапазона 0-100)
+  - `403` — Недостаточно прав
+  - `404` — Политика ценообразования не найдена
+
+### 42) DELETE `/category-pricing-policy/{pricing_policy_id}`
+- Метод: `DELETE`
+- Доступ: `Требуемое право` = `category_pricing_policy:delete`
+- Параметры:
+  - Path: `pricing_policy_id: int` (обяз.)
+- Успешный ответ (`200 OK`):
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+- Возможные ошибки:
+  - `403` — Недостаточно прав
+  - `404` — Политика ценообразования не найдена

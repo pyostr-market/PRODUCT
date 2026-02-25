@@ -73,3 +73,41 @@ class CategoryReadSchema(BaseModel):
 class CategoryListResponse(BaseModel):
     total: int
     items: List[CategoryReadSchema]
+
+
+# ----------------------------
+# Category Pricing Policy Schemas
+# ----------------------------
+
+class CategoryPricingPolicyCreateSchema(BaseModel):
+    category_id: int
+    markup_fixed: Optional[float] = None
+    markup_percent: Optional[float] = None
+    commission_percent: Optional[float] = None
+    discount_percent: Optional[float] = None
+    tax_rate: float = 0.00
+
+
+class CategoryPricingPolicyUpdateSchema(BaseModel):
+    markup_fixed: Optional[float] = None
+    markup_percent: Optional[float] = None
+    commission_percent: Optional[float] = None
+    discount_percent: Optional[float] = None
+    tax_rate: Optional[float] = None
+
+
+class CategoryPricingPolicyReadSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    category_id: int
+    markup_fixed: Optional[float] = None
+    markup_percent: Optional[float] = None
+    commission_percent: Optional[float] = None
+    discount_percent: Optional[float] = None
+    tax_rate: float
+
+
+class CategoryPricingPolicyListResponse(BaseModel):
+    total: int
+    items: List[CategoryPricingPolicyReadSchema]
