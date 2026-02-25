@@ -30,5 +30,5 @@ class CategoryPricingPolicy(TimestampMixin, Base):
 
     category = relationship(
         "Category",
-        back_populates="category_pricing_policies",
+        back_populates="category_pricing_policy",
     )
