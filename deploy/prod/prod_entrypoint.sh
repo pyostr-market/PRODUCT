@@ -8,5 +8,5 @@ export ENVIRONMENT_SLUG=prod
 
 exec gunicorn src.mount:app \
   -k uvicorn.workers.UvicornWorker \
-  -w 4 \
+  -w 1 \
   -b 0.0.0.0:8000
