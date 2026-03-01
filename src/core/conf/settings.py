@@ -55,10 +55,6 @@ class Settings(BaseSettings):
     JWT_PRIVATE_KEY: str
     JWT_PUBLIC_KEY: str
 
-    JWT_ACCESS_EXPIRE_MINUTES: int = 15
-    JWT_REFRESH_EXPIRE_DAYS: int = 7
-
-
     # ===============================
     # S3
     # ===============================

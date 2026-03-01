@@ -287,7 +287,8 @@ async def create(
 ):
     images_dto = await _parse_images_json(images_json) if images_json else []
     attributes_dto = _parse_attributes(attributes_json)
-
+    print(images_json)
+    print(images_dto)
     commands = ProductComposition.build_create_command(db)
     dto = await commands.execute(
         ProductCreateDTO(
