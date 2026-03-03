@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -280,12 +282,11 @@ async def filter_products(
         None,
         description="JSON-объект с атрибутами для фильтрации, например: {\"RAM\": \"8 GB\", \"Color\": \"Black\"}"
     ),
-    limit: int = Query(10, le=100),
+    limit: int = Query(10),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db),
 ):
-    import json
-    
+
     attributes_dict = None
     if attributes:
         try:
