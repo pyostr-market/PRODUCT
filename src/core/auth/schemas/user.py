@@ -8,6 +8,7 @@ class TokenSchema:
     iat: int
     type: str
     fio: Optional[str] = None
+    version: Optional[int] = None
 
 @dataclass
 class UserPermissionSchema:
