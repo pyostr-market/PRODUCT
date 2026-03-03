@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.catalog.product.api.schemas.export import ExportCatalogResponse
 from src.catalog.product.api.schemas.audit import (
     ProductAuditListResponse,
     ProductAuditReadSchema,
@@ -160,5 +161,24 @@ async def get_product_type_audit_logs(
         ProductTypeAuditListResponse(
             total=total,
             items=[ProductTypeAuditReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@admin_product_router.get(
+    "/catalog/export",
+    summary="Полная выгрузка каталога",
+    response_model=ExportCatalogResponse,
+)
+async def export_catalog(
+    db: AsyncSession = Depends(get_db),
+):
+    repo = ProductComposition.build_queries(db)
+    rows = await repo.read_repository.export_full_catalog()
+
+    return api_response(
+        ExportCatalogResponse(
+            total=len(rows),
+            items=rows,
         )
     )

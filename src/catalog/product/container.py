@@ -1,3 +1,12 @@
+from redis.asyncio import Redis
+
+from src.core.cache.base import Cache
+from src.core.cache.memory import InMemoryCache
+from src.core.cache.redis import RedisCache
+from src.core.cache.redis_client import RedisClientFactory
+from src.catalog.category.domain.repository.category import CategoryRepository
+from src.catalog.category.infrastructure.orm.category import SqlAlchemyCategoryRepository
+from src.catalog.product.infrastructure.orm.cache.cached_product import CachedProductRepository
 from src.catalog.product.application.commands.create_product import CreateProductCommand
 from src.catalog.product.application.commands.create_product_attribute import (
     CreateProductAttributeCommand,
@@ -46,7 +55,12 @@ from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.domain.repository.product_attribute import (
     ProductAttributeRepository,
 )
+from src.catalog.product.domain.repository.product_attribute_read import ProductAttributeReadRepositoryInterface
+from src.catalog.product.domain.repository.product_read import ProductReadRepositoryInterface
 from src.catalog.product.domain.repository.product_type import ProductTypeRepository
+from src.catalog.product.domain.repository.product_type_read import ProductTypeReadRepositoryInterface
+from src.catalog.product.domain.repository.product_audit_query import ProductAuditQueryRepository
+from src.catalog.product.domain.repository.product_type_audit_query import ProductTypeAuditQueryRepository
 from src.catalog.product.infrastructure.orm.product import SqlAlchemyProductRepository
 from src.catalog.product.infrastructure.orm.product_attribute import (
     SqlAlchemyProductAttributeRepository,
@@ -57,6 +71,15 @@ from src.catalog.product.infrastructure.orm.product_audit import (
 from src.catalog.product.infrastructure.orm.product_type import (
     SqlAlchemyProductTypeRepository,
 )
+from src.catalog.product.infrastructure.orm.product_read import SqlAlchemyProductReadRepository
+from src.catalog.product.infrastructure.orm.product_type_read import SqlAlchemyProductTypeReadRepository
+from src.catalog.product.infrastructure.orm.product_attribute_read import SqlAlchemyProductAttributeReadRepository
+from src.catalog.product.infrastructure.orm.product_audit_query import SqlAlchemyProductAuditQueryRepository
+from src.catalog.product.infrastructure.orm.product_type_audit_query import SqlAlchemyProductTypeAuditQueryRepository
+from src.catalog.suppliers.domain.repository.supplier import SupplierRepository
+from src.catalog.suppliers.infrastructure.orm.supplier import SqlAlchemySupplierRepository
+from src.uploads.domain.repository.upload_history import UploadHistoryRepository
+from src.uploads.infrastructure.orm.upload_history import SqlAlchemyUploadHistoryRepository
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus
@@ -64,11 +87,35 @@ from src.core.services.images import ImageStorageService, S3ImageStorageService
 
 container = ServiceContainer()
 
+# container.register(
+#     ProductRepository,
+#     lambda scope, db: SqlAlchemyProductRepository(db),
+# )
+
+
 container.register(
-    ProductRepository,
-    lambda scope, db: SqlAlchemyProductRepository(db),
+    Redis,
+    lambda scope, db: RedisClientFactory.get_client(),
 )
 
+container.register(
+    Cache,
+    lambda scope, db: (
+        InMemoryCache()
+        # RedisCache(scope.resolve(Redis, db=db))
+        # if settings.REDIS_ENABLED
+        # else InMemoryCache()
+    ),
+)
+
+container.register(
+    ProductRepository,
+    lambda scope, db: CachedProductRepository(
+        db_repository=SqlAlchemyProductRepository(db),
+        cache=scope.resolve(Cache, db=db),
+        ttl=300,
+    ),
+)
 container.register(
     ProductTypeRepository,
     lambda scope, db: SqlAlchemyProductTypeRepository(db),
@@ -95,19 +142,58 @@ container.register(
 )
 
 container.register(
+    ProductReadRepositoryInterface,
+    lambda scope, db: SqlAlchemyProductReadRepository(db),
+)
+
+container.register(
     ProductReadRepository,
-    lambda scope, db: ProductReadRepository(db),
+    lambda scope, db: ProductReadRepository(
+        repository=scope.resolve(ProductReadRepositoryInterface, db=db),
+    ),
+)
+
+container.register(
+    ProductTypeReadRepositoryInterface,
+    lambda scope, db: SqlAlchemyProductTypeReadRepository(db),
 )
 
 container.register(
     ProductTypeReadRepository,
-    lambda scope, db: ProductTypeReadRepository(db),
+    lambda scope, db: ProductTypeReadRepository(
+        repository=scope.resolve(ProductTypeReadRepositoryInterface, db=db),
+    ),
+)
+
+
+container.register(
+    ProductAttributeReadRepositoryInterface,
+    lambda scope, db: SqlAlchemyProductAttributeReadRepository(db),
 )
 
 container.register(
     ProductAttributeReadRepository,
-    lambda scope, db: ProductAttributeReadRepository(db),
+    lambda scope, db: ProductAttributeReadRepository(
+        repository=scope.resolve(ProductAttributeReadRepositoryInterface, db=db),
+    ),
 )
+
+# Репозитории для связанных сущностей
+container.register(
+    CategoryRepository,
+    lambda scope, db: SqlAlchemyCategoryRepository(db),
+)
+
+container.register(
+    SupplierRepository,
+    lambda scope, db: SqlAlchemySupplierRepository(db),
+)
+
+container.register(
+    UploadHistoryRepository,
+    lambda scope, db: SqlAlchemyUploadHistoryRepository(db),
+)
+
 
 container.register(
     ProductQueries,
@@ -140,7 +226,10 @@ container.register(
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
-        db=db,
+        upload_history_repository=scope.resolve(UploadHistoryRepository, db=db),
+        category_repository=scope.resolve(CategoryRepository, db=db),
+        supplier_repository=scope.resolve(SupplierRepository, db=db),
+        product_type_repository=scope.resolve(ProductTypeRepository, db=db),
     ),
 )
 
@@ -151,7 +240,6 @@ container.register(
         audit_repository=scope.resolve(ProductAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
-        db=db,
     ),
 )
 
@@ -173,7 +261,10 @@ container.register(
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
-        db=db,
+        upload_history_repository=scope.resolve(UploadHistoryRepository, db=db),
+        category_repository=scope.resolve(CategoryRepository, db=db),
+        supplier_repository=scope.resolve(SupplierRepository, db=db),
+        product_type_repository=scope.resolve(ProductTypeRepository, db=db),
     ),
 )
 
@@ -184,7 +275,6 @@ container.register(
         audit_repository=scope.resolve(ProductAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
-        db=db,
     ),
 )
 
@@ -235,11 +325,25 @@ container.register(
 )
 
 container.register(
+    ProductAuditQueryRepository,
+    lambda scope, db: SqlAlchemyProductAuditQueryRepository(db),
+)
+
+container.register(
     ProductAdminQueries,
-    lambda scope, db: ProductAdminQueries(db),
+    lambda scope, db: ProductAdminQueries(
+        repository=scope.resolve(ProductAuditQueryRepository, db=db),
+    ),
+)
+
+container.register(
+    ProductTypeAuditQueryRepository,
+    lambda scope, db: SqlAlchemyProductTypeAuditQueryRepository(db),
 )
 
 container.register(
     ProductTypeAdminQueries,
-    lambda scope, db: ProductTypeAdminQueries(db),
+    lambda scope, db: ProductTypeAdminQueries(
+        repository=scope.resolve(ProductTypeAuditQueryRepository, db=db),
+    ),
 )

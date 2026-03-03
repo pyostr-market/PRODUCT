@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, Column, ForeignKey, String, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 
 from src.core.db.database import Base
@@ -13,6 +13,8 @@ class ProductAttributeValue(TimestampMixin, Base):
             "attribute_id",
             name="uq_product_attribute_value_per_product",
         ),
+        Index("ix_pav_product_id", "product_id"),
+        Index("ix_pav_attribute_id", "attribute_id",)
     )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)

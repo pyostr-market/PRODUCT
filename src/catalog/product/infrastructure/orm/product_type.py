@@ -2,6 +2,7 @@ from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.domain.exceptions import ProductTypeNotFound
@@ -16,6 +17,16 @@ class SqlAlchemyProductTypeRepository(ProductTypeRepository):
 
     async def get(self, product_type_id: int) -> Optional[ProductTypeAggregate]:
         model = await self.db.get(ProductType, product_type_id)
+        if not model:
+            return None
+        return self._to_aggregate(model)
+
+    async def get_with_parent(self, product_type_id: int) -> Optional[ProductTypeAggregate]:
+        stmt = select(ProductType).options(
+            selectinload(ProductType.parent)
+        ).where(ProductType.id == product_type_id)
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
         if not model:
             return None
         return self._to_aggregate(model)
