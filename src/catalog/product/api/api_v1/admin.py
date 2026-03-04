@@ -3,7 +3,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.api.schemas.export import ExportCatalogResponse
+from src.catalog.product.api.schemas.export import ExportCatalogResponse, ExportCategorySchema, ExportSupplierSchema, \
+    ExportProductTypeSchema, ExportProductSchema
 from src.catalog.product.api.schemas.audit import (
     ProductAuditListResponse,
     ProductAuditReadSchema,
@@ -169,6 +170,7 @@ async def get_product_type_audit_logs(
     "/catalog/export",
     summary="Полная выгрузка каталога",
     response_model=ExportCatalogResponse,
+    dependencies=[Depends(require_permissions("product:export"))],
 )
 async def export_catalog(
     db: AsyncSession = Depends(get_db),
@@ -176,9 +178,34 @@ async def export_catalog(
     repo = ProductComposition.build_queries(db)
     rows = await repo.read_repository.export_full_catalog()
 
+    items = []
+
+    for r in rows:
+        items.append(
+            ExportProductSchema(
+                id=r["id"],
+                name=r["name"],
+                price=r["price"],
+                description=r.get("description"),
+                category=ExportCategorySchema(
+                    id=r["category_id"],
+                    name=r["category_name"],
+                ) if r["category_id"] else None,
+                supplier=ExportSupplierSchema(
+                    id=r["supplier_id"],
+                    name=r["supplier_name"],
+                ) if r["supplier_id"] else None,
+                product_type=ExportProductTypeSchema(
+                    id=r["product_type_id"],
+                    name=r["product_type_name"],
+                ) if r["product_type_id"] else None,
+                attributes=r["attributes"],
+            )
+        )
+
     return api_response(
         ExportCatalogResponse(
-            total=len(rows),
-            items=rows,
+            total=len(items),
+            items=items,
         )
     )

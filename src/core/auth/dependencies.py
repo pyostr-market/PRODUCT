@@ -46,7 +46,7 @@ async def get_current_user(
     exp = payload.get("exp")
     iat = payload.get("iat")
     sub = payload.get("sub")
-    version = payload.get("version")
+    version = payload.get("ver")
     fio = payload.get("fio")
 
     if not sub:
@@ -89,7 +89,7 @@ async def get_current_user(
             iat=iat,
             type=payload.get("type"),
             fio=fio,
-            version=version,
+            ver=version,
         ),
         permissions=[
             UserPermissionSchema(id=p.id, name=p.name)
