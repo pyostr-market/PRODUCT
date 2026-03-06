@@ -10,7 +10,7 @@ async def test_create_supplier_200(authorized_client):
         json={
             "name": "Apple поставщик",
             "contact_email": "apple@test.com",
-            "phone": "+15550001",
+            "phone": "+15550001234",
         },
     )
 
@@ -25,7 +25,7 @@ async def test_create_supplier_200(authorized_client):
 
     assert supplier.name == "Apple поставщик"
     assert supplier.contact_email == "apple@test.com"
-    assert supplier.phone == "+15550001"
+    assert supplier.phone == "+15550001234"
     assert isinstance(supplier.id, int)
 
 
@@ -34,7 +34,7 @@ async def test_create_supplier_409_already_exists(authorized_client):
     payload = {
         "name": "Samsung",
         "contact_email": "samsung@test.com",
-        "phone": "+15550002",
+        "phone": "+15550002345",
     }
 
     first = await authorized_client.post("/supplier", json=payload)
@@ -62,7 +62,7 @@ async def test_create_supplier_400_name_too_short(authorized_client):
         json={
             "name": "A",
             "contact_email": "short@test.com",
-            "phone": "+15550003",
+            "phone": "+15550003456",
         },
     )
 

@@ -1,5 +1,4 @@
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
 
 from src.catalog.category.application.dto.audit import CategoryAuditDTO
 from src.catalog.category.application.dto.category import (
@@ -11,13 +10,19 @@ from src.catalog.category.domain.aggregates.category import (
     CategoryAggregate,
     CategoryImageAggregate,
 )
+from src.catalog.category.domain.events.category_events import (
+    CategoryCreatedEvent,
+    CategoryImageAddedEvent,
+)
+from src.catalog.category.infrastructure.services.related_data_loader import (
+    CategoryRelatedDataLoader,
+)
 from src.catalog.manufacturer.domain.aggregates.manufacturer import (
     ManufacturerAggregate,
 )
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images import ImageStorageService
-from src.uploads.infrastructure.models.upload_history import UploadHistory
 
 
 class CreateCategoryCommand:
@@ -29,14 +34,14 @@ class CreateCategoryCommand:
         uow,
         image_storage: ImageStorageService,
         event_bus: AsyncEventBus,
-        db: AsyncSession,
+        data_loader: CategoryRelatedDataLoader,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.uow = uow
         self.image_storage = image_storage
         self.event_bus = event_bus
-        self.db = db
+        self.data_loader = data_loader
 
     async def execute(
         self,
@@ -46,21 +51,12 @@ class CreateCategoryCommand:
         uploaded_images: list[CategoryImageAggregate] = []
 
         for image in dto.images:
-            # Используем предварительно загруженное изображение
-            stmt = select(UploadHistory).where(UploadHistory.id == image.upload_id)
-            result = await self.db.execute(stmt)
-            upload_record = result.scalar_one_or_none()
-
-            if not upload_record:
-                from src.catalog.category.domain.exceptions import (
-                    CategoryInvalidImage,
-                )
-                raise CategoryInvalidImage(details={"reason": "upload_not_found", "upload_id": image.upload_id})
-
+            upload_id, object_key = await self.data_loader.get_upload_info(image.upload_id)
+            
             uploaded_images.append(CategoryImageAggregate(
-                upload_id=upload_record.id,
+                upload_id=upload_id,
                 ordering=image.ordering,
-                object_key=upload_record.file_path,
+                object_key=object_key,
             ))
 
         try:
@@ -95,33 +91,14 @@ class CreateCategoryCommand:
                     )
                 )
 
-                # Загружаем данные для parent и manufacturer
+                # Загружаем данные для parent и manufacturer через сервис
                 parent_dto = None
                 if aggregate.parent_id:
-                    parent_agg = await self.repository.get(aggregate.parent_id)
-                    if parent_agg:
-                        parent_dto = CategoryAggregate(
-                            category_id=parent_agg.id,
-                            name=parent_agg.name,
-                            description=parent_agg.description,
-                            parent_id=parent_agg.parent_id,
-                            manufacturer_id=parent_agg.manufacturer_id,
-                        )
+                    parent_dto = await self.data_loader.get_parent_category(aggregate.parent_id)
 
                 manufacturer_dto = None
                 if aggregate.manufacturer_id:
-                    from src.catalog.manufacturer.infrastructure.models.manufacturer import (
-                        Manufacturer,
-                    )
-                    stmt = select(Manufacturer).where(Manufacturer.id == aggregate.manufacturer_id)
-                    result = await self.db.execute(stmt)
-                    manufacturer_model = result.scalar_one_or_none()
-                    if manufacturer_model:
-                        manufacturer_dto = ManufacturerAggregate(
-                            manufacturer_id=manufacturer_model.id,
-                            name=manufacturer_model.name,
-                            description=manufacturer_model.description,
-                        )
+                    manufacturer_dto = await self.data_loader.get_manufacturer(aggregate.manufacturer_id)
 
                 result = CategoryReadDTO(
                     id=aggregate.id,
@@ -139,41 +116,86 @@ class CreateCategoryCommand:
                     parent=parent_dto,
                     manufacturer=manufacturer_dto,
                 )
+
+                # Получаем доменные события из агрегата
+                domain_events = aggregate.get_events()
+
         except Exception:
             raise
 
-        self.event_bus.publish_many_nowait(
-            [
-                build_event(
-                    event_type="crud",
-                    method="create",
-                    app="categories",
-                    entity="category",
-                    entity_id=result.id,
-                    data={
-                        "category_id": result.id,
-                        "fields": {
-                            "name": result.name,
-                            "description": result.description,
-                            "parent_id": parent_dto.id if parent_dto else None,
-                            "manufacturer_id": manufacturer_dto.id if manufacturer_dto else None,
-                        },
-                    },
-                ),
-                build_event(
-                    event_type="crud",
-                    method="create",
-                    app="images",
-                    entity="category_images",
-                    entity_id=result.id,
-                    data={
-                        "category_id": result.id,
-                        "images": [
-                            {"image_key": image.image_key, "ordering": image.ordering}
-                            for image in result.images
-                        ],
-                    },
-                ),
-            ]
-        )
+        # Публикуем события на основе доменных событий
+        events = self._build_domain_events(aggregate, domain_events)
+        if events:
+            self.event_bus.publish_many_nowait(events)
+
         return result
+
+    def _build_domain_events(
+        self,
+        aggregate: CategoryAggregate,
+        domain_events: list,
+    ) -> list[dict[str, Any]]:
+        """Преобразовать доменные события в события для публикации."""
+        events: list[dict[str, Any]] = []
+
+        for event in domain_events:
+            if isinstance(event, CategoryCreatedEvent):
+                events.extend(self._build_category_created_events(aggregate))
+            elif isinstance(event, CategoryImageAddedEvent):
+                events.append(self._build_image_event("create", aggregate.id, event.upload_id))
+
+        return events
+
+    def _build_category_created_events(self, aggregate: CategoryAggregate) -> list[dict[str, Any]]:
+        """Построить события для созданной категории."""
+        return [
+            build_event(
+                event_type="crud",
+                method="create",
+                app="categories",
+                entity="category",
+                entity_id=aggregate.id,
+                data={
+                    "category_id": aggregate.id,
+                    "fields": {
+                        "name": aggregate.name,
+                        "description": aggregate.description,
+                        "parent_id": aggregate.parent_id,
+                        "manufacturer_id": aggregate.manufacturer_id,
+                    },
+                },
+            ),
+            build_event(
+                event_type="crud",
+                method="create",
+                app="images",
+                entity="category_images",
+                entity_id=aggregate.id,
+                data={
+                    "category_id": aggregate.id,
+                    "images": [
+                        {"upload_id": image.upload_id, "ordering": image.ordering}
+                        for image in aggregate.images
+                    ],
+                },
+            ),
+        ]
+
+    def _build_image_event(
+        self,
+        method: str,
+        category_id: int,
+        upload_id: int,
+    ) -> dict[str, Any]:
+        """Построить событие для изображения."""
+        return build_event(
+            event_type="crud",
+            method=method,
+            app="images",
+            entity="category_images",
+            entity_id=category_id,
+            data={
+                "category_id": category_id,
+                "images": [{"upload_id": upload_id}],
+            },
+        )

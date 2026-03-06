@@ -1,9 +1,14 @@
+from typing import Any
+
 from src.catalog.suppliers.application.dto.audit import SupplierAuditDTO
 from src.catalog.suppliers.application.dto.supplier import (
     SupplierCreateDTO,
     SupplierReadDTO,
 )
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+from src.catalog.suppliers.domain.events.supplier_events import (
+    SupplierCreatedEvent,
+)
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 
@@ -53,21 +58,49 @@ class CreateSupplierCommand:
                 phone=aggregate.phone,
             )
 
-        self.event_bus.publish_nowait(
+            # Получаем доменные события из агрегата
+            domain_events = aggregate.get_events()
+
+        # Публикуем события на основе доменных событий
+        events = self._build_domain_events(aggregate, domain_events)
+        if events:
+            self.event_bus.publish_many_nowait(events)
+
+        return result
+
+    def _build_domain_events(
+        self,
+        aggregate: SupplierAggregate,
+        domain_events: list,
+    ) -> list[dict[str, Any]]:
+        """Преобразовать доменные события в события для публикации."""
+        events: list[dict[str, Any]] = []
+
+        for event in domain_events:
+            if isinstance(event, SupplierCreatedEvent):
+                events.extend(self._build_supplier_created_events(aggregate))
+
+        return events
+
+    def _build_supplier_created_events(
+        self,
+        aggregate: SupplierAggregate,
+    ) -> list[dict[str, Any]]:
+        """Построить события для созданного поставщика."""
+        return [
             build_event(
                 event_type="crud",
                 method="create",
                 app="suppliers",
                 entity="supplier",
-                entity_id=result.id,
+                entity_id=aggregate.id,
                 data={
-                    "supplier_id": result.id,
+                    "supplier_id": aggregate.id,
                     "fields": {
-                        "name": result.name,
-                        "contact_email": result.contact_email,
-                        "phone": result.phone,
+                        "name": aggregate.name,
+                        "contact_email": aggregate.contact_email,
+                        "phone": aggregate.phone,
                     },
                 },
-            )
-        )
-        return result
+            ),
+        ]

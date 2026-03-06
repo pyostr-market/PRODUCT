@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.domain.events.product_events import (
     DomainEvent,
     PriceChangedEvent,
@@ -13,10 +12,11 @@ from src.catalog.product.domain.events.product_events import (
     ProductNameChangedEvent,
 )
 from src.catalog.product.domain.value_objects import Money, ProductName
-from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 
 if TYPE_CHECKING:
     from src.catalog.category.domain.aggregates.category import CategoryAggregate
+    from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+    from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 
 
 class ProductImageOperation:
@@ -108,8 +108,8 @@ class ProductAggregate:
         attributes: Optional[list[ProductAttributeAggregate]] = None,
         product_id: Optional[int] = None,
         category: Optional['CategoryAggregate'] = None,
-        supplier: Optional[SupplierAggregate] = None,
-        product_type: Optional[ProductTypeAggregate] = None,
+        supplier: Optional['SupplierAggregate'] = None,
+        product_type: Optional['ProductTypeAggregate'] = None,
     ):
         # Используем Value Objects для name и price
         self._name_obj = name if isinstance(name, ProductName) else ProductName(name)
@@ -179,11 +179,11 @@ class ProductAggregate:
         return self._category
 
     @property
-    def supplier(self) -> Optional[SupplierAggregate]:
+    def supplier(self) -> Optional['SupplierAggregate']:
         return self._supplier
 
     @property
-    def product_type(self) -> Optional[ProductTypeAggregate]:
+    def product_type(self) -> Optional['ProductTypeAggregate']:
         return self._product_type
 
     def get_events(self) -> list[DomainEvent]:

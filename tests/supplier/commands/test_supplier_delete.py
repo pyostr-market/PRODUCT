@@ -8,7 +8,7 @@ async def test_delete_supplier_200(authorized_client):
         json={
             "name": "Delete Me",
             "contact_email": "delete@test.com",
-            "phone": "+15555000",
+            "phone": "+15555000123",
         },
     )
 
@@ -51,7 +51,7 @@ async def test_delete_supplier_second_time_404(authorized_client):
         json={
             "name": "Delete Twice",
             "contact_email": "twice@test.com",
-            "phone": "+15556000",
+            "phone": "+15556000123",
         },
     )
 

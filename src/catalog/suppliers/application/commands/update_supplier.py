@@ -1,7 +1,13 @@
+from typing import Any
+
 from src.catalog.suppliers.application.dto.audit import SupplierAuditDTO
 from src.catalog.suppliers.application.dto.supplier import (
     SupplierReadDTO,
     SupplierUpdateDTO,
+)
+from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+from src.catalog.suppliers.domain.events.supplier_events import (
+    SupplierUpdatedEvent,
 )
 from src.catalog.suppliers.domain.exceptions import SupplierNotFound
 from src.core.auth.schemas.user import User
@@ -63,23 +69,54 @@ class UpdateSupplierCommand:
                 phone=aggregate.phone,
             )
 
+            # Получаем доменные события из агрегата
+            domain_events = aggregate.get_events()
+
         changed_fields = {
             key: value
             for key, value in new_data.items()
             if old_data.get(key) != value
         }
-        if changed_fields:
-            self.event_bus.publish_nowait(
-                build_event(
-                    event_type="crud",
-                    method="update",
-                    app="suppliers",
-                    entity="supplier",
-                    entity_id=result.id,
-                    data={
-                        "supplier_id": result.id,
-                        "fields": changed_fields,
-                    },
-                )
-            )
+
+        # Публикуем события на основе доменных событий
+        events = self._build_domain_events(aggregate, domain_events, changed_fields)
+        if events:
+            self.event_bus.publish_many_nowait(events)
+
         return result
+
+    def _build_domain_events(
+        self,
+        aggregate: SupplierAggregate,
+        domain_events: list,
+        changed_fields: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Преобразовать доменные события в события для публикации."""
+        events: list[dict[str, Any]] = []
+
+        for event in domain_events:
+            if isinstance(event, SupplierUpdatedEvent):
+                events.append(self._build_supplier_updated_event(aggregate, changed_fields))
+
+        if not events and changed_fields:
+            events.append(self._build_supplier_updated_event(aggregate, changed_fields))
+
+        return events
+
+    def _build_supplier_updated_event(
+        self,
+        aggregate: SupplierAggregate,
+        changed_fields: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Построить событие для обновленного поставщика."""
+        return build_event(
+            event_type="crud",
+            method="update",
+            app="suppliers",
+            entity="supplier",
+            entity_id=aggregate.id,
+            data={
+                "supplier_id": aggregate.id,
+                "fields": changed_fields,
+            },
+        )

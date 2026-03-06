@@ -1,9 +1,9 @@
 from typing import Optional
 
-from src.catalog.category.application.read_models.pricing_policy_read_repository import (
+from src.catalog.category.domain.exceptions import CategoryPricingPolicyNotFound
+from src.catalog.category.infrastructure.services.pricing_policy_read_repository import (
     CategoryPricingPolicyReadRepository,
 )
-from src.catalog.category.domain.exceptions import CategoryPricingPolicyNotFound
 
 
 class CategoryPricingPolicyQueries:

@@ -20,7 +20,7 @@ class CategoryNestedSchema(BaseModel):
 class CategoryImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    upload_id: int  # ID из UploadHistory
+    upload_id: Optional[int] = None  # ID из UploadHistory
     image_url: str  # Публичный URL
     ordering: int
 
@@ -111,3 +111,25 @@ class CategoryPricingPolicyReadSchema(BaseModel):
 class CategoryPricingPolicyListResponse(BaseModel):
     total: int
     items: List[CategoryPricingPolicyReadSchema]
+
+
+class CategoryTreeSchema(BaseModel):
+    """Схема категории для иерархического представления (дерево)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    description: Optional[str]
+    images: List[CategoryImageReadSchema]
+    parent_id: Optional[int] = None
+    manufacturer: Optional[ManufacturerNestedSchema] = None
+    children: List["CategoryTreeSchema"] = Field(default_factory=list)
+
+
+CategoryTreeSchema.model_rebuild()
+
+
+class CategoryTreeResponse(BaseModel):
+    """Ответ API для метода дерева категорий."""
+    total: int
+    items: List[CategoryTreeSchema]

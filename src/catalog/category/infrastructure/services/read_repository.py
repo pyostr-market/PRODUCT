@@ -56,6 +56,7 @@ class CategoryReadRepository:
                 )
                 for image in sorted(model.images, key=lambda i: i.ordering)
             ],
+            parent_id=model.parent_id,
             parent=parent_dto,
             manufacturer=manufacturer_dto,
         )
@@ -105,3 +106,20 @@ class CategoryReadRepository:
         items = [self._to_read_dto(model) for model in result.scalars().all()]
         total = count_result.scalar() or 0
         return items, total
+
+    async def get_tree(self) -> List[CategoryReadDTO]:
+        """
+        Получить все категории в виде плоского списка с данными для построения дерева.
+        Загружает все категории с изображениями, родителями и производителями.
+        """
+        stmt = select(Category).options(
+            selectinload(Category.images).selectinload(CategoryImage.upload),
+            selectinload(Category.parent),
+            selectinload(Category.manufacturer),
+            selectinload(Category.children),
+        ).order_by(Category.id)
+
+        result = await self.db.execute(stmt)
+        categories = result.scalars().all()
+
+        return [self._to_read_dto(model) for model in categories]

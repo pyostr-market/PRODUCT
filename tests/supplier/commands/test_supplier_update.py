@@ -10,7 +10,7 @@ async def test_update_supplier_200_full_update(authorized_client):
         json={
             "name": "Old Name",
             "contact_email": "old@test.com",
-            "phone": "+15551000",
+            "phone": "+15551000123",
         },
     )
 
@@ -23,7 +23,7 @@ async def test_update_supplier_200_full_update(authorized_client):
         json={
             "name": "New Name",
             "contact_email": "new@test.com",
-            "phone": "+15551001",
+            "phone": "+15551001234",
         },
     )
 
@@ -38,7 +38,7 @@ async def test_update_supplier_200_full_update(authorized_client):
     assert updated.id == supplier_id
     assert updated.name == "New Name"
     assert updated.contact_email == "new@test.com"
-    assert updated.phone == "+15551001"
+    assert updated.phone == "+15551001234"
 
 
 @pytest.mark.asyncio
@@ -48,7 +48,7 @@ async def test_update_supplier_200_partial_update(authorized_client):
         json={
             "name": "Partial Name",
             "contact_email": "partial@test.com",
-            "phone": "+15552000",
+            "phone": "+15552000123",
         },
     )
 
@@ -57,7 +57,7 @@ async def test_update_supplier_200_partial_update(authorized_client):
     response = await authorized_client.put(
         f"/supplier/{supplier_id}",
         json={
-            "phone": "+15552001",
+            "phone": "+15552001234",
         },
     )
 
@@ -70,7 +70,7 @@ async def test_update_supplier_200_partial_update(authorized_client):
 
     assert updated.name == "Partial Name"
     assert updated.contact_email == "partial@test.com"
-    assert updated.phone == "+15552001"
+    assert updated.phone == "+15552001234"
 
 
 @pytest.mark.asyncio
@@ -96,7 +96,7 @@ async def test_update_supplier_400_name_too_short(authorized_client):
         json={
             "name": "Valid Name",
             "contact_email": "valid@test.com",
-            "phone": "+15553000",
+            "phone": "+15553000123",
         },
     )
 
@@ -123,7 +123,7 @@ async def test_update_supplier_409_conflict(authorized_client):
         json={
             "name": "Brand A",
             "contact_email": "a@test.com",
-            "phone": "+15554000",
+            "phone": "+15554000123",
         },
     )
 
@@ -132,7 +132,7 @@ async def test_update_supplier_409_conflict(authorized_client):
         json={
             "name": "Brand B",
             "contact_email": "b@test.com",
-            "phone": "+15554001",
+            "phone": "+15554001234",
         },
     )
 

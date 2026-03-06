@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.catalog.category.api.schemas.schemas import (
     CategoryListResponse,
     CategoryReadSchema,
+    CategoryTreeResponse,
+    CategoryTreeSchema,
 )
 from src.catalog.category.composition import CategoryComposition
 from src.core.api.responses import api_response
@@ -12,6 +14,81 @@ from src.core.db.database import get_db
 category_q_router = APIRouter(
     tags=["Категории"],
 )
+
+
+@category_q_router.get(
+    "/tree",
+    summary="Получить дерево всех категорий",
+    description="""
+    Возвращает все категории в виде иерархического дерева.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+
+    Сценарии:
+    - Построение полного дерева категорий для навигации.
+    - Отображение вложенной структуры каталога.
+    """,
+    response_description="Дерево категорий в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Дерево категорий успешно получено",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "total": 5,
+                            "items": [
+                                {
+                                    "id": 1,
+                                    "name": "Электроника",
+                                    "description": "Все виды электроники",
+                                    "images": [
+                                        {
+                                            "upload_id": 1,
+                                            "ordering": 0,
+                                            "image_url": "https://cdn.example.com/category/electronics.jpg",
+                                        }
+                                    ],
+                                    "parent_id": None,
+                                    "manufacturer": None,
+                                    "children": [
+                                        {
+                                            "id": 2,
+                                            "name": "Смартфоны",
+                                            "description": "Смартфоны и аксессуары",
+                                            "images": [],
+                                            "parent_id": 1,
+                                            "manufacturer": {
+                                                "id": 3,
+                                                "name": "Acme Devices",
+                                                "description": "Мировой производитель электроники"
+                                            },
+                                            "children": [],
+                                        }
+                                    ],
+                                }
+                            ],
+                        },
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_tree(
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CategoryComposition.build_queries(db)
+    items, total = await queries.tree()
+
+    return api_response(
+        CategoryTreeResponse(
+            total=total,
+            items=[CategoryTreeSchema.model_validate(i) for i in items],
+        )
+    )
 
 
 @category_q_router.get(
@@ -154,5 +231,80 @@ async def filter_categories(
         CategoryListResponse(
             total=total,
             items=[CategoryReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@category_q_router.get(
+    "/tree",
+    summary="Получить дерево всех категорий",
+    description="""
+    Возвращает все категории в виде иерархического дерева.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+
+    Сценарии:
+    - Построение полного дерева категорий для навигации.
+    - Отображение вложенной структуры каталога.
+    """,
+    response_description="Дерево категорий в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Дерево категорий успешно получено",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "total": 5,
+                            "items": [
+                                {
+                                    "id": 1,
+                                    "name": "Электроника",
+                                    "description": "Все виды электроники",
+                                    "images": [
+                                        {
+                                            "upload_id": 1,
+                                            "ordering": 0,
+                                            "image_url": "https://cdn.example.com/category/electronics.jpg",
+                                        }
+                                    ],
+                                    "parent_id": None,
+                                    "manufacturer": None,
+                                    "children": [
+                                        {
+                                            "id": 2,
+                                            "name": "Смартфоны",
+                                            "description": "Смартфоны и аксессуары",
+                                            "images": [],
+                                            "parent_id": 1,
+                                            "manufacturer": {
+                                                "id": 3,
+                                                "name": "Acme Devices",
+                                                "description": "Мировой производитель электроники"
+                                            },
+                                            "children": [],
+                                        }
+                                    ],
+                                }
+                            ],
+                        },
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_tree(
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CategoryComposition.build_queries(db)
+    items, total = await queries.tree()
+
+    return api_response(
+        CategoryTreeResponse(
+            total=total,
+            items=[CategoryTreeSchema.model_validate(i) for i in items],
         )
     )

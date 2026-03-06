@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
-from src.catalog.category.domain.aggregates.category import CategoryAggregate
-from src.catalog.manufacturer.domain.aggregates.manufacturer import (
-    ManufacturerAggregate,
-)
+if TYPE_CHECKING:
+    from src.catalog.category.domain.aggregates.category import CategoryAggregate
+    from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+        ManufacturerAggregate,
+    )
 
 
 @dataclass
@@ -36,8 +37,14 @@ class CategoryReadDTO:
     name: str
     description: Optional[str]
     images: list[CategoryImageReadDTO]
-    parent: Optional[CategoryAggregate] = None
-    manufacturer: Optional[ManufacturerAggregate] = None
+    parent_id: Optional[int] = None
+    parent: Optional['CategoryAggregate'] = None
+    manufacturer: Optional['ManufacturerAggregate'] = None
+    children: list['CategoryReadDTO'] = None
+
+    def __post_init__(self):
+        if self.children is None:
+            self.children = []
 
 
 @dataclass

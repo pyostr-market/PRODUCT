@@ -10,7 +10,7 @@ async def test_get_supplier_200(authorized_client):
         json={
             "name": "Get Test",
             "contact_email": "get@test.com",
-            "phone": "+15557000",
+            "phone": "+15557000123",
         },
     )
     assert create.status_code == 200
@@ -30,7 +30,7 @@ async def test_get_supplier_200(authorized_client):
     assert supplier.id == supplier_id
     assert supplier.name == "Get Test"
     assert supplier.contact_email == "get@test.com"
-    assert supplier.phone == "+15557000"
+    assert supplier.phone == "+15557000123"
 
 
 @pytest.mark.asyncio

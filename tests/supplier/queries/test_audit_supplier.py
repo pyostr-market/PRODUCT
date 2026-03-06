@@ -62,7 +62,7 @@ async def test_audit_logs_after_create(audit_client):
         json={
             "name": "AuditSupplier",
             "contact_email": "audit@test.com",
-            "phone": "+15558000",
+            "phone": "+15558000123",
         }
     )
     assert create.status_code == 200

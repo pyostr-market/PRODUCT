@@ -4,6 +4,9 @@ from src.catalog.manufacturer.domain.repository.manufacturer import (
 from src.catalog.manufacturer.infrastructure.orm.manufacturer import (
     SqlAlchemyManufacturerRepository,
 )
+from src.catalog.manufacturer.infrastructure.orm.manufacturer_audit_queries import (
+    SqlAlchemyManufacturerAuditQueries,
+)
 from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus
 
@@ -92,6 +95,13 @@ container.register(
 )
 
 container.register(
+    SqlAlchemyManufacturerAuditQueries,
+    lambda scope, db: SqlAlchemyManufacturerAuditQueries(db)
+)
+
+container.register(
     ManufacturerAdminQueries,
-    lambda scope, db: ManufacturerAdminQueries(db)
+    lambda scope, db: ManufacturerAdminQueries(
+        audit_queries=scope.resolve(SqlAlchemyManufacturerAuditQueries, db=db)
+    )
 )

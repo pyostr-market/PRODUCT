@@ -16,21 +16,9 @@ from src.catalog.category.application.commands.update_category import (
 from src.catalog.category.application.commands.update_pricing_policy import (
     UpdateCategoryPricingPolicyCommand,
 )
-from src.catalog.category.application.queries.category_admin_queries import (
-    CategoryAdminQueries,
-)
 from src.catalog.category.application.queries.category_queries import CategoryQueries
-from src.catalog.category.application.queries.pricing_policy_admin_queries import (
-    CategoryPricingPolicyAdminQueries,
-)
 from src.catalog.category.application.queries.pricing_policy_queries import (
     CategoryPricingPolicyQueries,
-)
-from src.catalog.category.application.read_models.category_read_repository import (
-    CategoryReadRepository,
-)
-from src.catalog.category.application.read_models.pricing_policy_read_repository import (
-    CategoryPricingPolicyReadRepository,
 )
 from src.catalog.category.domain.repository.audit import CategoryAuditRepository
 from src.catalog.category.domain.repository.category import CategoryRepository
@@ -52,10 +40,27 @@ from src.catalog.category.infrastructure.orm.pricing_policy import (
 from src.catalog.category.infrastructure.orm.pricing_policy_audit import (
     SqlAlchemyCategoryPricingPolicyAuditRepository,
 )
+from src.catalog.category.infrastructure.services.admin_queries import (
+    CategoryAdminQueries,
+)
+from src.catalog.category.infrastructure.services.pricing_policy_admin_queries import (
+    CategoryPricingPolicyAdminQueries,
+)
+from src.catalog.category.infrastructure.services.read_repository import (
+    CategoryReadRepository,
+)
+from src.catalog.category.infrastructure.services.pricing_policy_read_repository import (
+    CategoryPricingPolicyReadRepository,
+)
+from src.catalog.category.infrastructure.services.related_data_loader import (
+    CategoryRelatedDataLoader,
+)
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus
 from src.core.services.images import ImageStorageService, S3ImageStorageService
+from src.uploads.domain.repository.upload_history import UploadHistoryRepository
+from src.uploads.infrastructure.orm.upload_history import SqlAlchemyUploadHistoryRepository
 
 container = ServiceContainer()
 
@@ -93,6 +98,20 @@ container.register(
 )
 
 container.register(
+    UploadHistoryRepository,
+    lambda scope, db: SqlAlchemyUploadHistoryRepository(db),
+)
+
+container.register(
+    CategoryRelatedDataLoader,
+    lambda scope, db: CategoryRelatedDataLoader(
+        db=db,
+        category_repository=scope.resolve(CategoryRepository, db=db),
+        upload_history_repository=scope.resolve(UploadHistoryRepository, db=db),
+    ),
+)
+
+container.register(
     CreateCategoryCommand,
     lambda scope, db: CreateCategoryCommand(
         repository=scope.resolve(CategoryRepository, db=db),
@@ -100,7 +119,7 @@ container.register(
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
-        db=db,
+        data_loader=scope.resolve(CategoryRelatedDataLoader, db=db),
     ),
 )
 
@@ -112,7 +131,7 @@ container.register(
         uow=scope.resolve(UnitOfWork, db=db),
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
-        db=db,
+        data_loader=scope.resolve(CategoryRelatedDataLoader, db=db),
     ),
 )
 

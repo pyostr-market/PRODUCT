@@ -1,13 +1,23 @@
 from decimal import Decimal
 from typing import Optional
 
+from src.catalog.category.domain.events.base import DomainEvent
+from src.catalog.category.domain.events.category_events import (
+    PricingPolicyCreatedEvent,
+    PricingPolicyUpdatedEvent,
+    PricingPolicyMarkupFixedChangedEvent,
+    PricingPolicyMarkupPercentChangedEvent,
+    PricingPolicyCommissionChangedEvent,
+    PricingPolicyDiscountChangedEvent,
+    PricingPolicyTaxRateChangedEvent,
+)
 from src.catalog.category.domain.exceptions import CategoryPricingPolicyInvalidRateValue
 
 
 class CategoryPricingPolicyAggregate:
     """
     Агрегат политики ценообразования категории.
-    
+
     Содержит правила расчёта конечной цены товара в категории:
     - Наценка (фиксированная и процентная)
     - Комиссия маркетплейса
@@ -27,7 +37,7 @@ class CategoryPricingPolicyAggregate:
     ):
         self._id = pricing_policy_id
         self._category_id = category_id
-        
+
         # Валидация и установка значений
         # markup_fixed - фиксированная сумма, может быть любой
         self._markup_fixed = markup_fixed
@@ -36,13 +46,15 @@ class CategoryPricingPolicyAggregate:
         self._commission_percent = self._validate_percentage_value(commission_percent, "commission_percent")
         self._discount_percent = self._validate_percentage_value(discount_percent, "discount_percent")
         self._tax_rate = self._validate_tax_rate(tax_rate)
+        
+        self._events: list[DomainEvent] = []
 
     @staticmethod
     def _validate_percentage_value(value: Optional[Decimal], field_name: str) -> Optional[Decimal]:
         """Валидация процентных значений (от 0 до 100)."""
         if value is None:
             return None
-        
+
         if value < Decimal("0") or value > Decimal("100"):
             raise CategoryPricingPolicyInvalidRateValue(
                 details={
@@ -51,7 +63,7 @@ class CategoryPricingPolicyAggregate:
                     "reason": "Value must be between 0 and 100",
                 }
             )
-        
+
         return value
 
     @staticmethod
@@ -65,7 +77,7 @@ class CategoryPricingPolicyAggregate:
                     "reason": "Tax rate must be between 0 and 100",
                 }
             )
-        
+
         return value
 
     # -----------------------------
@@ -105,24 +117,71 @@ class CategoryPricingPolicyAggregate:
         return self._tax_rate
 
     # -----------------------------
+    # Domain Events
+    # -----------------------------
+
+    def get_events(self) -> list[DomainEvent]:
+        """Вернуть все накопленные события и очистить очередь."""
+        events = self._events.copy()
+        self._events.clear()
+        return events
+
+    def clear_events(self):
+        """Очистить очередь событий."""
+        self._events.clear()
+
+    def _record_event(self, event: DomainEvent):
+        """Записать доменное событие."""
+        self._events.append(event)
+
+    # -----------------------------
     # Behavior
     # -----------------------------
 
     def update_markup_fixed(self, markup_fixed: Optional[Decimal]):
-        # markup_fixed - фиксированная сумма, может быть любой
+        old_value = self._markup_fixed
         self._markup_fixed = markup_fixed
+        self._record_event(PricingPolicyMarkupFixedChangedEvent(
+            pricing_policy_id=self._id,
+            old_markup_fixed=old_value,
+            new_markup_fixed=markup_fixed,
+        ))
 
     def update_markup_percent(self, markup_percent: Optional[Decimal]):
+        old_value = self._markup_percent
         self._markup_percent = self._validate_percentage_value(markup_percent, "markup_percent")
+        self._record_event(PricingPolicyMarkupPercentChangedEvent(
+            pricing_policy_id=self._id,
+            old_markup_percent=old_value,
+            new_markup_percent=self._markup_percent,
+        ))
 
     def update_commission_percent(self, commission_percent: Optional[Decimal]):
+        old_value = self._commission_percent
         self._commission_percent = self._validate_percentage_value(commission_percent, "commission_percent")
+        self._record_event(PricingPolicyCommissionChangedEvent(
+            pricing_policy_id=self._id,
+            old_commission_percent=old_value,
+            new_commission_percent=self._commission_percent,
+        ))
 
     def update_discount_percent(self, discount_percent: Optional[Decimal]):
+        old_value = self._discount_percent
         self._discount_percent = self._validate_percentage_value(discount_percent, "discount_percent")
+        self._record_event(PricingPolicyDiscountChangedEvent(
+            pricing_policy_id=self._id,
+            old_discount_percent=old_value,
+            new_discount_percent=self._discount_percent,
+        ))
 
     def update_tax_rate(self, tax_rate: Decimal):
+        old_value = self._tax_rate
         self._tax_rate = self._validate_tax_rate(tax_rate)
+        self._record_event(PricingPolicyTaxRateChangedEvent(
+            pricing_policy_id=self._id,
+            old_tax_rate=old_value,
+            new_tax_rate=self._tax_rate,
+        ))
 
     def update(
         self,

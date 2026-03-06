@@ -10,6 +10,11 @@ from src.catalog.product.domain.value_objects.product_name import (
     ProductNameTooShort,
     ProductNameTooLong,
 )
+from src.catalog.product.domain.value_objects.ids import (
+    ProductId,
+    ProductTypeId,
+    ProductAttributeId,
+)
 
 __all__ = [
     "Money",
@@ -20,4 +25,7 @@ __all__ = [
     "InvalidProductName",
     "ProductNameTooShort",
     "ProductNameTooLong",
+    "ProductId",
+    "ProductTypeId",
+    "ProductAttributeId",
 ]

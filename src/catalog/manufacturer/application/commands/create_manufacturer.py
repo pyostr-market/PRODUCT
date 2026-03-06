@@ -1,3 +1,5 @@
+from typing import Any
+
 from src.catalog.manufacturer.application.dto.audit import ManufacturerAuditDTO
 from src.catalog.manufacturer.application.dto.manufacturer import (
     ManufacturerCreateDTO,
@@ -5,6 +7,9 @@ from src.catalog.manufacturer.application.dto.manufacturer import (
 )
 from src.catalog.manufacturer.domain.aggregates.manufacturer import (
     ManufacturerAggregate,
+)
+from src.catalog.manufacturer.domain.events.manufacturer_events import (
+    ManufacturerCreatedEvent,
 )
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
@@ -52,20 +57,48 @@ class CreateManufacturerCommand:
                 description=aggregate.description,
             )
 
-        self.event_bus.publish_nowait(
+            # Получаем доменные события из агрегата
+            domain_events = aggregate.get_events()
+
+        # Публикуем события на основе доменных событий
+        events = self._build_domain_events(aggregate, domain_events)
+        if events:
+            self.event_bus.publish_many_nowait(events)
+
+        return result
+
+    def _build_domain_events(
+        self,
+        aggregate: ManufacturerAggregate,
+        domain_events: list,
+    ) -> list[dict[str, Any]]:
+        """Преобразовать доменные события в события для публикации."""
+        events: list[dict[str, Any]] = []
+
+        for event in domain_events:
+            if isinstance(event, ManufacturerCreatedEvent):
+                events.extend(self._build_manufacturer_created_events(aggregate))
+
+        return events
+
+    def _build_manufacturer_created_events(
+        self,
+        aggregate: ManufacturerAggregate,
+    ) -> list[dict[str, Any]]:
+        """Построить события для созданного производителя."""
+        return [
             build_event(
                 event_type="crud",
                 method="create",
                 app="manufacturers",
                 entity="manufacturer",
-                entity_id=result.id,
+                entity_id=aggregate.id,
                 data={
-                    "manufacturer_id": result.id,
+                    "manufacturer_id": aggregate.id,
                     "fields": {
-                        "name": result.name,
-                        "description": result.description,
+                        "name": aggregate.name,
+                        "description": aggregate.description,
                     },
                 },
-            )
-        )
-        return result
+            ),
+        ]

@@ -11,16 +11,17 @@ from src.catalog.suppliers.application.queries.supplier_admin_queries import (
     SupplierAdminQueries,
 )
 from src.catalog.suppliers.application.queries.supplier_queries import SupplierQueries
-from src.catalog.suppliers.application.read_models.supplier_read_repository import (
-    SupplierReadRepository,
-)
 from src.catalog.suppliers.domain.repository.audit import SupplierAuditRepository
 from src.catalog.suppliers.domain.repository.supplier import SupplierRepository
+from src.catalog.suppliers.domain.repository.supplier_read import SupplierReadRepositoryInterface
 from src.catalog.suppliers.infrastructure.orm.supplier import (
     SqlAlchemySupplierRepository,
 )
 from src.catalog.suppliers.infrastructure.orm.supplier_audit import (
     SqlAlchemySupplierAuditRepository,
+)
+from src.catalog.suppliers.infrastructure.orm.supplier_read import (
+    SqlAlchemySupplierReadRepository,
 )
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
@@ -43,14 +44,17 @@ container.register(
     lambda scope, db: get_event_bus(),
 )
 
+# Read Repository - теперь регистрируем интерфейс с инфраструктурной реализацией
 container.register(
-    SupplierReadRepository,
-    lambda scope, db: SupplierReadRepository(db),
+    SupplierReadRepositoryInterface,
+    lambda scope, db: SqlAlchemySupplierReadRepository(db),
 )
 
 container.register(
     SupplierQueries,
-    lambda scope, db: SupplierQueries(scope.resolve(SupplierReadRepository, db=db)),
+    lambda scope, db: SupplierQueries(
+        read_repository=scope.resolve(SupplierReadRepositoryInterface, db=db)
+    ),
 )
 
 container.register(
@@ -90,5 +94,7 @@ container.register(
 
 container.register(
     SupplierAdminQueries,
-    lambda scope, db: SupplierAdminQueries(db),
+    lambda scope, db: SupplierAdminQueries(
+        audit_repository=scope.resolve(SupplierAuditRepository, db=db)
+    ),
 )

@@ -1,16 +1,20 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy import func, select
-
-from src.catalog.manufacturer.infrastructure.models.manufacturer_audit_logs import (
-    ManufacturerAuditLog,
+from src.catalog.manufacturer.infrastructure.orm.manufacturer_audit_queries import (
+    SqlAlchemyManufacturerAuditQueries,
 )
 
 
 class ManufacturerAdminQueries:
+    """
+    Application layer query сервис для аудита производителей.
+    
+    Делегирует инфраструктуре работу с ORM, предоставляет
+    интерфейс для использования в application layer.
+    """
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, audit_queries: SqlAlchemyManufacturerAuditQueries):
+        self.audit_queries = audit_queries
 
     async def filter_logs(
         self,
@@ -19,34 +23,16 @@ class ManufacturerAdminQueries:
         action: Optional[str],
         limit: int,
         offset: int,
-    ) -> Tuple[List[ManufacturerAuditLog], int]:
-
-        stmt = select(ManufacturerAuditLog)
-        count_stmt = select(func.count()).select_from(ManufacturerAuditLog)
-
-        if manufacturer_id:
-            stmt = stmt.where(
-                ManufacturerAuditLog.manufacturer_id == manufacturer_id
-            )
-            count_stmt = count_stmt.where(
-                ManufacturerAuditLog.manufacturer_id == manufacturer_id
-            )
-
-        if user_id:
-            stmt = stmt.where(ManufacturerAuditLog.user_id == user_id)
-            count_stmt = count_stmt.where(ManufacturerAuditLog.user_id == user_id)
-
-        if action:
-            stmt = stmt.where(ManufacturerAuditLog.action == action)
-            count_stmt = count_stmt.where(ManufacturerAuditLog.action == action)
-
-        stmt = stmt.order_by(ManufacturerAuditLog.created_at.desc())
-        stmt = stmt.limit(limit).offset(offset)
-
-        result = await self.db.execute(stmt)
-        count_result = await self.db.execute(count_stmt)
-
-        items = result.scalars().all()
-        total = count_result.scalar() or 0
-
-        return items, total
+    ) -> Tuple[List, int]:
+        """
+        Фильтрация логов аудита.
+        
+        Возвращает список записей и общее количество.
+        """
+        return await self.audit_queries.filter_logs(
+            manufacturer_id=manufacturer_id,
+            user_id=user_id,
+            action=action,
+            limit=limit,
+            offset=offset,
+        )
