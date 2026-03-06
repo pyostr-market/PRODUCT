@@ -50,6 +50,7 @@ from src.catalog.product.application.read_models.product_read_repository import 
 from src.catalog.product.application.read_models.product_type_read_repository import (
     ProductTypeReadRepository,
 )
+from src.catalog.product.application.services.related_entity_loader import RelatedEntityLoader
 from src.catalog.product.domain.repository.audit import ProductAuditRepository
 from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.domain.repository.product_attribute import (
@@ -219,6 +220,15 @@ container.register(
 )
 
 container.register(
+    RelatedEntityLoader,
+    lambda scope, db: RelatedEntityLoader(
+        category_repository=scope.resolve(CategoryRepository, db=db),
+        supplier_repository=scope.resolve(SupplierRepository, db=db),
+        product_type_repository=scope.resolve(ProductTypeRepository, db=db),
+    ),
+)
+
+container.register(
     CreateProductCommand,
     lambda scope, db: CreateProductCommand(
         repository=scope.resolve(ProductRepository, db=db),
@@ -227,9 +237,7 @@ container.register(
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
         upload_history_repository=scope.resolve(UploadHistoryRepository, db=db),
-        category_repository=scope.resolve(CategoryRepository, db=db),
-        supplier_repository=scope.resolve(SupplierRepository, db=db),
-        product_type_repository=scope.resolve(ProductTypeRepository, db=db),
+        entity_loader=scope.resolve(RelatedEntityLoader, db=db),
     ),
 )
 
@@ -262,9 +270,7 @@ container.register(
         image_storage=scope.resolve(ImageStorageService, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
         upload_history_repository=scope.resolve(UploadHistoryRepository, db=db),
-        category_repository=scope.resolve(CategoryRepository, db=db),
-        supplier_repository=scope.resolve(SupplierRepository, db=db),
-        product_type_repository=scope.resolve(ProductTypeRepository, db=db),
+        entity_loader=scope.resolve(RelatedEntityLoader, db=db),
     ),
 )
 

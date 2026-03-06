@@ -1,40 +1,43 @@
-from src.catalog.category.domain.aggregates.category import CategoryAggregate
-from src.catalog.category.domain.repository.category import CategoryRepository
+from typing import Any
+
 from src.catalog.product.application.dto.audit import ProductAuditDTO
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
     ProductReadDTO,
 )
+from src.catalog.product.application.services.related_entity_loader import RelatedEntityLoader
 from src.catalog.product.domain.aggregates.product import (
     ProductAggregate,
     ProductAttributeAggregate,
     ProductImageAggregate,
 )
-from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
-from src.catalog.product.domain.repository.product_type import ProductTypeRepository
-from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
-from src.catalog.suppliers.domain.repository.supplier import SupplierRepository
+from src.catalog.product.domain.events.product_events import (
+    DomainEvent,
+    ProductCreatedEvent,
+    ProductImageAddedEvent,
+    ProductAttributeAddedEvent,
+)
+from src.catalog.product.domain.repository.product import ProductRepository
+from src.catalog.product.domain.repository.audit import ProductAuditRepository
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images.storage import S3ImageStorageService
-from src.uploads.domain.aggregates.upload_history import UploadHistoryAggregate
 from src.uploads.domain.repository.upload_history import UploadHistoryRepository
+from src.core.db.unit_of_work import UnitOfWork
 
 
 class CreateProductCommand:
 
     def __init__(
         self,
-        repository,
-        audit_repository,
-        uow,
+        repository: ProductRepository,
+        audit_repository: ProductAuditRepository,
+        uow: UnitOfWork,
         image_storage: S3ImageStorageService,
         event_bus: AsyncEventBus,
         upload_history_repository: UploadHistoryRepository,
-        category_repository: CategoryRepository,
-        supplier_repository: SupplierRepository,
-        product_type_repository: ProductTypeRepository,
+        entity_loader: RelatedEntityLoader,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
@@ -42,9 +45,7 @@ class CreateProductCommand:
         self.image_storage = image_storage
         self.event_bus = event_bus
         self.upload_history_repository = upload_history_repository
-        self.category_repository = category_repository
-        self.supplier_repository = supplier_repository
-        self.product_type_repository = product_type_repository
+        self.entity_loader = entity_loader
 
     async def execute(self, dto, user: User) -> ProductReadDTO:
         mapped_images: list[ProductImageAggregate] = []
@@ -54,7 +55,6 @@ class CreateProductCommand:
                 from src.catalog.product.domain.exceptions import ProductInvalidImage
                 raise ProductInvalidImage(details={"reason": "upload_id_required"})
 
-            # Используем предварительно загруженное изображение из UploadHistory
             upload_record = await self.upload_history_repository.get(image.upload_id)
 
             if not upload_record:
@@ -79,152 +79,186 @@ class CreateProductCommand:
             for attribute in dto.attributes
         ]
 
-        try:
-            async with self.uow:
-                aggregate = ProductAggregate(
-                    name=dto.name,
-                    description=dto.description,
-                    price=dto.price,
-                    category_id=dto.category_id,
-                    supplier_id=dto.supplier_id,
-                    product_type_id=dto.product_type_id,
-                    images=mapped_images,
-                    attributes=mapped_attributes,
+        async with self.uow:
+            aggregate = ProductAggregate(
+                name=dto.name,
+                description=dto.description,
+                price=dto.price,
+                category_id=dto.category_id,
+                supplier_id=dto.supplier_id,
+                product_type_id=dto.product_type_id,
+                images=mapped_images,
+                attributes=mapped_attributes,
+            )
+
+            await self.repository.create(aggregate)
+
+            # Получаем доменные события из агрегата
+            domain_events = aggregate.get_events()
+
+            new_data = self._capture_state(aggregate)
+
+            await self.audit_repository.log(
+                ProductAuditDTO(
+                    product_id=aggregate.id,
+                    action="create",
+                    old_data=None,
+                    new_data=new_data,
+                    user_id=user.id,
+                    fio=user.fio,
                 )
+            )
 
-                await self.repository.create(aggregate)
+            # Загружаем связанные данные через сервис
+            category_dto, supplier_dto, product_type_dto = await self.entity_loader.load_all(
+                aggregate.category_id,
+                aggregate.supplier_id,
+                aggregate.product_type_id,
+            )
 
-                new_data = {
-                    "name": aggregate.name,
-                    "description": aggregate.description,
-                    "price": str(aggregate.price),
-                    "category_id": aggregate.category_id,
-                    "supplier_id": aggregate.supplier_id,
-                    "product_type_id": aggregate.product_type_id,
+            result = self._to_read_dto(
+                aggregate,
+                category_dto,
+                supplier_dto,
+                product_type_dto,
+            )
+
+        # Публикуем события на основе доменных событий
+        events = self._build_domain_events(aggregate, domain_events)
+        if events:
+            self.event_bus.publish_many_nowait(events)
+
+        return result
+
+    def _capture_state(self, aggregate: ProductAggregate) -> dict[str, Any]:
+        """Зафиксировать текущее состояние агрегата."""
+        return {
+            "name": aggregate.name,
+            "description": aggregate.description,
+            "price": str(aggregate.price),
+            "category_id": aggregate.category_id,
+            "supplier_id": aggregate.supplier_id,
+            "product_type_id": aggregate.product_type_id,
+            "images": [
+                {"upload_id": image.upload_id, "is_main": image.is_main}
+                for image in aggregate.images
+            ],
+            "attributes": [
+                {
+                    "name": attribute.name,
+                    "value": attribute.value,
+                    "is_filterable": attribute.is_filterable,
+                }
+                for attribute in aggregate.attributes
+            ],
+        }
+
+    def _build_domain_events(
+        self,
+        aggregate: ProductAggregate,
+        domain_events: list[DomainEvent],
+    ) -> list[dict[str, Any]]:
+        """Преобразовать доменные события в события для публикации."""
+        events: list[dict[str, Any]] = []
+
+        for event in domain_events:
+            if isinstance(event, ProductCreatedEvent):
+                events.extend(self._build_product_created_events(aggregate))
+            elif isinstance(event, ProductImageAddedEvent):
+                events.append(self._build_image_event("create", aggregate.id, event.upload_id))
+            elif isinstance(event, ProductAttributeAddedEvent):
+                pass  # Атрибуты не имеют отдельных событий в текущей реализации
+
+        return events
+
+    def _build_product_created_events(self, aggregate: ProductAggregate) -> list[dict[str, Any]]:
+        """Построить события для созданного продукта."""
+        return [
+            build_event(
+                event_type="crud",
+                method="create",
+                app="products",
+                entity="product",
+                entity_id=aggregate.id,
+                data={
+                    "product_id": aggregate.id,
+                    "fields": {
+                        "name": aggregate.name,
+                        "description": aggregate.description,
+                        "price": str(aggregate.price),
+                        "category_id": aggregate.category_id,
+                        "supplier_id": aggregate.supplier_id,
+                        "product_type_id": aggregate.product_type_id,
+                    },
+                },
+            ),
+            build_event(
+                event_type="crud",
+                method="create",
+                app="images",
+                entity="product_images",
+                entity_id=aggregate.id,
+                data={
+                    "product_id": aggregate.id,
                     "images": [
                         {"upload_id": image.upload_id, "is_main": image.is_main}
                         for image in aggregate.images
                     ],
-                    "attributes": [
-                        {
-                            "name": attribute.name,
-                            "value": attribute.value,
-                            "is_filterable": attribute.is_filterable,
-                        }
-                        for attribute in aggregate.attributes
-                    ],
-                }
+                },
+            ),
+        ]
 
-                await self.audit_repository.log(
-                    ProductAuditDTO(
-                        product_id=aggregate.id,
-                        action="create",
-                        old_data=None,
-                        new_data=new_data,
-                        user_id=user.id,
-                        fio=user.fio,
-                    )
-                )
-
-                # Загружаем данные для category, supplier, product_type
-                category_dto = None
-                if aggregate.category_id:
-                    category_model = await self.category_repository.get(aggregate.category_id)
-                    if category_model:
-                        category_dto = CategoryAggregate(
-                            category_id=category_model.id,
-                            name=category_model.name,
-                            description=category_model.description,
-                            parent_id=category_model.parent_id,
-                            manufacturer_id=category_model.manufacturer_id,
-                        )
-
-                supplier_dto = None
-                if aggregate.supplier_id:
-                    supplier_model = await self.supplier_repository.get(aggregate.supplier_id)
-                    if supplier_model:
-                        supplier_dto = SupplierAggregate(
-                            supplier_id=supplier_model.id,
-                            name=supplier_model.name,
-                            contact_email=supplier_model.contact_email,
-                            phone=supplier_model.phone,
-                        )
-
-                product_type_dto = None
-                if aggregate.product_type_id:
-                    product_type_model = await self.product_type_repository.get_with_parent(aggregate.product_type_id)
-                    if product_type_model:
-                        product_type_dto = ProductTypeAggregate(
-                            product_type_id=product_type_model.id,
-                            name=product_type_model.name,
-                            parent_id=product_type_model.parent_id,
-                            parent=product_type_model.parent,
-                        )
-
-                result = ProductReadDTO(
-                    id=aggregate.id,
-                    name=aggregate.name,
-                    description=aggregate.description,
-                    price=aggregate.price,
-                    images=[
-                        ProductImageReadDTO(
-                            image_key="",
-                            image_url="",
-                            is_main=image.is_main,
-                            ordering=image.ordering,
-                            upload_id=image.upload_id,
-                        )
-                        for image in aggregate.images
-                    ],
-                    attributes=[
-                        ProductAttributeReadDTO(
-                            name=attribute.name,
-                            value=attribute.value,
-                            is_filterable=attribute.is_filterable,
-                        )
-                        for attribute in aggregate.attributes
-                    ],
-                    category=category_dto,
-                    supplier=supplier_dto,
-                    product_type=product_type_dto,
-                )
-        except Exception:
-            raise
-
-        self.event_bus.publish_many_nowait(
-            [
-                build_event(
-                    event_type="crud",
-                    method="create",
-                    app="products",
-                    entity="product",
-                    entity_id=result.id,
-                    data={
-                        "product_id": result.id,
-                        "fields": {
-                            "name": result.name,
-                            "description": result.description,
-                            "price": str(result.price),
-                            "category_id": category_dto.id if category_dto else None,
-                            "supplier_id": supplier_dto.id if supplier_dto else None,
-                            "product_type_id": product_type_dto.id if product_type_dto else None,
-                        },
-                    },
-                ),
-                build_event(
-                    event_type="crud",
-                    method="create",
-                    app="images",
-                    entity="product_images",
-                    entity_id=result.id,
-                    data={
-                        "product_id": result.id,
-                        "images": [
-                            {"upload_id": image.upload_id, "is_main": image.is_main}
-                            for image in result.images
-                        ],
-                    },
-                ),
-            ]
+    def _build_image_event(
+        self,
+        method: str,
+        product_id: int,
+        upload_id: int,
+    ) -> dict[str, Any]:
+        """Построить событие для изображения."""
+        return build_event(
+            event_type="crud",
+            method=method,
+            app="images",
+            entity="product_images",
+            entity_id=product_id,
+            data={
+                "product_id": product_id,
+                "images": [{"upload_id": upload_id}],
+            },
         )
-        return result
+
+    def _to_read_dto(
+        self,
+        aggregate: ProductAggregate,
+        category_dto,
+        supplier_dto,
+        product_type_dto,
+    ) -> ProductReadDTO:
+        """Преобразовать агрегат в DTO для чтения."""
+        return ProductReadDTO(
+            id=aggregate.id,
+            name=aggregate.name,
+            description=aggregate.description,
+            price=aggregate.price,
+            images=[
+                ProductImageReadDTO(
+                    image_key="",
+                    image_url="",
+                    is_main=image.is_main,
+                    ordering=image.ordering,
+                    upload_id=image.upload_id,
+                )
+                for image in aggregate.images
+            ],
+            attributes=[
+                ProductAttributeReadDTO(
+                    name=attribute.name,
+                    value=attribute.value,
+                    is_filterable=attribute.is_filterable,
+                )
+                for attribute in aggregate.attributes
+            ],
+            category=category_dto,
+            supplier=supplier_dto,
+            product_type=product_type_dto,
+        )

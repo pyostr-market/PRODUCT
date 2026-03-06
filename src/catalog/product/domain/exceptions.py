@@ -1,3 +1,4 @@
+from src.catalog.product.domain.value_objects.product_name import ProductNameTooShort
 from src.core.exceptions.base import BaseServiceError
 
 
@@ -7,16 +8,6 @@ class ProductNotFound(BaseServiceError):
         msg: str = "Товар не найден",
         code: str = "product_not_found",
         status_code: int = 404,
-    ):
-        super().__init__(message=msg, code=code, status_code=status_code)
-
-
-class ProductNameTooShort(BaseServiceError):
-    def __init__(
-        self,
-        msg: str = "Имя слишком короткое",
-        code: str = "product_name_too_short",
-        status_code: int = 400,
     ):
         super().__init__(message=msg, code=code, status_code=status_code)
 

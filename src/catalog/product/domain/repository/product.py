@@ -2,6 +2,7 @@ from abc import ABC
 from typing import Optional
 
 from src.catalog.product.domain.aggregates.product import ProductAggregate
+from src.catalog.product.domain.events.product_events import DomainEvent
 
 
 class ProductRepository(ABC):
@@ -13,9 +14,11 @@ class ProductRepository(ABC):
         ...
 
     async def create(self, aggregate: ProductAggregate) -> ProductAggregate:
+        """Создать продукт. После вызова доступны события через aggregate.get_events()."""
         ...
 
     async def update(self, aggregate: ProductAggregate) -> ProductAggregate:
+        """Обновить продукт. После вызова доступны события через aggregate.get_events()."""
         ...
 
     async def delete(self, product_id: int) -> bool:

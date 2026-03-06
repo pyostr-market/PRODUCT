@@ -1,5 +1,9 @@
+from typing import Any
+
 from src.catalog.product.application.dto.audit import ProductAuditDTO
+from src.catalog.product.domain.events.product_events import ProductDeletedEvent
 from src.catalog.product.domain.exceptions import ProductNotFound
+from src.catalog.product.domain.repository.product import ProductRepository
 from src.core.auth.schemas.user import User
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images.storage import S3ImageStorageService
@@ -9,7 +13,7 @@ class DeleteProductCommand:
 
     def __init__(
         self,
-        repository,
+        repository: ProductRepository,
         audit_repository,
         uow,
         image_storage: S3ImageStorageService,
@@ -23,6 +27,8 @@ class DeleteProductCommand:
 
     async def execute(self, product_id: int, user: User) -> bool:
         image_keys: list[str] = []
+        old_data: dict[str, Any] | None = None
+        aggregate = None
 
         async with self.uow:
             aggregate = await self.repository.get(product_id)
@@ -30,7 +36,7 @@ class DeleteProductCommand:
             if not aggregate:
                 raise ProductNotFound()
 
-            image_keys = [image.object_key for image in aggregate.images]
+            image_keys = [image.object_key for image in aggregate.images if image.object_key]
 
             old_data = {
                 "name": aggregate.name,
@@ -53,6 +59,10 @@ class DeleteProductCommand:
                 ],
             }
 
+            # Записываем доменное событие перед удалением
+            aggregate._record_event(ProductDeletedEvent(product_id=product_id))
+            domain_events = aggregate.get_events()
+
             await self.repository.delete(product_id)
 
             await self.audit_repository.log(
@@ -66,28 +76,45 @@ class DeleteProductCommand:
                 )
             )
 
+        # Удаляем файлы после коммита транзакции
         for key in image_keys:
             await self.image_storage.delete_object(key)
 
-        self.event_bus.publish_many_nowait(
-            [
-                build_event(
-                    event_type="crud",
-                    method="delete",
-                    app="products",
-                    entity="product",
-                    entity_id=product_id,
-                    data={"product_id": product_id},
-                ),
-                build_event(
-                    event_type="crud",
-                    method="delete",
-                    app="images",
-                    entity="product_images",
-                    entity_id=product_id,
-                    data={"product_id": product_id},
-                ),
-            ]
-        )
+        # Публикуем события на основе доменных событий
+        events = self._build_domain_events(product_id, domain_events, old_data)
+        if events:
+            self.event_bus.publish_many_nowait(events)
 
         return True
+
+    def _build_domain_events(
+        self,
+        product_id: int,
+        domain_events: list,
+        old_data: dict[str, Any] | None,
+    ) -> list[dict[str, Any]]:
+        """Преобразовать доменные события в события для публикации."""
+        events: list[dict[str, Any]] = []
+
+        for event in domain_events:
+            if isinstance(event, ProductDeletedEvent):
+                events.extend([
+                    build_event(
+                        event_type="crud",
+                        method="delete",
+                        app="products",
+                        entity="product",
+                        entity_id=product_id,
+                        data={"product_id": product_id},
+                    ),
+                    build_event(
+                        event_type="crud",
+                        method="delete",
+                        app="images",
+                        entity="product_images",
+                        entity_id=product_id,
+                        data={"product_id": product_id},
+                    ),
+                ])
+
+        return events
