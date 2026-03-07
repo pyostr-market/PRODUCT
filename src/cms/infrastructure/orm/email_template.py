@@ -55,7 +55,7 @@ class SqlAlchemyEmailTemplateRepository(EmailTemplateRepository):
         self.db.add(model)
         await self.db.flush()
 
-        aggregate.template_id = model.id
+        aggregate._set_id(model.id)
         return aggregate
 
     async def delete(self, template_id: int) -> bool:

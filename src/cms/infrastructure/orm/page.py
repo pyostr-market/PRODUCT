@@ -124,7 +124,7 @@ class SqlAlchemyPageRepository(PageRepository):
                 page_id=model.id,
                 block_type=block.block_type,
                 order=block.order,
-                data=PageBlockData(data=block.data),
+                data=block.data,
                 is_active=block.is_active,
             )
             for block in sorted(model.blocks, key=lambda b: b.order)

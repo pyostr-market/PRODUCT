@@ -42,7 +42,7 @@ class SqlAlchemySeoRepository(SeoRepository):
         self.db.add(model)
         await self.db.flush()
 
-        aggregate.seo_id = model.id
+        aggregate._set_id(model.id)
         return aggregate
 
     async def delete(self, seo_id: int) -> bool:

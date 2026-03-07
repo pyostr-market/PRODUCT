@@ -20,10 +20,10 @@ if TYPE_CHECKING:
 class PageAggregate:
     """
     Aggregate Root для страницы (Page).
-
+    
     Отвечает за:
     - Согласованность данных страницы
-    - Управление блоками страницы
+    - Управление блоками страницы (как часть транзакционной границы)
     - Публикацию доменных событий при изменениях
     """
 
@@ -44,6 +44,9 @@ class PageAggregate:
             blocks or [],
             key=lambda b: b.order
         )
+        # Устанавливаем контекст страницы для всех блоков
+        for block in self._blocks:
+            block.set_page_context(self, self._id or 0)
         self._events: list[DomainEvent] = []
 
     @property
@@ -99,7 +102,12 @@ class PageAggregate:
             ))
 
     def change_title(self, new_title: str):
-        """Изменить заголовок страницы."""
+        """
+        Изменить заголовок страницы.
+        
+        Args:
+            new_title: Новый заголовок
+        """
         old_title = self._title
         self._title = PageTitle(new_title).value
         self._record_event(PageTitleChangedEvent(
@@ -109,7 +117,12 @@ class PageAggregate:
         ))
 
     def change_slug(self, new_slug: str):
-        """Изменить slug страницы."""
+        """
+        Изменить slug страницы.
+        
+        Args:
+            new_slug: Новый slug
+        """
         old_slug = self._slug
         self._slug = PageSlug(new_slug).value
         self._record_event(PageSlugChangedEvent(
@@ -125,7 +138,18 @@ class PageAggregate:
         order: Optional[int] = None,
         block_id: Optional[int] = None,
     ) -> 'PageBlockAggregate':
-        """Добавить блок к странице."""
+        """
+        Добавить блок к странице.
+        
+        Args:
+            block_type: Тип блока
+            data: Данные блока
+            order: Порядок отображения
+            block_id: ID блока (для существующих)
+            
+        Returns:
+            Созданный блок
+        """
         from src.cms.domain.aggregates.page_block import PageBlockAggregate
         from src.cms.domain.value_objects.page_block_data import PageBlockData
 
@@ -138,8 +162,10 @@ class PageAggregate:
             page_id=self._id or 0,
             block_type=block_type,
             order=order,
-            data=PageBlockData(data=data),
+            data=data,
         )
+        # Устанавливаем контекст страницы
+        block.set_page_context(self, self._id or 0)
 
         self._blocks.append(block)
         self._blocks.sort(key=lambda b: b.order)
@@ -154,7 +180,12 @@ class PageAggregate:
         return block
 
     def remove_block(self, block_id: int):
-        """Удалить блок из страницы."""
+        """
+        Удалить блок из страницы.
+        
+        Args:
+            block_id: ID блока для удаления
+        """
         for i, block in enumerate(self._blocks):
             if block.id == block_id:
                 self._blocks.pop(i)
@@ -165,7 +196,15 @@ class PageAggregate:
                 break
 
     def get_block(self, block_id: int) -> Optional['PageBlockAggregate']:
-        """Получить блок по ID."""
+        """
+        Получить блок по ID.
+        
+        Args:
+            block_id: ID блока
+            
+        Returns:
+            Блок или None
+        """
         for block in self._blocks:
             if block.id == block_id:
                 return block
@@ -174,7 +213,7 @@ class PageAggregate:
     def reorder_blocks(self, block_order: list[tuple[int, int]]):
         """
         Переупорядочить блоки.
-
+        
         Args:
             block_order: Список кортежей (block_id, new_order)
         """
@@ -186,8 +225,14 @@ class PageAggregate:
         self._blocks.sort(key=lambda b: b.order)
 
     def _set_id(self, page_id: int):
-        """Установить ID страницы (используется после создания)."""
+        """
+        Установить ID страницы (используется после создания).
+        
+        Args:
+            page_id: ID страницы
+        """
         self._id = page_id
-        # Обновляем page_id у всех блоков
+        # Обновляем page_id у всех блоков и устанавливаем контекст
         for block in self._blocks:
-            block.page_id = page_id
+            block._set_page_id(page_id)
+            block.set_page_context(self, page_id)

@@ -51,7 +51,7 @@ class SqlAlchemyFaqRepository(FaqRepository):
         self.db.add(model)
         await self.db.flush()
 
-        aggregate.faq_id = model.id
+        aggregate._set_id(model.id)
         return aggregate
 
     async def delete(self, faq_id: int) -> bool:

@@ -17,9 +17,9 @@ class AddPageBlockCommand:
         uow: UnitOfWork,
         event_bus: AsyncEventBus,
     ):
-        self.repository = repository
-        self.uow = uow
-        self.event_bus = event_bus
+        self._repository = repository
+        self._uow = uow
+        self._event_bus = event_bus
 
     async def execute(
         self,
@@ -28,15 +28,30 @@ class AddPageBlockCommand:
         data: dict[str, Any],
         order: int | None = None,
     ) -> int:
+        """
+        Выполнить команду добавления блока.
+        
+        Args:
+            page_id: ID страницы
+            block_type: Тип блока
+            data: Данные блока
+            order: Порядок отображения
+            
+        Returns:
+            ID добавленного блока
+            
+        Raises:
+            PageNotFound: Если страница не найдена
+        """
         # Загружаем страницу
-        aggregate = await self.repository.get_by_id(page_id)
+        aggregate = await self._repository.get_by_id(page_id)
         if not aggregate:
             from src.cms.domain.exceptions import PageNotFound
             raise PageNotFound()
 
         try:
-            async with self.uow:
-                # Добавляем блок
+            async with self._uow:
+                # Добавляем блок через агрегат
                 block = aggregate.add_block(
                     block_type=block_type,
                     data=data,
@@ -44,7 +59,7 @@ class AddPageBlockCommand:
                 )
 
                 # Сохраняем
-                await self.repository.update(aggregate)
+                await self._repository.update(aggregate)
 
                 # Получаем доменные события
                 domain_events = block.get_events()
@@ -52,7 +67,7 @@ class AddPageBlockCommand:
             # Публикуем события
             events = self._build_events(aggregate, block, domain_events)
             if events:
-                self.event_bus.publish_many_nowait(events)
+                self._event_bus.publish_many_nowait(events)
 
             return block.id or 0
 

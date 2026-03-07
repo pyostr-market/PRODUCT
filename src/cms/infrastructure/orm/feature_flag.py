@@ -47,7 +47,7 @@ class SqlAlchemyFeatureFlagRepository(FeatureFlagRepository):
         self.db.add(model)
         await self.db.flush()
 
-        aggregate.flag_id = model.id
+        aggregate._set_id(model.id)
         return aggregate
 
     async def delete(self, flag_id: int) -> bool:

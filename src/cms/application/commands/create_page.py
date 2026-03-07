@@ -4,6 +4,7 @@ from src.cms.application.dto.cms_dto import PageCreateDTO, PageReadDTO
 from src.cms.domain.aggregates.page import PageAggregate
 from src.cms.domain.events.cms_events import PageCreatedEvent
 from src.cms.domain.repository.page import PageRepository
+from src.cms.domain.services.page_slug_uniqueness_service import PageSlugUniquenessService
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.events import AsyncEventBus, build_event
 
@@ -16,19 +17,31 @@ class CreatePageCommand:
         repository: PageRepository,
         uow: UnitOfWork,
         event_bus: AsyncEventBus,
+        slug_uniqueness_service: PageSlugUniquenessService,
     ):
-        self.repository = repository
-        self.uow = uow
-        self.event_bus = event_bus
+        self._repository = repository
+        self._uow = uow
+        self._event_bus = event_bus
+        self._slug_uniqueness_service = slug_uniqueness_service
 
     async def execute(self, dto: PageCreateDTO) -> PageReadDTO:
-        # Проверяем уникальность slug
-        if await self.repository.exists_by_slug(dto.slug):
-            from src.cms.domain.exceptions import PageSlugAlreadyExists
-            raise PageSlugAlreadyExists(dto.slug)
-
+        """
+        Выполнить команду создания страницы.
+        
+        Args:
+            dto: Данные для создания страницы
+            
+        Returns:
+            DTO созданной страницы
+            
+        Raises:
+            PageSlugAlreadyExists: Если slug уже существует
+        """
         try:
-            async with self.uow:
+            async with self._uow:
+                # Проверяем уникальность slug через Domain Service
+                await self._slug_uniqueness_service.ensure_slug_is_unique(dto.slug)
+
                 # Создаем агрегат
                 aggregate = PageAggregate(
                     slug=dto.slug,
@@ -46,7 +59,7 @@ class CreatePageCommand:
                         )
 
                 # Сохраняем
-                await self.repository.create(aggregate)
+                await self._repository.create(aggregate)
 
                 # Получаем доменные события
                 domain_events = aggregate.get_events()
@@ -54,7 +67,7 @@ class CreatePageCommand:
             # Публикуем события
             events = self._build_events(aggregate, domain_events)
             if events:
-                self.event_bus.publish_many_nowait(events)
+                self._event_bus.publish_many_nowait(events)
 
             # Возвращаем DTO
             return self._to_read_dto(aggregate)

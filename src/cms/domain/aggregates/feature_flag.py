@@ -1,11 +1,9 @@
-from dataclasses import dataclass
 from typing import Optional
 
 from src.cms.domain.events.base import DomainEvent
 from src.cms.domain.events.cms_events import FeatureFlagChangedEvent
 
 
-@dataclass
 class FeatureFlagAggregate:
     """
     Aggregate Root для feature flag.
@@ -15,19 +13,43 @@ class FeatureFlagAggregate:
     - Публикацию доменных событий при изменениях
     """
 
-    flag_id: Optional[int]
-    key: str
-    enabled: bool
-    description: Optional[str] = None
-    _events: list[DomainEvent] = None
-
-    def __post_init__(self):
-        if self._events is None:
-            self._events = []
+    def __init__(
+        self,
+        flag_id: Optional[int] = None,
+        key: str = "",
+        enabled: bool = False,
+        description: Optional[str] = None,
+    ):
+        """
+        Инициализировать feature flag.
+        
+        Args:
+            flag_id: ID записи (None для новых)
+            key: Ключ флага
+            enabled: Включен ли
+            description: Описание
+        """
+        self._flag_id = flag_id
+        self._key = key
+        self._enabled = enabled
+        self._description = description
+        self._events: list[DomainEvent] = []
 
     @property
     def id(self) -> Optional[int]:
-        return self.flag_id
+        return self._flag_id
+
+    @property
+    def key(self) -> str:
+        return self._key
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
 
     def get_events(self) -> list[DomainEvent]:
         """Вернуть все накопленные события и очистить очередь."""
@@ -45,35 +67,44 @@ class FeatureFlagAggregate:
 
     def enable(self):
         """Включить feature flag."""
-        if not self.enabled:
-            old_enabled = self.enabled
-            self.enabled = True
+        if not self._enabled:
+            old_enabled = self._enabled
+            self._enabled = True
             self._record_event(FeatureFlagChangedEvent(
-                flag_id=self.flag_id or 0,
-                key=self.key,
+                flag_id=self._flag_id or 0,
+                key=self._key,
                 old_enabled=old_enabled,
                 new_enabled=True,
             ))
 
     def disable(self):
         """Выключить feature flag."""
-        if self.enabled:
-            old_enabled = self.enabled
-            self.enabled = False
+        if self._enabled:
+            old_enabled = self._enabled
+            self._enabled = False
             self._record_event(FeatureFlagChangedEvent(
-                flag_id=self.flag_id or 0,
-                key=self.key,
+                flag_id=self._flag_id or 0,
+                key=self._key,
                 old_enabled=old_enabled,
                 new_enabled=False,
             ))
 
     def toggle(self):
         """Переключить состояние feature flag."""
-        if self.enabled:
+        if self._enabled:
             self.disable()
         else:
             self.enable()
 
     def update_description(self, description: str):
         """Обновить описание."""
-        self.description = description
+        self._description = description
+
+    def _set_id(self, flag_id: int):
+        """
+        Установить ID (используется после создания).
+        
+        Args:
+            flag_id: ID записи
+        """
+        self._flag_id = flag_id

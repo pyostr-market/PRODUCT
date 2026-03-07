@@ -3,6 +3,7 @@ from typing import Any
 from src.cms.application.dto.cms_dto import PageBlockReadDTO, PageReadDTO, PageUpdateDTO
 from src.cms.domain.aggregates.page import PageAggregate
 from src.cms.domain.repository.page import PageRepository
+from src.cms.domain.services.page_slug_uniqueness_service import PageSlugUniquenessService
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.events import AsyncEventBus, build_event
 
@@ -15,25 +16,41 @@ class UpdatePageCommand:
         repository: PageRepository,
         uow: UnitOfWork,
         event_bus: AsyncEventBus,
+        slug_uniqueness_service: PageSlugUniquenessService,
     ):
-        self.repository = repository
-        self.uow = uow
-        self.event_bus = event_bus
+        self._repository = repository
+        self._uow = uow
+        self._event_bus = event_bus
+        self._slug_uniqueness_service = slug_uniqueness_service
 
     async def execute(self, page_id: int, dto: PageUpdateDTO) -> PageReadDTO:
+        """
+        Выполнить команду обновления страницы.
+        
+        Args:
+            page_id: ID страницы
+            dto: Данные для обновления
+            
+        Returns:
+            DTO обновленной страницы
+            
+        Raises:
+            PageNotFound: Если страница не найдена
+            PageSlugAlreadyExists: Если slug уже существует
+        """
         # Загружаем страницу
-        aggregate = await self.repository.get_by_id(page_id)
+        aggregate = await self._repository.get_by_id(page_id)
         if not aggregate:
             from src.cms.domain.exceptions import PageNotFound
             raise PageNotFound()
 
         try:
-            async with self.uow:
-                # Проверяем slug на уникальность если он меняется
+            async with self._uow:
+                # Проверяем slug на уникальность если он меняется (через Domain Service)
                 if dto.slug and dto.slug != aggregate.slug:
-                    if await self.repository.exists_by_slug(dto.slug, exclude_id=page_id):
-                        from src.cms.domain.exceptions import PageSlugAlreadyExists
-                        raise PageSlugAlreadyExists(dto.slug)
+                    await self._slug_uniqueness_service.ensure_slug_is_unique(
+                        dto.slug, exclude_id=page_id
+                    )
                     aggregate.change_slug(dto.slug)
 
                 # Обновляем title
@@ -48,7 +65,7 @@ class UpdatePageCommand:
                         aggregate.unpublish()
 
                 # Сохраняем
-                await self.repository.update(aggregate)
+                await self._repository.update(aggregate)
 
                 # Получаем доменные события
                 domain_events = aggregate.get_events()
@@ -56,7 +73,7 @@ class UpdatePageCommand:
             # Публикуем события
             events = self._build_events(aggregate, domain_events)
             if events:
-                self.event_bus.publish_many_nowait(events)
+                self._event_bus.publish_many_nowait(events)
 
             # Возвращаем DTO
             return self._to_read_dto(aggregate)

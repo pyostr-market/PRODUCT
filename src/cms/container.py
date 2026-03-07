@@ -24,11 +24,13 @@ from src.cms.domain.repository.faq import FaqRepository
 from src.cms.domain.repository.feature_flag import FeatureFlagRepository
 from src.cms.domain.repository.page import PageRepository
 from src.cms.domain.repository.seo import SeoRepository
+from src.cms.domain.services.page_slug_uniqueness_service import PageSlugUniquenessService
 from src.cms.infrastructure.orm.email_template import SqlAlchemyEmailTemplateRepository
 from src.cms.infrastructure.orm.faq import SqlAlchemyFaqRepository
 from src.cms.infrastructure.orm.feature_flag import SqlAlchemyFeatureFlagRepository
 from src.cms.infrastructure.orm.page import SqlAlchemyPageRepository
 from src.cms.infrastructure.orm.seo import SqlAlchemySeoRepository
+from src.cms.infrastructure.services.page_slug_uniqueness_service import PageSlugUniquenessServiceImpl
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus
@@ -76,6 +78,15 @@ container.register(
     lambda scope, db: SqlAlchemySeoRepository(db),
 )
 
+# ==================== Domain Services ====================
+
+container.register(
+    PageSlugUniquenessService,
+    lambda scope, db: PageSlugUniquenessServiceImpl(
+        page_repository=scope.resolve(PageRepository, db=db),
+    ),
+)
+
 # ==================== Queries ====================
 
 container.register(
@@ -111,6 +122,7 @@ container.register(
         repository=scope.resolve(PageRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        slug_uniqueness_service=scope.resolve(PageSlugUniquenessService, db=db),
     ),
 )
 
@@ -120,6 +132,7 @@ container.register(
         repository=scope.resolve(PageRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        slug_uniqueness_service=scope.resolve(PageSlugUniquenessService, db=db),
     ),
 )
 

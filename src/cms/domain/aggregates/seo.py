@@ -1,11 +1,9 @@
-from dataclasses import dataclass
 from typing import Optional
 
 from src.cms.domain.events.base import DomainEvent
 from src.cms.domain.events.cms_events import SeoUpdatedEvent
 
 
-@dataclass
 class SeoAggregate:
     """
     Aggregate Root для SEO данных.
@@ -15,23 +13,57 @@ class SeoAggregate:
     - Публикацию доменных событий при изменениях
     """
 
-    seo_id: Optional[int]
-    page_slug: str
-    title: Optional[str] = None
-    description: Optional[str] = None
-    keywords: Optional[list[str]] = None
-    og_image_id: Optional[int] = None
-    _events: list[DomainEvent] = None
-
-    def __post_init__(self):
-        if self._events is None:
-            self._events = []
-        if self.keywords is None:
-            self.keywords = []
+    def __init__(
+        self,
+        seo_id: Optional[int] = None,
+        page_slug: str = "",
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        keywords: Optional[list[str]] = None,
+        og_image_id: Optional[int] = None,
+    ):
+        """
+        Инициализировать SEO агрегат.
+        
+        Args:
+            seo_id: ID записи (None для новых)
+            page_slug: Slug страницы
+            title: Meta title
+            description: Meta description
+            keywords: Meta keywords
+            og_image_id: ID OG изображения
+        """
+        self._seo_id = seo_id
+        self._page_slug = page_slug
+        self._title = title
+        self._description = description
+        self._keywords = keywords if keywords is not None else []
+        self._og_image_id = og_image_id
+        self._events: list[DomainEvent] = []
 
     @property
     def id(self) -> Optional[int]:
-        return self.seo_id
+        return self._seo_id
+
+    @property
+    def page_slug(self) -> str:
+        return self._page_slug
+
+    @property
+    def title(self) -> Optional[str]:
+        return self._title
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @property
+    def keywords(self) -> list[str]:
+        return self._keywords
+
+    @property
+    def og_image_id(self) -> Optional[int]:
+        return self._og_image_id
 
     def get_events(self) -> list[DomainEvent]:
         """Вернуть все накопленные события и очистить очередь."""
@@ -54,19 +86,27 @@ class SeoAggregate:
         keywords: Optional[list[str]] = None,
         og_image_id: Optional[int] = None,
     ):
-        """Обновить SEO данные."""
+        """
+        Обновить SEO данные.
+        
+        Args:
+            title: Meta title
+            description: Meta description
+            keywords: Meta keywords
+            og_image_id: ID OG изображения
+        """
         if title is not None:
-            self.title = title
+            self._title = title
         if description is not None:
-            self.description = description
+            self._description = description
         if keywords is not None:
-            self.keywords = keywords
+            self._keywords = keywords
         if og_image_id is not None:
-            self.og_image_id = og_image_id
+            self._og_image_id = og_image_id
 
         self._record_event(SeoUpdatedEvent(
-            seo_id=self.seo_id or 0,
-            page_slug=self.page_slug,
+            seo_id=self._seo_id or 0,
+            page_slug=self._page_slug,
         ))
 
     def get_meta_tags(self) -> dict[str, str]:
@@ -78,14 +118,14 @@ class SeoAggregate:
         """
         meta = {}
 
-        if self.title:
-            meta['title'] = self.title
+        if self._title:
+            meta['title'] = self._title
 
-        if self.description:
-            meta['description'] = self.description
+        if self._description:
+            meta['description'] = self._description
 
-        if self.keywords:
-            meta['keywords'] = ', '.join(self.keywords)
+        if self._keywords:
+            meta['keywords'] = ', '.join(self._keywords)
 
         return meta
 
@@ -97,5 +137,14 @@ class SeoAggregate:
             Словарь с OG данными
         """
         return {
-            'og_image_id': self.og_image_id,
+            'og_image_id': self._og_image_id,
         }
+
+    def _set_id(self, seo_id: int):
+        """
+        Установить ID (используется после создания).
+        
+        Args:
+            seo_id: ID записи
+        """
+        self._seo_id = seo_id
