@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 
+from src.cms.api.api_v1.admin import admin_page_router
+from src.cms.api.api_v1.commands import page_commands_router
 from src.cms.api.api_v1.email_template import email_template_router
 from src.cms.api.api_v1.faq import faq_router
 from src.cms.api.api_v1.feature_flag import feature_flag_router
 from src.cms.api.api_v1.page import page_router
+from src.cms.api.api_v1.q import page_q_router
 from src.cms.api.api_v1.seo import seo_router
 
 
@@ -29,6 +32,15 @@ class CmsApiModule:
 
         # SEO endpoints (должен быть ПЕРЕД page_router)
         app.include_router(seo_router, prefix="/cms/seo")
+
+        # Admin page endpoints (должен быть ПЕРЕД page_router)
+        app.include_router(admin_page_router, prefix="/cms/pages")
+
+        # Page commands endpoints (должен быть ПЕРЕД page_router)
+        app.include_router(page_commands_router, prefix="/cms/pages")
+
+        # Page query endpoints (должен быть ПЕРЕД page_router)
+        app.include_router(page_q_router, prefix="/cms/pages")
 
         # Page endpoints (в конце, т.к. имеет общий маршрут /{slug})
         app.include_router(page_router, prefix="/cms")
