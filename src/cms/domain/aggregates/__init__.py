@@ -1,0 +1,1 @@
+# Domain aggregates for CMS

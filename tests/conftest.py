@@ -208,6 +208,12 @@ async def cleanup_test_data(engine, image_storage_mock):
 
     # Очищаем данные ПЕРЕД каждым тестом
     async with engine.begin() as conn:
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM cms_seo CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM cms_page_blocks CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM cms_pages CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM cms_faq CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM cms_email_templates CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM cms_feature_flags CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policy_audit_logs CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_audit_logs CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policies CASCADE"))
