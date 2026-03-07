@@ -34,13 +34,16 @@ class CmsApiModule:
         app.include_router(seo_router, prefix="/cms/seo")
 
         # Admin page endpoints (должен быть ПЕРЕД page_router)
-        app.include_router(admin_page_router, prefix="/cms/pages")
+        # Используем префикс /cms/admin для совместимости с тестами
+        app.include_router(admin_page_router, prefix="/cms/admin")
 
         # Page commands endpoints (должен быть ПЕРЕД page_router)
-        app.include_router(page_commands_router, prefix="/cms/pages")
+        # Используем префикс /cms/admin для совместимости с тестами
+        app.include_router(page_commands_router, prefix="/cms/admin")
 
         # Page query endpoints (должен быть ПЕРЕД page_router)
-        app.include_router(page_q_router, prefix="/cms/pages")
+        # Эти роуты используются для админских запросов по ID страницы
+        app.include_router(page_q_router, prefix="/cms/admin")
 
         # Page endpoints (в конце, т.к. имеет общий маршрут /{slug})
         app.include_router(page_router, prefix="/cms")

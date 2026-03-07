@@ -57,6 +57,11 @@ def authorized_user():
         'product_attribute:create',
         'product_attribute:update',
         'product_attribute:delete',
+        'cms:create',
+        'cms:delete',
+        'cms:update',
+        'cms:view',
+        'cms:audit',
     ]
     permissions = []
     for ids, name  in enumerate(permissions_names):

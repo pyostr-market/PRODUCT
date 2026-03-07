@@ -16,6 +16,7 @@ from src.cms.application.dto.cms_dto import EmailTemplateCreateDTO, EmailTemplat
 from src.cms.application.queries.email_template_queries import EmailTemplateQueries
 from src.cms.composition import CmsComposition
 from src.core.api.responses import api_response
+from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
 email_template_router = APIRouter(tags=["CMS: Email Templates"])
@@ -25,7 +26,23 @@ email_template_router = APIRouter(tags=["CMS: Email Templates"])
 @email_template_router.post(
     "/admin",
     summary="Создать email шаблон (admin)",
+    description="""
+    Создаёт новый email шаблон.
+
+    Права:
+    - Требуется permission: `cms:create`
+
+    Сценарии:
+    - Создание шаблона для транзакционных писем.
+    - Настройка email уведомлений.
+    """,
     response_description="Созданный шаблон",
+    responses={
+        200: {"description": "Шаблон успешно создан"},
+        403: {"description": "Недостаточно прав"},
+        409: {"description": "Шаблон с таким key уже существует"},
+    },
+    dependencies=[Depends(require_permissions("cms:create"))],
 )
 async def create_template(
     schema: EmailTemplateCreateSchema,
@@ -48,7 +65,23 @@ async def create_template(
 @email_template_router.put(
     "/admin/{template_id}",
     summary="Обновить email шаблон (admin)",
+    description="""
+    Обновляет email шаблон по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:update`
+
+    Сценарии:
+    - Изменение текста или темы письма.
+    - Обновление переменных шаблона.
+    """,
     response_description="Обновленный шаблон",
+    responses={
+        200: {"description": "Шаблон успешно обновлен"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "Шаблон не найден"},
+    },
+    dependencies=[Depends(require_permissions("cms:update"))],
 )
 async def update_template(
     template_id: int,
@@ -71,7 +104,22 @@ async def update_template(
 @email_template_router.delete(
     "/admin/{template_id}",
     summary="Удалить email шаблон (admin)",
+    description="""
+    Удаляет email шаблон по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:delete`
+
+    Сценарии:
+    - Удаление устаревшего шаблона.
+    """,
     response_description="Результат удаления",
+    responses={
+        200: {"description": "Шаблон успешно удален"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "Шаблон не найден"},
+    },
+    dependencies=[Depends(require_permissions("cms:delete"))],
 )
 async def delete_template(
     template_id: int,
@@ -87,6 +135,15 @@ async def delete_template(
 @email_template_router.get(
     "",
     summary="Получить все email шаблоны",
+    description="""
+    Возвращает список активных email шаблонов.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам).
+
+    Сценарии:
+    - Получение списка доступных шаблонов.
+    """,
     response_description="Список шаблонов",
 )
 async def get_all_templates(
@@ -106,7 +163,20 @@ async def get_all_templates(
 @email_template_router.get(
     "/{key}",
     summary="Получить шаблон по ключу",
+    description="""
+    Возвращает email шаблон по ключу.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам).
+
+    Сценарии:
+    - Получение шаблона для отправки письма.
+    """,
     response_description="Email шаблон",
+    responses={
+        200: {"description": "Шаблон успешно получен"},
+        404: {"description": "Шаблон не найден"},
+    },
 )
 async def get_template(
     key: str = Path(..., description="Ключ шаблона"),

@@ -15,6 +15,7 @@ from src.cms.application.dto.cms_dto import FeatureFlagCreateDTO, FeatureFlagUpd
 from src.cms.application.queries.feature_flag_queries import FeatureFlagQueries
 from src.cms.composition import CmsComposition
 from src.core.api.responses import api_response
+from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
 feature_flag_router = APIRouter(tags=["CMS: Feature Flags"])
@@ -24,7 +25,23 @@ feature_flag_router = APIRouter(tags=["CMS: Feature Flags"])
 @feature_flag_router.post(
     "/admin",
     summary="Создать feature flag (admin)",
+    description="""
+    Создаёт новый feature flag.
+
+    Права:
+    - Требуется permission: `cms:create`
+
+    Сценарии:
+    - Включение/выключение функциональности.
+    - A/B тестирование функций.
+    """,
     response_description="Созданный флаг",
+    responses={
+        200: {"description": "Feature flag успешно создан"},
+        403: {"description": "Недостаточно прав"},
+        409: {"description": "Feature flag с таким key уже существует"},
+    },
+    dependencies=[Depends(require_permissions("cms:create"))],
 )
 async def create_flag(
     schema: FeatureFlagCreateSchema,
@@ -44,7 +61,23 @@ async def create_flag(
 @feature_flag_router.put(
     "/admin/{flag_id}",
     summary="Обновить feature flag (admin)",
+    description="""
+    Обновляет feature flag по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:update`
+
+    Сценарии:
+    - Включение/выключение флага.
+    - Изменение описания флага.
+    """,
     response_description="Обновленный флаг",
+    responses={
+        200: {"description": "Feature flag успешно обновлен"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "Feature flag не найден"},
+    },
+    dependencies=[Depends(require_permissions("cms:update"))],
 )
 async def update_flag(
     flag_id: int,
@@ -64,7 +97,22 @@ async def update_flag(
 @feature_flag_router.delete(
     "/admin/{flag_id}",
     summary="Удалить feature flag (admin)",
+    description="""
+    Удаляет feature flag по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:delete`
+
+    Сценарии:
+    - Удаление устаревшего флага.
+    """,
     response_description="Результат удаления",
+    responses={
+        200: {"description": "Feature flag успешно удален"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "Feature flag не найден"},
+    },
+    dependencies=[Depends(require_permissions("cms:delete"))],
 )
 async def delete_flag(
     flag_id: int,
@@ -80,7 +128,17 @@ async def delete_flag(
 @feature_flag_router.get(
     "",
     summary="Получить все feature flags",
+    description="""
+    Возвращает список всех feature flags.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Получение списка всех флагов для админки.
+    """,
     response_description="Список флагов",
+    dependencies=[Depends(require_permissions("cms:view"))],
 )
 async def get_all_flags(
     db: AsyncSession = Depends(get_db),
@@ -99,6 +157,16 @@ async def get_all_flags(
 @feature_flag_router.get(
     "/enabled",
     summary="Получить включенные feature flags",
+    description="""
+    Возвращает список включенных feature flags.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам).
+
+    Сценарии:
+    - Проверка активных функций на фронтенде.
+    - Динамическое включение функциональности.
+    """,
     response_description="Список включенных флагов",
 )
 async def get_enabled_flags(

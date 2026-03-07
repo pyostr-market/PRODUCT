@@ -1,10 +1,14 @@
-import json
-from typing import Annotated, Any, List, Optional
+from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.cms.api.schemas.page_schemas import PageReadSchema
+from src.cms.api.schemas.page_schemas import (
+    AddBlockSchema,
+    PageCreateSchema,
+    PageReadSchema,
+    PageUpdateSchema,
+)
 from src.cms.application.commands.add_page_block import AddPageBlockCommand
 from src.cms.application.commands.create_page import CreatePageCommand
 from src.cms.application.commands.delete_page import DeletePageCommand
@@ -21,113 +25,33 @@ page_commands_router = APIRouter(
 )
 
 
-def _parse_blocks_json(blocks_json: str | None) -> list[PageBlockDTO]:
-    """
-    Парсинг JSON массива блоков для создания страницы.
-
-    Формат blocks_json:
-    ```json
-    [
-      {"block_type": "text", "data": {"content": "Hello"}, "order": 0},
-      {"block_type": "image", "data": {"upload_id": 1}, "order": 1}
-    ]
-    ```
-    """
-    if not blocks_json:
-        return []
-
-    try:
-        payload = json.loads(blocks_json)
-    except json.JSONDecodeError as exc:
-        from src.cms.domain.exceptions import CmsInvalidData
-        raise CmsInvalidData(details={"reason": "invalid_blocks_json", "error": str(exc)})
-
-    if not isinstance(payload, list):
-        from src.cms.domain.exceptions import CmsInvalidData
-        raise CmsInvalidData(details={"reason": "blocks_must_be_list"})
-
-    mapped = []
-    for idx, item in enumerate(payload):
-        if not isinstance(item, dict):
-            from src.cms.domain.exceptions import CmsInvalidData
-            raise CmsInvalidData(details={"reason": "block_item_must_be_object"})
-
-        block_type = item.get("block_type")
-        if not block_type:
-            from src.cms.domain.exceptions import CmsInvalidData
-            raise CmsInvalidData(details={"reason": "missing_block_type", "index": idx})
-
-        if not isinstance(block_type, str):
-            from src.cms.domain.exceptions import CmsInvalidData
-            raise CmsInvalidData(details={"reason": "block_type_must_be_string", "index": idx})
-
-        data = item.get("data", {})
-        if not isinstance(data, dict):
-            from src.cms.domain.exceptions import CmsInvalidData
-            raise CmsInvalidData(details={"reason": "data_must_be_object", "index": idx})
-
-        ordering = item.get("order", idx)
-        if isinstance(ordering, str):
-            try:
-                ordering = int(ordering)
-            except ValueError:
-                ordering = idx
-
-        mapped.append(
-            PageBlockDTO(
-                block_type=block_type,
-                data=data,
-                order=ordering,
+def _page_create_schema_to_dto(schema: PageCreateSchema) -> PageCreateDTO:
+    """Конвертация схемы создания страницы в DTO."""
+    blocks_dto = []
+    if schema.blocks:
+        for block in schema.blocks:
+            blocks_dto.append(
+                PageBlockDTO(
+                    block_type=block.block_type,
+                    data=block.data,
+                    order=block.order,
+                )
             )
-        )
+    return PageCreateDTO(
+        slug=schema.slug,
+        title=schema.title,
+        is_published=schema.is_published,
+        blocks=blocks_dto,
+    )
 
-    return mapped
 
-
-async def _build_block_operations_dto(
-    blocks_json: str | None,
-) -> list[dict[str, Any]] | None:
-    """
-    Построение DTO для операций с блоками при обновлении страницы.
-
-    blocks_json - JSON-список операций {action, block_id, block_type, data, ordering}
-    """
-    if not blocks_json:
-        return None
-
-    try:
-        payload = json.loads(blocks_json)
-    except json.JSONDecodeError as exc:
-        from src.cms.domain.exceptions import CmsInvalidData
-        raise CmsInvalidData(details={"reason": "invalid_blocks_json", "error": str(exc)})
-
-    if not isinstance(payload, list):
-        from src.cms.domain.exceptions import CmsInvalidData
-        raise CmsInvalidData(details={"reason": "blocks_must_be_list"})
-
-    operations: list[dict[str, Any]] = []
-
-    for item in payload:
-        if not isinstance(item, dict):
-            from src.cms.domain.exceptions import CmsInvalidData
-            raise CmsInvalidData(details={"reason": "block_operation_must_be_object"})
-
-        action = item.get("action")
-        if action not in ("create", "update", "delete", "pass"):
-            from src.cms.domain.exceptions import CmsInvalidData
-            raise CmsInvalidData(details={"reason": "invalid_action", "action": action})
-
-        op = {
-            "action": action,
-            "block_id": item.get("block_id"),
-            "block_type": item.get("block_type"),
-            "data": item.get("data"),
-            "order": item.get("order"),
-        }
-
-        operations.append(op)
-
-    return operations if operations else None
+def _page_update_schema_to_dto(schema: PageUpdateSchema) -> PageUpdateDTO:
+    """Конвертация схемы обновления страницы в DTO."""
+    return PageUpdateDTO(
+        slug=schema.slug,
+        title=schema.title,
+        is_published=schema.is_published,
+    )
 
 
 @page_commands_router.post(
@@ -138,14 +62,14 @@ async def _build_block_operations_dto(
     Создаёт новую страницу с блоками контента.
 
     Права:
-    - Требуется permission: `cms:page:create`
+    - Требуется permission: `cms:create`
 
     Сценарии:
     - Создание новой статической страницы (о компании, доставка, контакты).
     - Создание лендинга с набором блоков.
     - Публикация новой страницы с предварительной настройкой блоков.
 
-    **Формат `blocks_json`** (массив объектов с block_type и data):
+    **Формат `blocks`** (массив объектов с block_type и data):
     ```json
     [
       {"block_type": "text", "data": {"content": "Добро пожаловать"}, "order": 0},
@@ -204,7 +128,7 @@ async def _build_block_operations_dto(
             },
         },
         400: {
-            "description": "Некорректный JSON блоков или некорректные входные данные",
+            "description": "Некорректные входные данные",
             "content": {
                 "application/json": {
                     "example": {
@@ -213,7 +137,7 @@ async def _build_block_operations_dto(
                             "code": "cms_invalid_data",
                             "message": "Некорректные данные CMS",
                             "details": {
-                                "reason": "invalid_blocks_json",
+                                "reason": "invalid_data",
                             },
                         },
                     }
@@ -237,24 +161,15 @@ async def _build_block_operations_dto(
             },
         },
     },
-    dependencies=[Depends(require_permissions("cms:page:create"))],
+    dependencies=[Depends(require_permissions("cms:create"))],
 )
 async def create(
-    slug: Annotated[str, Form(...)],
-    title: Annotated[str, Form(...)],
-    is_published: Annotated[bool, Form()] = False,
-    blocks_json: Annotated[str | None, Form()] = None,
+    schema: PageCreateSchema,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    blocks_dto = _parse_blocks_json(blocks_json) if blocks_json else []
+    dto = _page_create_schema_to_dto(schema)
     commands = CmsComposition.build_create_page_command(db)
-    dto = PageCreateDTO(
-        slug=slug,
-        title=title,
-        is_published=is_published,
-        blocks=blocks_dto,
-    )
     result = await commands.execute(dto)
     return api_response(PageReadSchema.model_validate(result))
 
@@ -266,7 +181,7 @@ async def create(
     Частично обновляет страницу по идентификатору.
 
     Права:
-    - Требуется permission: `cms:page:update`
+    - Требуется permission: `cms:update`
 
     Сценарии:
     - Изменение заголовка или slug страницы.
@@ -274,14 +189,14 @@ async def create(
     - Управление блоками контента.
 
     Работа с блоками:
-    - Блоки передаются через `blocks_json` (JSON-массив операций).
+    - Блоки передаются через `blocks` (массив операций).
     - Каждая операция имеет поле `action`: `create`, `update`, `delete`, `pass`.
     - `create` — добавить блок (требуется `block_type`).
     - `update` — обновить блок (требуется `block_id`).
     - `delete` — удалить блок (требуется `block_id`).
     - `pass` — сохранить существующий блок (требуется `block_id`).
 
-    Пример `blocks_json`:
+    Пример `blocks`:
     ```json
     [
       {"action": "pass", "block_id": 1, "order": 0},
@@ -320,7 +235,7 @@ async def create(
             },
         },
         400: {
-            "description": "Переданы некорректные данные (например, invalid JSON)",
+            "description": "Переданы некорректные данные",
             "content": {
                 "application/json": {
                     "example": {
@@ -328,7 +243,7 @@ async def create(
                         "error": {
                             "code": "cms_invalid_data",
                             "message": "Некорректные данные CMS",
-                            "details": {"reason": "invalid_blocks_json"},
+                            "details": {"reason": "invalid_data"},
                         },
                     }
                 }
@@ -366,23 +281,16 @@ async def create(
             },
         },
     },
-    dependencies=[Depends(require_permissions("cms:page:update"))],
+    dependencies=[Depends(require_permissions("cms:update"))],
 )
 async def update(
     page_id: int,
-    slug: Annotated[str | None, Form()] = None,
-    title: Annotated[str | None, Form()] = None,
-    is_published: Annotated[bool | None, Form()] = None,
-    blocks_json: Annotated[str | None, Form()] = None,
+    schema: PageUpdateSchema,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    dto = _page_update_schema_to_dto(schema)
     commands = CmsComposition.build_update_page_command(db)
-    dto = PageUpdateDTO(
-        slug=slug,
-        title=title,
-        is_published=is_published,
-    )
     result = await commands.execute(page_id, dto)
     return api_response(PageReadSchema.model_validate(result))
 
@@ -394,7 +302,7 @@ async def update(
     Удаляет страницу по идентификатору.
 
     Права:
-    - Требуется permission: `cms:page:delete`
+    - Требуется permission: `cms:delete`
 
     Сценарии:
     - Удаление устаревшей страницы.
@@ -406,7 +314,7 @@ async def update(
             "description": "Страница успешно удалена",
             "content": {
                 "application/json": {
-                    "example": {"success": True, "data": {"deleted": True}}
+                    "example": {"success": True, "data": {"page_id": 1, "deleted": True}}
                 }
             },
         },
@@ -427,7 +335,7 @@ async def update(
         },
         403: {"description": "Недостаточно прав"},
     },
-    dependencies=[Depends(require_permissions("cms:page:delete"))],
+    dependencies=[Depends(require_permissions("cms:delete"))],
 )
 async def delete(
     page_id: int,
@@ -436,7 +344,7 @@ async def delete(
 ):
     commands = CmsComposition.build_delete_page_command(db)
     result = await commands.execute(page_id)
-    return api_response({"deleted": result})
+    return api_response({"page_id": page_id, "deleted": result})
 
 
 @page_commands_router.post(
@@ -446,14 +354,14 @@ async def delete(
     Добавляет новый блок контента на существующую страницу.
 
     Права:
-    - Требуется permission: `cms:page:update`
+    - Требуется permission: `cms:update`
 
     Сценарии:
     - Добавление нового текстового блока.
     - Добавление изображения или видео.
     - Расширение контента страницы.
 
-    **Формат `data_json`**:
+    **Формат `data`**:
     ```json
     {"content": "Текст блока"}
     ```
@@ -495,22 +403,19 @@ async def delete(
         },
         403: {"description": "Недостаточно прав"},
     },
-    dependencies=[Depends(require_permissions("cms:page:update"))],
+    dependencies=[Depends(require_permissions("cms:update"))],
 )
 async def add_block(
     page_id: int,
-    block_type: Annotated[str, Form(...)],
-    data_json: Annotated[str | None, Form()] = None,
-    order: Annotated[int | None, Form()] = None,
+    schema: AddBlockSchema,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    data = json.loads(data_json) if data_json else {}
     commands = CmsComposition.build_add_page_block_command(db)
     block_id = await commands.execute(
         page_id=page_id,
-        block_type=block_type,
-        data=data,
-        order=order,
+        block_type=schema.block_type,
+        data=schema.data,
+        order=schema.order,
     )
     return api_response({"block_id": block_id, "page_id": page_id})

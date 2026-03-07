@@ -17,6 +17,7 @@ from src.cms.application.dto.cms_dto import FaqCreateDTO, FaqUpdateDTO
 from src.cms.application.queries.faq_queries import FaqQueries
 from src.cms.composition import CmsComposition
 from src.core.api.responses import api_response
+from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
 faq_router = APIRouter(tags=["CMS: FAQ"])
@@ -26,7 +27,22 @@ faq_router = APIRouter(tags=["CMS: FAQ"])
 @faq_router.post(
     "/admin",
     summary="Создать FAQ (admin)",
+    description="""
+    Создаёт новый FAQ элемент.
+
+    Права:
+    - Требуется permission: `cms:create`
+
+    Сценарии:
+    - Добавление нового вопроса и ответа.
+    - Создание FAQ с категоризацией.
+    """,
     response_description="Созданный FAQ",
+    responses={
+        200: {"description": "FAQ успешно создан"},
+        403: {"description": "Недостаточно прав"},
+    },
+    dependencies=[Depends(require_permissions("cms:create"))],
 )
 async def create_faq(
     schema: FaqCreateSchema,
@@ -48,7 +64,23 @@ async def create_faq(
 @faq_router.put(
     "/admin/{faq_id}",
     summary="Обновить FAQ (admin)",
+    description="""
+    Обновляет FAQ элемент по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:update`
+
+    Сценарии:
+    - Изменение вопроса или ответа.
+    - Обновление категории или порядка.
+    """,
     response_description="Обновленный FAQ",
+    responses={
+        200: {"description": "FAQ успешно обновлен"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "FAQ не найден"},
+    },
+    dependencies=[Depends(require_permissions("cms:update"))],
 )
 async def update_faq(
     faq_id: int,
@@ -71,7 +103,22 @@ async def update_faq(
 @faq_router.delete(
     "/admin/{faq_id}",
     summary="Удалить FAQ (admin)",
+    description="""
+    Удаляет FAQ элемент по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:delete`
+
+    Сценарии:
+    - Удаление устаревшего FAQ.
+    """,
     response_description="Результат удаления",
+    responses={
+        200: {"description": "FAQ успешно удален"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "FAQ не найден"},
+    },
+    dependencies=[Depends(require_permissions("cms:delete"))],
 )
 async def delete_faq(
     faq_id: int,
@@ -87,6 +134,16 @@ async def delete_faq(
 @faq_router.get(
     "",
     summary="Получить все FAQ",
+    description="""
+    Возвращает список опубликованных FAQ.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам).
+
+    Сценарии:
+    - Отображение FAQ на сайте.
+    - Фильтрация по категории.
+    """,
     response_description="Список FAQ",
 )
 async def get_all_faq(
@@ -107,6 +164,12 @@ async def get_all_faq(
 @faq_router.get(
     "/categories",
     summary="Получить категории FAQ",
+    description="""
+    Возвращает список всех категорий FAQ.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам).
+    """,
     response_description="Список категорий",
 )
 async def get_faq_categories(

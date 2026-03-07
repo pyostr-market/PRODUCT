@@ -16,11 +16,12 @@ class PageQueries:
         self.db = db
 
     async def get_by_slug(self, slug: str) -> Optional[PageReadDTO]:
-        """Получить страницу по slug."""
+        """Получить страницу по slug (только опубликованные)."""
         stmt = (
             select(CmsPage)
             .options(selectinload(CmsPage.blocks))
             .where(CmsPage.slug == slug)
+            .where(CmsPage.is_published == True)
         )
         result = await self.db.execute(stmt)
         model = result.scalar_one_or_none()

@@ -56,7 +56,7 @@ class SqlAlchemyPageRepository(PageRepository):
         await self.db.flush()
 
         # Добавляем блоки
-        for block in aggregate.blocks:
+        for idx, block in enumerate(aggregate.blocks):
             block_model = CmsPageBlock(
                 page_id=model.id,
                 block_type=block.block_type,
@@ -68,7 +68,22 @@ class SqlAlchemyPageRepository(PageRepository):
 
         await self.db.flush()
 
+        # Устанавливаем ID для агрегата и блоков
         aggregate._set_id(model.id)
+        
+        # Обновляем ID блоков из модели БД
+        stmt = (
+            select(CmsPageBlock)
+            .where(CmsPageBlock.page_id == model.id)
+            .order_by(CmsPageBlock.id)
+        )
+        result = await self.db.execute(stmt)
+        block_models = result.scalars().all()
+        
+        # Сопоставляем блоки агрегата с моделями БД по порядку
+        for agg_block, db_block in zip(aggregate.blocks, block_models):
+            agg_block._set_id(db_block.id)
+        
         return aggregate
 
     async def delete(self, page_id: int) -> bool:

@@ -9,6 +9,7 @@ from src.cms.application.dto.cms_dto import SeoCreateDTO, SeoUpdateDTO
 from src.cms.application.queries.seo_queries import SeoQueries
 from src.cms.composition import CmsComposition
 from src.core.api.responses import api_response
+from src.core.auth.dependencies import require_permissions
 from src.core.db.database import get_db
 
 seo_router = APIRouter(tags=["CMS: SEO"])
@@ -18,7 +19,23 @@ seo_router = APIRouter(tags=["CMS: SEO"])
 @seo_router.post(
     "/admin",
     summary="Создать SEO данные (admin)",
+    description="""
+    Создаёт SEO данные для страницы.
+
+    Права:
+    - Требуется permission: `cms:create`
+
+    Сценарии:
+    - Добавление meta тегов для страницы.
+    - Настройка SEO оптимизации.
+    """,
     response_description="Созданные SEO данные",
+    responses={
+        200: {"description": "SEO данные успешно созданы"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "Страница не найдена"},
+    },
+    dependencies=[Depends(require_permissions("cms:create"))],
 )
 async def create_seo(
     schema: SeoCreateSchema,
@@ -40,7 +57,23 @@ async def create_seo(
 @seo_router.put(
     "/admin/{seo_id}",
     summary="Обновить SEO данные (admin)",
+    description="""
+    Обновляет SEO данные по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:update`
+
+    Сценарии:
+    - Изменение meta тегов.
+    - Обновление keywords или description.
+    """,
     response_description="Обновленные SEO данные",
+    responses={
+        200: {"description": "SEO данные успешно обновлены"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "SEO данные не найдены"},
+    },
+    dependencies=[Depends(require_permissions("cms:update"))],
 )
 async def update_seo(
     seo_id: int,
@@ -62,7 +95,22 @@ async def update_seo(
 @seo_router.delete(
     "/admin/{seo_id}",
     summary="Удалить SEO данные (admin)",
+    description="""
+    Удаляет SEO данные по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:delete`
+
+    Сценарии:
+    - Удаление устаревших SEO данных.
+    """,
     response_description="Результат удаления",
+    responses={
+        200: {"description": "SEO данные успешно удалены"},
+        403: {"description": "Недостаточно прав"},
+        404: {"description": "SEO данные не найдены"},
+    },
+    dependencies=[Depends(require_permissions("cms:delete"))],
 )
 async def delete_seo(
     seo_id: int,
@@ -78,7 +126,21 @@ async def delete_seo(
 @seo_router.get(
     "/{page_slug}/meta",
     summary="Получить meta теги для страницы",
+    description="""
+    Возвращает meta теги для указанной страницы.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам).
+
+    Сценарии:
+    - Получение SEO данных для фронтенда.
+    - Динамическая генерация meta тегов.
+    """,
     response_description="Meta теги",
+    responses={
+        200: {"description": "Meta теги успешно получены"},
+        404: {"description": "SEO данные не найдены"},
+    },
 )
 async def get_seo_meta(
     page_slug: str = Path(..., description="Slug страницы"),

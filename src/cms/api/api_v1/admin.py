@@ -24,7 +24,7 @@ admin_page_router = APIRouter(
     Возвращает журнал изменений по страницам с фильтрами и пагинацией.
 
     Права:
-    - Требуется permission: `cms:page:audit`
+    - Требуется permission: `cms:view`
 
     Сценарии:
     - Разбор инцидентов и восстановление хронологии изменений.
@@ -59,7 +59,7 @@ admin_page_router = APIRouter(
         },
         403: {"description": "Недостаточно прав"},
     },
-    dependencies=[Depends(require_permissions("cms:page:audit"))],
+    dependencies=[Depends(require_permissions("cms:view"))],
 )
 async def get_audit_logs(
     page_id: Optional[int] = Query(None, description="Фильтр по ID страницы"),
