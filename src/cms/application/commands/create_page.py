@@ -53,9 +53,9 @@ class CreatePageCommand:
                 if dto.blocks:
                     for block_dto in dto.blocks:
                         aggregate.add_block(
-                            block_type=block_dto.block_type if hasattr(block_dto, 'block_type') else 'text',
+                            block_type=block_dto.block_type,
                             data=block_dto.data or {},
-                            order=block_dto.ordering if hasattr(block_dto, 'ordering') else 0,
+                            order=block_dto.order,
                         )
 
                 # Сохраняем

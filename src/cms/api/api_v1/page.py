@@ -15,7 +15,7 @@ from src.cms.application.commands.add_page_block import AddPageBlockCommand
 from src.cms.application.commands.create_page import CreatePageCommand
 from src.cms.application.commands.delete_page import DeletePageCommand
 from src.cms.application.commands.update_page import UpdatePageCommand
-from src.cms.application.dto.cms_dto import PageCreateDTO, PageUpdateDTO
+from src.cms.application.dto.cms_dto import PageBlockDTO, PageCreateDTO, PageUpdateDTO
 from src.cms.application.queries.page_queries import PageQueries
 from src.cms.composition import CmsComposition
 from src.core.api.responses import api_response
@@ -35,11 +35,24 @@ async def create_page(
     db: AsyncSession = Depends(get_db),
 ):
     command = CmsComposition.build_create_page_command(db)
+    
+    # Конвертируем блоки из schema в DTO
+    blocks_dto = None
+    if schema.blocks:
+        blocks_dto = [
+            PageBlockDTO(
+                block_type=b.block_type,
+                data=b.data,
+                order=b.order,
+            )
+            for b in schema.blocks
+        ]
+    
     dto = PageCreateDTO(
         slug=schema.slug,
         title=schema.title,
         is_published=schema.is_published,
-        blocks=schema.blocks,
+        blocks=blocks_dto,
     )
     result = await command.execute(dto)
 

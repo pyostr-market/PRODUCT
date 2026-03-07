@@ -4,8 +4,9 @@ from typing import Any, Optional
 
 @dataclass
 class PageBlockDTO:
+    block_type: str = "text"
     upload_id: Optional[int] = None
-    ordering: int = 0
+    order: int = 0
     data: Optional[dict[str, Any]] = None
 
 

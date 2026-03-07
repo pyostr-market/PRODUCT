@@ -15,19 +15,20 @@ class CmsApiModule:
     mount_paths = ["/cms"]
 
     def mount(self, app: FastAPI) -> None:
-        # Admin endpoints регистрируем ПЕРЕД public чтобы избежать конфликтов маршрутизации
-        
-        # Page admin endpoints
-        app.include_router(page_router, prefix="/cms")
-        
-        # FAQ endpoints
+        # Специфичные роутеры регистрируем ПЕРЕД page_router чтобы избежать конфликтов
+        # page_router имеет маршрут /{slug} который перехватывает все запросы
+
+        # FAQ endpoints (должен быть ПЕРЕД page_router)
         app.include_router(faq_router, prefix="/cms/faq")
-        
-        # Email template endpoints
+
+        # Email template endpoints (должен быть ПЕРЕД page_router)
         app.include_router(email_template_router, prefix="/cms/email-templates")
-        
-        # Feature flag endpoints
+
+        # Feature flag endpoints (должен быть ПЕРЕД page_router)
         app.include_router(feature_flag_router, prefix="/cms/feature-flags")
-        
-        # SEO endpoints
+
+        # SEO endpoints (должен быть ПЕРЕД page_router)
         app.include_router(seo_router, prefix="/cms/seo")
+
+        # Page endpoints (в конце, т.к. имеет общий маршрут /{slug})
+        app.include_router(page_router, prefix="/cms")
