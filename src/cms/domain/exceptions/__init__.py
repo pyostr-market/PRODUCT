@@ -81,6 +81,14 @@ class EmailTemplateKeyInvalid(CmsError):
         super().__init__(message="Некорректный ключ email шаблона. Допустимы только буквы, цифры и подчеркивания", code="email_template_key_invalid", status_code=400)
 
 
+class EmailTemplateKeyAlreadyExists(CmsError):
+    """Ключ email шаблона уже существует."""
+
+    def __init__(self, key: str):
+        self.key = key
+        super().__init__(message=f"Email шаблон с ключом '{key}' уже существует", code="email_template_key_exists", status_code=400)
+
+
 class FeatureFlagNotFound(CmsError):
     """Feature flag не найден."""
 
@@ -90,6 +98,14 @@ class FeatureFlagNotFound(CmsError):
         if key:
             message += f": {key}"
         super().__init__(message=message, code="feature_flag_not_found", status_code=404)
+
+
+class FeatureFlagKeyAlreadyExists(CmsError):
+    """Ключ feature flag уже существует."""
+
+    def __init__(self, key: str):
+        self.key = key
+        super().__init__(message=f"Feature flag с ключом '{key}' уже существует", code="feature_flag_key_exists", status_code=400)
 
 
 class SeoNotFound(CmsError):
@@ -105,9 +121,11 @@ class SeoNotFound(CmsError):
 
 __all__ = [
     "CmsError",
+    "EmailTemplateKeyAlreadyExists",
     "EmailTemplateKeyInvalid",
     "EmailTemplateNotFound",
     "FaqNotFound",
+    "FeatureFlagKeyAlreadyExists",
     "FeatureFlagNotFound",
     "PageBlockNotFound",
     "PageBlockTypeInvalid",

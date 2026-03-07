@@ -121,7 +121,7 @@ async def test_add_page_block_200(authorized_client):
     # Создаём страницу
     create_response = await authorized_client.post(
         "/cms/admin",
-        json={"slug": "page-with-blocks", "title": "Page With Blocks"},
+        json={"slug": "page-with-blocks", "title": "Page With Blocks", "is_published": True},
     )
     assert create_response.status_code == 200
     page_id = create_response.json()["data"]["id"]

@@ -3,7 +3,7 @@ from src.cms.domain.aggregates.feature_flag import FeatureFlagAggregate
 from src.cms.domain.repository.feature_flag import FeatureFlagRepository
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.events import AsyncEventBus, build_event
-from src.cms.domain.exceptions import FeatureFlagNotFound
+from src.cms.domain.exceptions import FeatureFlagKeyAlreadyExists
 
 
 class CreateFeatureFlagCommand:
@@ -23,7 +23,7 @@ class CreateFeatureFlagCommand:
         # Проверяем уникальность ключа
         existing = await self.repository.get_by_key(dto.key)
         if existing:
-            raise FeatureFlagNotFound(dto.key)
+            raise FeatureFlagKeyAlreadyExists(dto.key)
 
         aggregate = FeatureFlagAggregate(
             flag_id=None,

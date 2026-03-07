@@ -22,8 +22,8 @@ class CreateEmailTemplateCommand:
         # Проверяем уникальность ключа
         existing = await self.repository.get_by_key(dto.key)
         if existing:
-            from src.cms.domain.exceptions import EmailTemplateKeyInvalid
-            raise EmailTemplateKeyInvalid()
+            from src.cms.domain.exceptions import EmailTemplateKeyAlreadyExists
+            raise EmailTemplateKeyAlreadyExists(dto.key)
 
         aggregate = EmailTemplateAggregate(
             template_id=None,
