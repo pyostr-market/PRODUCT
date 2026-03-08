@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.cms.api.schemas.faq_schemas import (
@@ -130,6 +130,105 @@ async def delete_faq(
     return api_response({"success": result, "faq_id": faq_id})
 
 
+@faq_router.get(
+    "/admin/{faq_id}",
+    summary="Получить FAQ по ID (admin)",
+    description="""
+    Возвращает детальную информацию о FAQ по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Получение FAQ для админки.
+    """,
+    response_description="FAQ элемент",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_faq_by_id(
+    faq_id: int = Path(..., description="ID FAQ"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_faq_queries(db)
+    result = await queries.get_by_id(faq_id)
+
+    if not result:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": {"message": "FAQ не найден", "code": "faq_not_found"}}
+        )
+
+    return api_response(FaqReadSchema.model_validate(result))
+
+
+@faq_router.get(
+    "/admin/search",
+    summary="Поиск FAQ (admin)",
+    description="""
+    Поиск FAQ по частичному совпадению в вопросе или ответе (LIKE).
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Поиск FAQ в админке.
+    - Фильтрация по категории.
+    """,
+    response_description="Список FAQ",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def search_faq(
+    q: str = Query(..., description="Поисковый запрос"),
+    category: Optional[str] = Query(None, description="Фильтр по категории"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_faq_queries(db)
+    items, total = await queries.search(query=q, category=category, limit=limit, offset=offset)
+
+    return api_response(
+        FaqListResponse(
+            total=total,
+            items=[FaqReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@faq_router.get(
+    "/admin",
+    summary="Получить все FAQ (admin)",
+    description="""
+    Возвращает список всех FAQ с фильтрацией и пагинацией.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Управление FAQ в админке.
+    - Фильтрация по категории.
+    """,
+    response_description="Список FAQ",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_all_faq_admin(
+    category: Optional[str] = Query(None, description="Фильтр по категории"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_faq_queries(db)
+    items, total = await queries.get_all(category=category, is_active=None, limit=limit, offset=offset)
+
+    return api_response(
+        FaqListResponse(
+            total=total,
+            items=[FaqReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
 # Public endpoints
 @faq_router.get(
     "",
@@ -148,14 +247,16 @@ async def delete_faq(
 )
 async def get_all_faq(
     category: Optional[str] = Query(None, description="Фильтр по категории"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
     db: AsyncSession = Depends(get_db),
 ):
     queries = CmsComposition.build_faq_queries(db)
-    items = await queries.get_all(category=category, is_active=True)
+    items, total = await queries.get_all(category=category, is_active=True, limit=limit, offset=offset)
 
     return api_response(
         FaqListResponse(
-            total=len(items),
+            total=total,
             items=[FaqReadSchema.model_validate(i) for i in items],
         )
     )

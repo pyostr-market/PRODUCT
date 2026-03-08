@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.cms.api.schemas.feature_flag_schemas import (
@@ -124,6 +126,102 @@ async def delete_flag(
     return api_response({"success": result, "flag_id": flag_id})
 
 
+@feature_flag_router.get(
+    "/admin/{flag_id}",
+    summary="Получить feature flag по ID (admin)",
+    description="""
+    Возвращает детальную информацию о feature flag по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Получение флага для админки.
+    """,
+    response_description="Feature flag",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_flag_by_id(
+    flag_id: int = Path(..., description="ID флага"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_feature_flag_queries(db)
+    result = await queries.get_by_id(flag_id)
+
+    if not result:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": {"message": "Feature flag не найден", "code": "feature_flag_not_found"}}
+        )
+
+    return api_response(FeatureFlagReadSchema.model_validate(result))
+
+
+@feature_flag_router.get(
+    "/admin/search",
+    summary="Поиск feature flags (admin)",
+    description="""
+    Поиск feature flags по частичному совпадению в key или description (LIKE).
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Поиск флагов в админке.
+    """,
+    response_description="Список флагов",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def search_flags(
+    q: str = Query(..., description="Поисковый запрос"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_feature_flag_queries(db)
+    items, total = await queries.search(query=q, limit=limit, offset=offset)
+
+    return api_response(
+        FeatureFlagListResponse(
+            total=total,
+            items=[FeatureFlagReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@feature_flag_router.get(
+    "/admin",
+    summary="Получить все feature flags (admin)",
+    description="""
+    Возвращает список всех feature flags с пагинацией.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Получение списка всех флагов для админки.
+    """,
+    response_description="Список флагов",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_all_flags_admin(
+    enabled: Optional[bool] = Query(None, description="Фильтр по статусу"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_feature_flag_queries(db)
+    items, total = await queries.filter(enabled=enabled, limit=limit, offset=offset)
+
+    return api_response(
+        FeatureFlagListResponse(
+            total=total,
+            items=[FeatureFlagReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
 # Public endpoints
 @feature_flag_router.get(
     "",
@@ -141,14 +239,16 @@ async def delete_flag(
     dependencies=[Depends(require_permissions("cms:view"))],
 )
 async def get_all_flags(
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
     db: AsyncSession = Depends(get_db),
 ):
     queries = CmsComposition.build_feature_flag_queries(db)
-    items = await queries.get_all()
+    items, total = await queries.filter(limit=limit, offset=offset)
 
     return api_response(
         FeatureFlagListResponse(
-            total=len(items),
+            total=total,
             items=[FeatureFlagReadSchema.model_validate(i) for i in items],
         )
     )

@@ -99,6 +99,36 @@ class PageQueries:
 
         return [self._to_read_dto(model) for model in models], total
 
+    async def search(self, query: str, limit: int = 10, offset: int = 0) -> Tuple[list[PageReadDTO], int]:
+        """
+        Поиск страниц по заголовку (LIKE).
+
+        Args:
+            query: Поисковый запрос
+            limit: Максимальное количество записей
+            offset: Смещение для пагинации
+
+        Returns:
+            Кортеж из списка DTO и общего количества записей
+        """
+        stmt = select(CmsPage).options(selectinload(CmsPage.blocks))
+
+        if query:
+            stmt = stmt.where(CmsPage.title.ilike(f"%{query}%"))
+
+        # Получаем общее количество
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await self.db.execute(count_stmt)
+        total = total_result.scalar() or 0
+
+        # Применяем пагинацию и сортировку
+        stmt = stmt.order_by(CmsPage.id).limit(limit).offset(offset)
+
+        result = await self.db.execute(stmt)
+        models = result.scalars().all()
+
+        return [self._to_read_dto(model) for model in models], total
+
     def _to_read_dto(self, model: CmsPage) -> PageReadDTO:
         return PageReadDTO(
             id=model.id,

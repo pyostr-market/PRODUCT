@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.cms.api.schemas.email_template_schemas import (
@@ -131,6 +131,101 @@ async def delete_template(
     return api_response({"success": result, "template_id": template_id})
 
 
+@email_template_router.get(
+    "/admin/{template_id}",
+    summary="Получить email шаблон по ID (admin)",
+    description="""
+    Возвращает детальную информацию о email шаблоне по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Получение шаблона для админки.
+    """,
+    response_description="Email шаблон",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_template_by_id(
+    template_id: int = Path(..., description="ID шаблона"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_email_template_queries(db)
+    result = await queries.get_by_id(template_id)
+
+    if not result:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": {"message": "Шаблон не найден", "code": "email_template_not_found"}}
+        )
+
+    return api_response(EmailTemplateReadSchema.model_validate(result))
+
+
+@email_template_router.get(
+    "/admin/search",
+    summary="Поиск email шаблонов (admin)",
+    description="""
+    Поиск email шаблонов по частичному совпадению в key или subject (LIKE).
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Поиск шаблонов в админке.
+    """,
+    response_description="Список шаблонов",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def search_templates(
+    q: str = Query(..., description="Поисковый запрос"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_email_template_queries(db)
+    items, total = await queries.search(query=q, limit=limit, offset=offset)
+
+    return api_response(
+        EmailTemplateListResponse(
+            total=total,
+            items=[EmailTemplateReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@email_template_router.get(
+    "/admin",
+    summary="Получить все email шаблоны (admin)",
+    description="""
+    Возвращает список всех email шаблонов с пагинацией.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Управление шаблонами в админке.
+    """,
+    response_description="Список шаблонов",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_all_templates_admin(
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_email_template_queries(db)
+    items, total = await queries.filter(is_active=None, limit=limit, offset=offset)
+
+    return api_response(
+        EmailTemplateListResponse(
+            total=total,
+            items=[EmailTemplateReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
 # Public endpoints
 @email_template_router.get(
     "",
@@ -147,14 +242,16 @@ async def delete_template(
     response_description="Список шаблонов",
 )
 async def get_all_templates(
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
     db: AsyncSession = Depends(get_db),
 ):
     queries = CmsComposition.build_email_template_queries(db)
-    items = await queries.get_all(is_active=True)
+    items, total = await queries.filter(is_active=True, limit=limit, offset=offset)
 
     return api_response(
         EmailTemplateListResponse(
-            total=len(items),
+            total=total,
             items=[EmailTemplateReadSchema.model_validate(i) for i in items],
         )
     )

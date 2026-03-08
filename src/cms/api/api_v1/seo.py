@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Path
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.cms.api.schemas.seo_schemas import SeoCreateSchema, SeoMetaResponse, SeoReadSchema, SeoUpdateSchema
@@ -120,6 +122,108 @@ async def delete_seo(
     result = await command.execute(seo_id)
 
     return api_response({"success": result, "seo_id": seo_id})
+
+
+@seo_router.get(
+    "/admin/{seo_id}",
+    summary="Получить SEO данные по ID (admin)",
+    description="""
+    Возвращает детальную информацию о SEO данных по идентификатору.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Получение SEO для админки.
+    """,
+    response_description="SEO данные",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_seo_by_id(
+    seo_id: int = Path(..., description="ID SEO данных"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_seo_queries(db)
+    result = await queries.get_by_id(seo_id)
+
+    if not result:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": {"message": "SEO данные не найдены", "code": "seo_not_found"}}
+        )
+
+    return api_response(SeoReadSchema.model_validate(result))
+
+
+@seo_router.get(
+    "/admin/search",
+    summary="Поиск SEO данных (admin)",
+    description="""
+    Поиск SEO данных по частичному совпадению в title или description (LIKE).
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Поиск SEO в админке.
+    """,
+    response_description="Список SEO данных",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def search_seo(
+    q: str = Query(..., description="Поисковый запрос"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_seo_queries(db)
+    items, total = await queries.search(query=q, limit=limit, offset=offset)
+
+    return api_response(
+        SeoListResponse(
+            total=total,
+            items=[SeoReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@seo_router.get(
+    "/admin",
+    summary="Получить все SEO данные (admin)",
+    description="""
+    Возвращает список всех SEO данных с фильтрацией и пагинацией.
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Управление SEO в админке.
+    """,
+    response_description="Список SEO данных",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def get_all_seo(
+    page_slug: Optional[str] = Query(None, description="Фильтр по slug страницы"),
+    title: Optional[str] = Query(None, description="Фильтр по заголовку"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_seo_queries(db)
+    items, total = await queries.filter(
+        page_slug=page_slug,
+        title=title,
+        limit=limit,
+        offset=offset,
+    )
+
+    return api_response(
+        SeoListResponse(
+            total=total,
+            items=[SeoReadSchema.model_validate(i) for i in items],
+        )
+    )
 
 
 # Public endpoints

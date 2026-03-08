@@ -35,3 +35,9 @@ class SeoMetaResponse(BaseModel):
     description: Optional[str]
     keywords: Optional[str]
     og_image_id: Optional[int]
+
+
+class SeoListResponse(BaseModel):
+    """Ответ API для списка SEO данных."""
+    total: int
+    items: list[SeoReadSchema]
