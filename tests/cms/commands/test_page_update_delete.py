@@ -101,7 +101,7 @@ async def test_delete_page_200(authorized_client):
     assert body["data"]["page_id"] == page_id
 
     # Проверяем, что страница удалена
-    get_response = await authorized_client.get("/cms/to-delete")
+    get_response = await authorized_client.get("/cms/pages/slug/to-delete")
     assert get_response.status_code == 404
 
 
@@ -141,7 +141,7 @@ async def test_add_page_block_200(authorized_client):
     assert "block_id" in body["data"]
 
     # Проверяем, что блок добавился
-    get_response = await authorized_client.get("/cms/page-with-blocks")
+    get_response = await authorized_client.get("/cms/pages/slug/page-with-blocks")
     assert get_response.status_code == 200
     page_data = get_response.json()["data"]
     assert len(page_data["blocks"]) == 1

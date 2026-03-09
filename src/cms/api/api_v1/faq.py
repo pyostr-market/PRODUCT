@@ -131,6 +131,40 @@ async def delete_faq(
 
 
 @faq_router.get(
+    "/admin/search",
+    summary="Поиск FAQ (admin)",
+    description="""
+    Поиск FAQ по частичному совпадению в вопросе или ответе (LIKE).
+
+    Права:
+    - Требуется permission: `cms:view`
+
+    Сценарии:
+    - Поиск FAQ в админке.
+    - Фильтрация по категории.
+    """,
+    response_description="Список FAQ",
+    dependencies=[Depends(require_permissions("cms:view"))],
+)
+async def search_faq(
+    q: Optional[str] = Query(None, description="Поисковый запрос"),
+    category: Optional[str] = Query(None, description="Фильтр по категории"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_faq_queries(db)
+    items, total = await queries.search(query=q or "", category=category, limit=limit, offset=offset)
+
+    return api_response(
+        FaqListResponse(
+            total=total,
+            items=[FaqReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@faq_router.get(
     "/admin/{faq_id}",
     summary="Получить FAQ по ID (admin)",
     description="""
@@ -160,40 +194,6 @@ async def get_faq_by_id(
         )
 
     return api_response(FaqReadSchema.model_validate(result))
-
-
-@faq_router.get(
-    "/admin/search",
-    summary="Поиск FAQ (admin)",
-    description="""
-    Поиск FAQ по частичному совпадению в вопросе или ответе (LIKE).
-
-    Права:
-    - Требуется permission: `cms:view`
-
-    Сценарии:
-    - Поиск FAQ в админке.
-    - Фильтрация по категории.
-    """,
-    response_description="Список FAQ",
-    dependencies=[Depends(require_permissions("cms:view"))],
-)
-async def search_faq(
-    q: str = Query(..., description="Поисковый запрос"),
-    category: Optional[str] = Query(None, description="Фильтр по категории"),
-    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
-    offset: int = Query(0, ge=0, description="Смещение"),
-    db: AsyncSession = Depends(get_db),
-):
-    queries = CmsComposition.build_faq_queries(db)
-    items, total = await queries.search(query=q, category=category, limit=limit, offset=offset)
-
-    return api_response(
-        FaqListResponse(
-            total=total,
-            items=[FaqReadSchema.model_validate(i) for i in items],
-        )
-    )
 
 
 @faq_router.get(

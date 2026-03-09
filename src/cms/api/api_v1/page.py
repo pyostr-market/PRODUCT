@@ -13,8 +13,42 @@ page_router = APIRouter(tags=["CMS: Pages"])
 
 
 # Public endpoints - GET по ID и slug
+# Специфичные маршруты должны быть зарегистрированы ПЕРЕД общими /{page_id}
+
 @page_router.get(
-    "/{page_id}",
+    "/pages/search",
+    summary="Поиск страниц по заголовку",
+    response_description="Список страниц",
+    description="""
+    Поиск страниц по частичному совпадению в заголовке (LIKE).
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам).
+
+    Сценарии:
+    - Поиск страниц по названию.
+    - Фильтрация в админке.
+    """,
+)
+async def search_pages(
+    q: Optional[str] = Query(None, description="Поисковый запрос"),
+    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
+    offset: int = Query(0, ge=0, description="Смещение"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = CmsComposition.build_page_queries(db)
+    items, total = await queries.search(query=q or "", limit=limit, offset=offset)
+
+    return api_response(
+        PageListResponse(
+            total=total,
+            items=[PageReadSchema.model_validate(i) for i in items],
+        )
+    )
+
+
+@page_router.get(
+    "/pages/{page_id}",
     summary="Получить страницу по ID",
     response_description="Страница с блоками",
     description="""
@@ -46,7 +80,7 @@ async def get_page_by_id(
 
 
 @page_router.get(
-    "/{slug}",
+    "/pages/slug/{slug}",
     summary="Получить страницу по slug",
     response_description="Страница с блоками",
     description="""
@@ -78,39 +112,7 @@ async def get_page(
 
 
 @page_router.get(
-    "/search",
-    summary="Поиск страниц по заголовку",
-    response_description="Список страниц",
-    description="""
-    Поиск страниц по частичному совпадению в заголовке (LIKE).
-
-    Права:
-    - Не требуются (доступно авторизованным и публичным клиентам).
-
-    Сценарии:
-    - Поиск страниц по названию.
-    - Фильтрация в админке.
-    """,
-)
-async def search_pages(
-    q: str = Query(..., description="Поисковый запрос"),
-    limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
-    offset: int = Query(0, ge=0, description="Смещение"),
-    db: AsyncSession = Depends(get_db),
-):
-    queries = CmsComposition.build_page_queries(db)
-    items, total = await queries.search(query=q, limit=limit, offset=offset)
-
-    return api_response(
-        PageListResponse(
-            total=total,
-            items=[PageReadSchema.model_validate(i) for i in items],
-        )
-    )
-
-
-@page_router.get(
-    "",
+    "/pages",
     summary="Получить список страниц",
     response_description="Список страниц",
     description="""

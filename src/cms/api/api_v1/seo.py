@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.cms.api.schemas.seo_schemas import SeoCreateSchema, SeoMetaResponse, SeoReadSchema, SeoUpdateSchema
+from src.cms.api.schemas.seo_schemas import SeoCreateSchema, SeoListResponse, SeoMetaResponse, SeoReadSchema, SeoUpdateSchema
 from src.cms.application.commands.create_seo import CreateSeoCommand
 from src.cms.application.commands.delete_seo import DeleteSeoCommand
 from src.cms.application.commands.update_seo import UpdateSeoCommand
@@ -172,13 +172,13 @@ async def get_seo_by_id(
     dependencies=[Depends(require_permissions("cms:view"))],
 )
 async def search_seo(
-    q: str = Query(..., description="Поисковый запрос"),
+    q: Optional[str] = Query(None, description="Поисковый запрос"),
     limit: int = Query(10, ge=1, le=100, description="Лимит записей"),
     offset: int = Query(0, ge=0, description="Смещение"),
     db: AsyncSession = Depends(get_db),
 ):
     queries = CmsComposition.build_seo_queries(db)
-    items, total = await queries.search(query=q, limit=limit, offset=offset)
+    items, total = await queries.search(query=q or "", limit=limit, offset=offset)
 
     return api_response(
         SeoListResponse(

@@ -18,8 +18,8 @@ async def test_get_page_200(authorized_client, client):
         },
     )
 
-    # Получаем страницу
-    response = await client.get("/cms/about")
+    # Получаем страницу по slug
+    response = await client.get("/cms/pages/slug/about")
 
     assert response.status_code == 200
     body = response.json()
@@ -32,14 +32,51 @@ async def test_get_page_200(authorized_client, client):
 
 
 @pytest.mark.asyncio
+async def test_get_page_by_id_200(authorized_client, client):
+    """Тест успешного получения страницы по ID."""
+    # Создаём страницу
+    create_response = await authorized_client.post(
+        "/cms/admin",
+        json={
+            "slug": "about-id",
+            "title": "О компании ID",
+            "is_published": True,
+        },
+    )
+    page_id = create_response.json()["data"]["id"]
+
+    # Получаем страницу по ID
+    response = await client.get(f"/cms/pages/{page_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+
+    page = PageReadSchema(**body["data"])
+    assert page.id == page_id
+    assert page.slug == "about-id"
+    assert page.title == "О компании ID"
+
+
+@pytest.mark.asyncio
 async def test_get_page_404_not_found(client):
     """Тест получения несуществующей страницы."""
-    response = await client.get("/cms/non-existent-page")
+    response = await client.get("/cms/pages/slug/non-existent-page")
 
     assert response.status_code == 404
     body = response.json()
     # Проверяем что ответ содержит ошибку
     assert "error" in body or body.get("success") is False
+
+
+@pytest.mark.asyncio
+async def test_get_page_by_id_404_not_found(client):
+    """Тест получения несуществующей страницы по ID."""
+    response = await client.get("/cms/pages/999999")
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body.get("success") is False
 
 
 @pytest.mark.asyncio
@@ -56,7 +93,7 @@ async def test_get_page_404_unpublished(client, authorized_client):
     )
 
     # Пытаемся получить страницу (должна вернуть 404)
-    response = await client.get("/cms/draft-page")
+    response = await client.get("/cms/pages/slug/draft-page")
 
     assert response.status_code == 404
 
@@ -86,8 +123,8 @@ async def test_get_page_with_blocks(authorized_client, client):
         },
     )
 
-    # Получаем страницу
-    response = await client.get("/cms/home")
+    # Получаем страницу по slug
+    response = await client.get("/cms/pages/slug/home")
 
     assert response.status_code == 200
     body = response.json()
@@ -117,8 +154,8 @@ async def test_get_page_blocks_sorted_by_order(authorized_client, client):
         },
     )
 
-    # Получаем страницу
-    response = await client.get("/cms/sorted-page")
+    # Получаем страницу по slug
+    response = await client.get("/cms/pages/slug/sorted-page")
 
     assert response.status_code == 200
     body = response.json()
@@ -129,3 +166,77 @@ async def test_get_page_blocks_sorted_by_order(authorized_client, client):
     assert page.blocks[0].block_type == "banner"
     assert page.blocks[1].block_type == "hero"
     assert page.blocks[2].block_type == "text"
+
+
+@pytest.mark.asyncio
+async def test_search_pages_200(authorized_client, client):
+    """Тест поиска страниц по заголовку."""
+    # Создаём страницы
+    await authorized_client.post(
+        "/cms/admin",
+        json={"slug": "about-us", "title": "О компании", "is_published": True},
+    )
+    await authorized_client.post(
+        "/cms/admin",
+        json={"slug": "contact", "title": "Контакты", "is_published": True},
+    )
+
+    # Поиск по частичному совпадению
+    response = await client.get("/cms/pages/search?q=компании")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["total"] >= 1
+    assert "О компании" in body["data"]["items"][0]["title"]
+
+    # Поиск с пустым запросом (должны вернуться все страницы)
+    response = await client.get("/cms/pages/search")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["total"] >= 2
+
+
+@pytest.mark.asyncio
+async def test_search_pages_with_pagination(authorized_client, client):
+    """Тест поиска страниц с пагинацией."""
+    # Создаём страницы
+    for i in range(15):
+        await authorized_client.post(
+            "/cms/admin",
+            json={"slug": f"page-{i}", "title": f"Страница {i}", "is_published": True},
+        )
+
+    # Поиск с пагинацией
+    response = await client.get("/cms/pages/search?q=Страница&limit=5&offset=0")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["total"] == 15
+    assert len(body["data"]["items"]) == 5
+
+
+@pytest.mark.asyncio
+async def test_get_all_pages_with_filter(authorized_client, client):
+    """Тест получения списка страниц с фильтрацией."""
+    # Создаём страницы
+    await authorized_client.post(
+        "/cms/admin",
+        json={"slug": "published", "title": "Опубликована", "is_published": True},
+    )
+    await authorized_client.post(
+        "/cms/admin",
+        json={"slug": "draft", "title": "Черновик", "is_published": False},
+    )
+
+    # Фильтр по статусу
+    response = await client.get("/cms/pages?is_published=true&limit=10&offset=0")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["total"] == 1
+    assert body["data"]["items"][0]["title"] == "Опубликована"
