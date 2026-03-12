@@ -18,3 +18,7 @@ class ProductTypeReadRepositoryInterface(ABC):
     ) -> Tuple[List[ProductTypeReadDTO], int]:
         """Фильтрация типов продуктов с пагинацией."""
         raise NotImplementedError
+
+    async def get_tree(self) -> List[ProductTypeReadDTO]:
+        """Получить все типы продуктов для построения дерева."""
+        raise NotImplementedError

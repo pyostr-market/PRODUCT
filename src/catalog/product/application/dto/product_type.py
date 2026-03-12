@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Any, List, Optional
 
 from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 
@@ -8,7 +8,9 @@ from src.catalog.product.domain.aggregates.product_type import ProductTypeAggreg
 class ProductTypeReadDTO:
     id: int
     name: str
-    parent: Optional[ProductTypeAggregate] = None
+    parent_id: Optional[int] = None
+    parent: Optional[Any] = None
+    children: List[Any] = field(default_factory=list)
 
 
 @dataclass

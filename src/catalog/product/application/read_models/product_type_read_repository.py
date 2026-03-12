@@ -27,3 +27,6 @@ class ProductTypeReadRepository:
             limit=limit,
             offset=offset,
         )
+
+    async def get_tree(self) -> List[ProductTypeReadDTO]:
+        return await self._repository.get_tree()

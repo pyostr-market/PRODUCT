@@ -24,10 +24,20 @@ class ProductTypeReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
+    parent_id: Optional[int] = None
     parent: Optional[ProductTypeNestedSchema] = None
+    children: List["ProductTypeReadSchema"] = []
+
+
+ProductTypeReadSchema.model_rebuild()
 
 
 class ProductTypeListResponse(BaseModel):
+    total: int
+    items: List[ProductTypeReadSchema]
+
+
+class ProductTypeTreeResponse(BaseModel):
     total: int
     items: List[ProductTypeReadSchema]
 

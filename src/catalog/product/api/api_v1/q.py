@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.catalog.product.api.schemas.product_type import (
     ProductTypeListResponse,
     ProductTypeReadSchema,
+    ProductTypeTreeResponse,
 )
 from src.catalog.product.api.schemas.schemas import (
     ProductListResponse,
@@ -318,6 +319,74 @@ async def filter_products(
 product_type_q_router = APIRouter(
     tags=["Типы продуктов"],
 )
+
+
+@product_type_q_router.get(
+    "/type/tree",
+    summary="Получить дерево типов продуктов",
+    description="""
+    Возвращает все типы продуктов в виде иерархического дерева.
+
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+
+    Сценарии:
+    - Построение дерева типов продуктов в UI.
+    - Отображение вложенной структуры типов.
+    """,
+    response_description="Дерево типов продуктов в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Дерево типов продуктов успешно получено",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "total": 3,
+                            "items": [
+                                {
+                                    "id": 5,
+                                    "name": "Смартфоны",
+                                    "parent": None,
+                                    "children": [
+                                        {
+                                            "id": 6,
+                                            "name": "Планшеты",
+                                            "parent": None,
+                                            "children": []
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 7,
+                                    "name": "Наушники",
+                                    "parent": None,
+                                    "children": []
+                                },
+                            ],
+                        },
+                    }
+                }
+            },
+        },
+    },
+)
+async def get_product_type_tree(
+    db: AsyncSession = Depends(get_db),
+):
+    queries = ProductComposition.build_product_type_queries(db)
+    items, total = await queries.tree()
+
+    return api_response(
+        ProductTypeTreeResponse(
+            total=total,
+            items=[
+                ProductTypeReadSchema.model_validate(i)
+                for i in items
+            ],
+        )
+    )
 
 
 @product_type_q_router.get(
