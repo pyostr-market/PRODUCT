@@ -1,23 +1,23 @@
 from src.catalog.category.domain.events.base import DomainEvent
 from src.catalog.category.domain.events.category_events import (
     CategoryCreatedEvent,
-    CategoryUpdatedEvent,
     CategoryDeletedEvent,
-    CategoryNameChangedEvent,
     CategoryDescriptionChangedEvent,
-    CategoryParentChangedEvent,
-    CategoryManufacturerChangedEvent,
     CategoryImageAddedEvent,
     CategoryImageRemovedEvent,
     CategoryImagesReplacedEvent,
+    CategoryManufacturerChangedEvent,
+    CategoryNameChangedEvent,
+    CategoryParentChangedEvent,
+    CategoryUpdatedEvent,
+    PricingPolicyCommissionChangedEvent,
     PricingPolicyCreatedEvent,
-    PricingPolicyUpdatedEvent,
     PricingPolicyDeletedEvent,
+    PricingPolicyDiscountChangedEvent,
     PricingPolicyMarkupFixedChangedEvent,
     PricingPolicyMarkupPercentChangedEvent,
-    PricingPolicyCommissionChangedEvent,
-    PricingPolicyDiscountChangedEvent,
     PricingPolicyTaxRateChangedEvent,
+    PricingPolicyUpdatedEvent,
 )
 
 __all__ = [

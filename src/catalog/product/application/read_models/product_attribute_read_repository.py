@@ -1,7 +1,11 @@
 from typing import List, Optional, Tuple
 
-from src.catalog.product.application.dto.product_attribute import ProductAttributeReadDTO
-from src.catalog.product.domain.repository.product_attribute_read import ProductAttributeReadRepositoryInterface
+from src.catalog.product.application.dto.product_attribute import (
+    ProductAttributeReadDTO,
+)
+from src.catalog.product.domain.repository.product_attribute_read import (
+    ProductAttributeReadRepositoryInterface,
+)
 
 
 class ProductAttributeReadRepository:

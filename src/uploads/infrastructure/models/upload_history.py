@@ -41,3 +41,7 @@ class UploadHistory(Base, TimestampMixin):
         "CategoryImage",
         back_populates="upload",
     )
+    manufacturer_images = relationship(
+        "ManufacturerImage",
+        back_populates="upload",
+    )

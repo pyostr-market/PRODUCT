@@ -1,7 +1,9 @@
 from abc import ABC
 from typing import List, Optional, Tuple
 
-from src.catalog.product.application.dto.product_attribute import ProductAttributeReadDTO
+from src.catalog.product.application.dto.product_attribute import (
+    ProductAttributeReadDTO,
+)
 
 
 class ProductAttributeReadRepositoryInterface(ABC):

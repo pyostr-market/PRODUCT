@@ -7,7 +7,11 @@ from src.catalog.suppliers.domain.events.supplier_events import (
     SupplierPhoneChangedEvent,
 )
 from src.catalog.suppliers.domain.exceptions import SupplierNameTooShort
-from src.catalog.suppliers.domain.value_objects import ContactEmail, PhoneNumber, SupplierName
+from src.catalog.suppliers.domain.value_objects import (
+    ContactEmail,
+    PhoneNumber,
+    SupplierName,
+)
 
 
 class SupplierAggregate:

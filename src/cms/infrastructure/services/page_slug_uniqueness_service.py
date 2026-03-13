@@ -1,6 +1,8 @@
-from src.cms.domain.repository.page import PageRepository
-from src.cms.domain.services.page_slug_uniqueness_service import PageSlugUniquenessService
 from src.cms.domain.exceptions import PageSlugAlreadyExists
+from src.cms.domain.repository.page import PageRepository
+from src.cms.domain.services.page_slug_uniqueness_service import (
+    PageSlugUniquenessService,
+)
 
 
 class PageSlugUniquenessServiceImpl(PageSlugUniquenessService):

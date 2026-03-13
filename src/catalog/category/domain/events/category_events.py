@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import Any, Optional
 from decimal import Decimal
+from typing import Any, Optional
 
 from src.catalog.category.domain.events.base import DomainEvent
 

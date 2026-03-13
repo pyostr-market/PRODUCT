@@ -5,7 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.category.domain.aggregates.category import CategoryAggregate
 from src.catalog.category.domain.repository.category import CategoryRepository
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
 from src.uploads.domain.repository.upload_history import UploadHistoryRepository
 

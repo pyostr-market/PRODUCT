@@ -1,14 +1,14 @@
 from src.catalog.product.domain.events.base import DomainEvent
 from src.catalog.product.domain.events.product_events import (
-    ProductCreatedEvent,
-    ProductUpdatedEvent,
-    ProductDeletedEvent,
     PriceChangedEvent,
-    ProductNameChangedEvent,
-    ProductImageAddedEvent,
-    ProductImageRemovedEvent,
     ProductAttributeAddedEvent,
     ProductAttributeRemovedEvent,
+    ProductCreatedEvent,
+    ProductDeletedEvent,
+    ProductImageAddedEvent,
+    ProductImageRemovedEvent,
+    ProductNameChangedEvent,
+    ProductUpdatedEvent,
 )
 
 __all__ = [

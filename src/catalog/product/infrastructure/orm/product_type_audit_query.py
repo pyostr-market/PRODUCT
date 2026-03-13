@@ -3,7 +3,9 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.domain.repository.product_type_audit_query import ProductTypeAuditQueryRepository
+from src.catalog.product.domain.repository.product_type_audit_query import (
+    ProductTypeAuditQueryRepository,
+)
 from src.catalog.product.infrastructure.models.product_audit_logs import (
     ProductTypeAuditLog,
 )

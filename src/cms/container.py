@@ -1,15 +1,21 @@
 from src.cms.application.commands.add_page_block import AddPageBlockCommand
-from src.cms.application.commands.create_email_template import CreateEmailTemplateCommand
+from src.cms.application.commands.create_email_template import (
+    CreateEmailTemplateCommand,
+)
 from src.cms.application.commands.create_faq import CreateFaqCommand
 from src.cms.application.commands.create_feature_flag import CreateFeatureFlagCommand
 from src.cms.application.commands.create_page import CreatePageCommand
 from src.cms.application.commands.create_seo import CreateSeoCommand
-from src.cms.application.commands.delete_email_template import DeleteEmailTemplateCommand
+from src.cms.application.commands.delete_email_template import (
+    DeleteEmailTemplateCommand,
+)
 from src.cms.application.commands.delete_faq import DeleteFaqCommand
 from src.cms.application.commands.delete_feature_flag import DeleteFeatureFlagCommand
 from src.cms.application.commands.delete_page import DeletePageCommand
 from src.cms.application.commands.delete_seo import DeleteSeoCommand
-from src.cms.application.commands.update_email_template import UpdateEmailTemplateCommand
+from src.cms.application.commands.update_email_template import (
+    UpdateEmailTemplateCommand,
+)
 from src.cms.application.commands.update_faq import UpdateFaqCommand
 from src.cms.application.commands.update_feature_flag import UpdateFeatureFlagCommand
 from src.cms.application.commands.update_page import UpdatePageCommand
@@ -24,13 +30,17 @@ from src.cms.domain.repository.faq import FaqRepository
 from src.cms.domain.repository.feature_flag import FeatureFlagRepository
 from src.cms.domain.repository.page import PageRepository
 from src.cms.domain.repository.seo import SeoRepository
-from src.cms.domain.services.page_slug_uniqueness_service import PageSlugUniquenessService
+from src.cms.domain.services.page_slug_uniqueness_service import (
+    PageSlugUniquenessService,
+)
 from src.cms.infrastructure.orm.email_template import SqlAlchemyEmailTemplateRepository
 from src.cms.infrastructure.orm.faq import SqlAlchemyFaqRepository
 from src.cms.infrastructure.orm.feature_flag import SqlAlchemyFeatureFlagRepository
 from src.cms.infrastructure.orm.page import SqlAlchemyPageRepository
 from src.cms.infrastructure.orm.seo import SqlAlchemySeoRepository
-from src.cms.infrastructure.services.page_slug_uniqueness_service import PageSlugUniquenessServiceImpl
+from src.cms.infrastructure.services.page_slug_uniqueness_service import (
+    PageSlugUniquenessServiceImpl,
+)
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus

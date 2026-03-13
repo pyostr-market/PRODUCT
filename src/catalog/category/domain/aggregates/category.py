@@ -3,13 +3,13 @@ from typing import TYPE_CHECKING, Optional
 
 from src.catalog.category.domain.events.base import DomainEvent
 from src.catalog.category.domain.events.category_events import (
-    CategoryNameChangedEvent,
     CategoryDescriptionChangedEvent,
-    CategoryParentChangedEvent,
-    CategoryManufacturerChangedEvent,
     CategoryImageAddedEvent,
     CategoryImageRemovedEvent,
     CategoryImagesReplacedEvent,
+    CategoryManufacturerChangedEvent,
+    CategoryNameChangedEvent,
+    CategoryParentChangedEvent,
 )
 from src.catalog.category.domain.exceptions import CategoryNameTooShort
 

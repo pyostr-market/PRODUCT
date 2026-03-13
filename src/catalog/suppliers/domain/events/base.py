@@ -1,8 +1,8 @@
+import uuid
 from abc import ABC
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
-import uuid
 
 
 @dataclass

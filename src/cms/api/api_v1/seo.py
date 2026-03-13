@@ -3,7 +3,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.cms.api.schemas.seo_schemas import SeoCreateSchema, SeoListResponse, SeoMetaResponse, SeoReadSchema, SeoUpdateSchema
+from src.cms.api.schemas.seo_schemas import (
+    SeoCreateSchema,
+    SeoListResponse,
+    SeoMetaResponse,
+    SeoReadSchema,
+    SeoUpdateSchema,
+)
 from src.cms.application.commands.create_seo import CreateSeoCommand
 from src.cms.application.commands.delete_seo import DeleteSeoCommand
 from src.cms.application.commands.update_seo import UpdateSeoCommand

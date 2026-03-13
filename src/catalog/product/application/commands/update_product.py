@@ -6,7 +6,9 @@ from src.catalog.product.application.dto.product import (
     ProductImageReadDTO,
     ProductReadDTO,
 )
-from src.catalog.product.application.services.related_entity_loader import RelatedEntityLoader
+from src.catalog.product.application.services.related_entity_loader import (
+    RelatedEntityLoader,
+)
 from src.catalog.product.domain.aggregates.product import (
     ProductAggregate,
     ProductAttributeAggregate,
@@ -22,13 +24,13 @@ from src.catalog.product.domain.events.product_events import (
     ProductUpdatedEvent,
 )
 from src.catalog.product.domain.exceptions import ProductNotFound
-from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.domain.repository.audit import ProductAuditRepository
+from src.catalog.product.domain.repository.product import ProductRepository
 from src.core.auth.schemas.user import User
+from src.core.db.unit_of_work import UnitOfWork
 from src.core.events import AsyncEventBus, build_event
 from src.core.services.images.storage import S3ImageStorageService
 from src.uploads.domain.repository.upload_history import UploadHistoryRepository
-from src.core.db.unit_of_work import UnitOfWork
 
 
 class UpdateProductCommand:

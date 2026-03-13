@@ -17,3 +17,11 @@ class Manufacturer(TimestampMixin, Base):
         back_populates="manufacturer",
         cascade="all, delete",
     )
+
+    # 🖼 Изображение (одно)
+    image = relationship(
+        "ManufacturerImage",
+        back_populates="manufacturer",
+        cascade="all, delete-orphan",
+        uselist=False,  # Отношение один-к-одному
+    )

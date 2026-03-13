@@ -6,7 +6,9 @@ from sqlalchemy.orm import selectinload
 
 from src.catalog.product.application.dto.product_type import ProductTypeReadDTO
 from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
-from src.catalog.product.domain.repository.product_type_read import ProductTypeReadRepositoryInterface
+from src.catalog.product.domain.repository.product_type_read import (
+    ProductTypeReadRepositoryInterface,
+)
 from src.catalog.product.infrastructure.models.product_type import ProductType
 
 

@@ -1,8 +1,6 @@
 ################################# # Регистрация моделей ################################
 # src/mount_models.py
 
-import src.catalog.category.infrastructure.models
-
 # Category
 import src.catalog.category.infrastructure.models
 
@@ -15,8 +13,8 @@ import src.catalog.product.infrastructure.models
 # Supplier
 import src.catalog.suppliers.infrastructure.models
 
-# Uploads
-import src.uploads.infrastructure.models
-
 # CMS
 import src.cms.infrastructure.models
+
+# Uploads
+import src.uploads.infrastructure.models

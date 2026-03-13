@@ -40,3 +40,19 @@ class ManufacturerNameTooShort(BaseServiceError):
             code=code,
             status_code=status_code,
         )
+
+
+class ManufacturerInvalidPayload(BaseServiceError):
+    def __init__(
+            self,
+            msg: str = 'Некорректный payload производителя',
+            code: str = 'manufacturer_invalid_payload',
+            status_code: int = 400,
+            details: dict | None = None,
+    ):
+        super().__init__(
+            message=msg,
+            code=code,
+            status_code=status_code,
+            details=details,
+        )

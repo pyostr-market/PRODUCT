@@ -1,2 +1,3 @@
 from .manufacturer import Manufacturer
 from .manufacturer_audit_logs import ManufacturerAuditLog
+from .manufacturer_image import ManufacturerImage

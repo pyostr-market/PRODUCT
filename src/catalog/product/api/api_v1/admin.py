@@ -3,11 +3,16 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.product.api.schemas.export import ExportCatalogResponse, ExportCategorySchema, ExportSupplierSchema, \
-    ExportProductTypeSchema, ExportProductSchema
 from src.catalog.product.api.schemas.audit import (
     ProductAuditListResponse,
     ProductAuditReadSchema,
+)
+from src.catalog.product.api.schemas.export import (
+    ExportCatalogResponse,
+    ExportCategorySchema,
+    ExportProductSchema,
+    ExportProductTypeSchema,
+    ExportSupplierSchema,
 )
 from src.catalog.product.api.schemas.product_type import (
     ProductTypeAuditListResponse,

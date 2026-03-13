@@ -9,10 +9,19 @@ from src.cms.api.schemas.email_template_schemas import (
     EmailTemplateReadSchema,
     EmailTemplateUpdateSchema,
 )
-from src.cms.application.commands.create_email_template import CreateEmailTemplateCommand
-from src.cms.application.commands.delete_email_template import DeleteEmailTemplateCommand
-from src.cms.application.commands.update_email_template import UpdateEmailTemplateCommand
-from src.cms.application.dto.cms_dto import EmailTemplateCreateDTO, EmailTemplateUpdateDTO
+from src.cms.application.commands.create_email_template import (
+    CreateEmailTemplateCommand,
+)
+from src.cms.application.commands.delete_email_template import (
+    DeleteEmailTemplateCommand,
+)
+from src.cms.application.commands.update_email_template import (
+    UpdateEmailTemplateCommand,
+)
+from src.cms.application.dto.cms_dto import (
+    EmailTemplateCreateDTO,
+    EmailTemplateUpdateDTO,
+)
 from src.cms.application.queries.email_template_queries import EmailTemplateQueries
 from src.cms.composition import CmsComposition
 from src.core.api.responses import api_response

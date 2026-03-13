@@ -15,8 +15,8 @@ from src.catalog.product.domain.value_objects import Money, ProductName
 
 if TYPE_CHECKING:
     from src.catalog.category.domain.aggregates.category import CategoryAggregate
-    from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
     from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
+    from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 
 
 class ProductImageOperation:

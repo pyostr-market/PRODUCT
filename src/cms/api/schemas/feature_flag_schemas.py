@@ -1,8 +1,7 @@
+import re
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
-
-import re
 
 
 class FeatureFlagCreateSchema(BaseModel):

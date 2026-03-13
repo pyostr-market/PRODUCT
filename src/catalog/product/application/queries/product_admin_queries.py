@@ -1,6 +1,8 @@
 from typing import List, Optional, Tuple
 
-from src.catalog.product.domain.repository.product_audit_query import ProductAuditQueryRepository
+from src.catalog.product.domain.repository.product_audit_query import (
+    ProductAuditQueryRepository,
+)
 from src.catalog.product.infrastructure.models.product_audit_logs import ProductAuditLog
 
 

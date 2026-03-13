@@ -3,13 +3,13 @@ from typing import Optional
 
 from src.catalog.category.domain.events.base import DomainEvent
 from src.catalog.category.domain.events.category_events import (
+    PricingPolicyCommissionChangedEvent,
     PricingPolicyCreatedEvent,
-    PricingPolicyUpdatedEvent,
+    PricingPolicyDiscountChangedEvent,
     PricingPolicyMarkupFixedChangedEvent,
     PricingPolicyMarkupPercentChangedEvent,
-    PricingPolicyCommissionChangedEvent,
-    PricingPolicyDiscountChangedEvent,
     PricingPolicyTaxRateChangedEvent,
+    PricingPolicyUpdatedEvent,
 )
 from src.catalog.category.domain.exceptions import CategoryPricingPolicyInvalidRateValue
 

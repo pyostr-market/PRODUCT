@@ -13,7 +13,9 @@ from src.catalog.suppliers.application.queries.supplier_admin_queries import (
 from src.catalog.suppliers.application.queries.supplier_queries import SupplierQueries
 from src.catalog.suppliers.domain.repository.audit import SupplierAuditRepository
 from src.catalog.suppliers.domain.repository.supplier import SupplierRepository
-from src.catalog.suppliers.domain.repository.supplier_read import SupplierReadRepositoryInterface
+from src.catalog.suppliers.domain.repository.supplier_read import (
+    SupplierReadRepositoryInterface,
+)
 from src.catalog.suppliers.infrastructure.orm.supplier import (
     SqlAlchemySupplierRepository,
 )

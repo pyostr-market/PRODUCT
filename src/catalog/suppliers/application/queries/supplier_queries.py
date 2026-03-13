@@ -1,7 +1,9 @@
 from typing import Optional
 
-from src.catalog.suppliers.domain.repository.supplier_read import SupplierReadRepositoryInterface
 from src.catalog.suppliers.domain.exceptions import SupplierNotFound
+from src.catalog.suppliers.domain.repository.supplier_read import (
+    SupplierReadRepositoryInterface,
+)
 
 
 class SupplierQueries:

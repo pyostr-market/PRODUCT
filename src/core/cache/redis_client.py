@@ -2,6 +2,7 @@ from redis.asyncio import Redis
 
 from src.core.conf.settings import get_settings
 
+
 class RedisClientFactory:
 
     _client: Redis | None = None

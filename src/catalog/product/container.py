@@ -1,12 +1,9 @@
 from redis.asyncio import Redis
 
-from src.core.cache.base import Cache
-from src.core.cache.memory import InMemoryCache
-from src.core.cache.redis import RedisCache
-from src.core.cache.redis_client import RedisClientFactory
 from src.catalog.category.domain.repository.category import CategoryRepository
-from src.catalog.category.infrastructure.orm.category import SqlAlchemyCategoryRepository
-from src.catalog.product.infrastructure.orm.cache.cached_product import CachedProductRepository
+from src.catalog.category.infrastructure.orm.category import (
+    SqlAlchemyCategoryRepository,
+)
 from src.catalog.product.application.commands.create_product import CreateProductCommand
 from src.catalog.product.application.commands.create_product_attribute import (
     CreateProductAttributeCommand,
@@ -50,41 +47,74 @@ from src.catalog.product.application.read_models.product_read_repository import 
 from src.catalog.product.application.read_models.product_type_read_repository import (
     ProductTypeReadRepository,
 )
-from src.catalog.product.application.services.related_entity_loader import RelatedEntityLoader
+from src.catalog.product.application.services.related_entity_loader import (
+    RelatedEntityLoader,
+)
 from src.catalog.product.domain.repository.audit import ProductAuditRepository
 from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.domain.repository.product_attribute import (
     ProductAttributeRepository,
 )
-from src.catalog.product.domain.repository.product_attribute_read import ProductAttributeReadRepositoryInterface
-from src.catalog.product.domain.repository.product_read import ProductReadRepositoryInterface
+from src.catalog.product.domain.repository.product_attribute_read import (
+    ProductAttributeReadRepositoryInterface,
+)
+from src.catalog.product.domain.repository.product_audit_query import (
+    ProductAuditQueryRepository,
+)
+from src.catalog.product.domain.repository.product_read import (
+    ProductReadRepositoryInterface,
+)
 from src.catalog.product.domain.repository.product_type import ProductTypeRepository
-from src.catalog.product.domain.repository.product_type_read import ProductTypeReadRepositoryInterface
-from src.catalog.product.domain.repository.product_audit_query import ProductAuditQueryRepository
-from src.catalog.product.domain.repository.product_type_audit_query import ProductTypeAuditQueryRepository
+from src.catalog.product.domain.repository.product_type_audit_query import (
+    ProductTypeAuditQueryRepository,
+)
+from src.catalog.product.domain.repository.product_type_read import (
+    ProductTypeReadRepositoryInterface,
+)
+from src.catalog.product.infrastructure.orm.cache.cached_product import (
+    CachedProductRepository,
+)
 from src.catalog.product.infrastructure.orm.product import SqlAlchemyProductRepository
 from src.catalog.product.infrastructure.orm.product_attribute import (
     SqlAlchemyProductAttributeRepository,
 )
+from src.catalog.product.infrastructure.orm.product_attribute_read import (
+    SqlAlchemyProductAttributeReadRepository,
+)
 from src.catalog.product.infrastructure.orm.product_audit import (
     SqlAlchemyProductAuditRepository,
+)
+from src.catalog.product.infrastructure.orm.product_audit_query import (
+    SqlAlchemyProductAuditQueryRepository,
+)
+from src.catalog.product.infrastructure.orm.product_read import (
+    SqlAlchemyProductReadRepository,
 )
 from src.catalog.product.infrastructure.orm.product_type import (
     SqlAlchemyProductTypeRepository,
 )
-from src.catalog.product.infrastructure.orm.product_read import SqlAlchemyProductReadRepository
-from src.catalog.product.infrastructure.orm.product_type_read import SqlAlchemyProductTypeReadRepository
-from src.catalog.product.infrastructure.orm.product_attribute_read import SqlAlchemyProductAttributeReadRepository
-from src.catalog.product.infrastructure.orm.product_audit_query import SqlAlchemyProductAuditQueryRepository
-from src.catalog.product.infrastructure.orm.product_type_audit_query import SqlAlchemyProductTypeAuditQueryRepository
+from src.catalog.product.infrastructure.orm.product_type_audit_query import (
+    SqlAlchemyProductTypeAuditQueryRepository,
+)
+from src.catalog.product.infrastructure.orm.product_type_read import (
+    SqlAlchemyProductTypeReadRepository,
+)
 from src.catalog.suppliers.domain.repository.supplier import SupplierRepository
-from src.catalog.suppliers.infrastructure.orm.supplier import SqlAlchemySupplierRepository
-from src.uploads.domain.repository.upload_history import UploadHistoryRepository
-from src.uploads.infrastructure.orm.upload_history import SqlAlchemyUploadHistoryRepository
+from src.catalog.suppliers.infrastructure.orm.supplier import (
+    SqlAlchemySupplierRepository,
+)
+from src.core.cache.base import Cache
+from src.core.cache.memory import InMemoryCache
+from src.core.cache.redis import RedisCache
+from src.core.cache.redis_client import RedisClientFactory
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus
 from src.core.services.images import ImageStorageService, S3ImageStorageService
+from src.uploads.domain.repository.upload_history import UploadHistoryRepository
+from src.uploads.infrastructure.orm.upload_history import (
+    SqlAlchemyUploadHistoryRepository,
+)
 
 container = ServiceContainer()
 

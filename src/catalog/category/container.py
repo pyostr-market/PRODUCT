@@ -46,11 +46,11 @@ from src.catalog.category.infrastructure.services.admin_queries import (
 from src.catalog.category.infrastructure.services.pricing_policy_admin_queries import (
     CategoryPricingPolicyAdminQueries,
 )
-from src.catalog.category.infrastructure.services.read_repository import (
-    CategoryReadRepository,
-)
 from src.catalog.category.infrastructure.services.pricing_policy_read_repository import (
     CategoryPricingPolicyReadRepository,
+)
+from src.catalog.category.infrastructure.services.read_repository import (
+    CategoryReadRepository,
 )
 from src.catalog.category.infrastructure.services.related_data_loader import (
     CategoryRelatedDataLoader,
@@ -60,7 +60,9 @@ from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus
 from src.core.services.images import ImageStorageService, S3ImageStorageService
 from src.uploads.domain.repository.upload_history import UploadHistoryRepository
-from src.uploads.infrastructure.orm.upload_history import SqlAlchemyUploadHistoryRepository
+from src.uploads.infrastructure.orm.upload_history import (
+    SqlAlchemyUploadHistoryRepository,
+)
 
 container = ServiceContainer()
 

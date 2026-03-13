@@ -8,7 +8,21 @@ from src.catalog.manufacturer.domain.events.manufacturer_events import (
 from src.catalog.manufacturer.domain.exceptions import ManufacturerNameTooShort
 
 if TYPE_CHECKING:
-    from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+    from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+        ManufacturerAggregate,
+    )
+
+
+class ManufacturerImageAggregate:
+    """Агрегат изображения производителя."""
+
+    def __init__(
+        self,
+        upload_id: int,
+        object_key: Optional[str] = None,
+    ):
+        self.upload_id = upload_id
+        self.object_key = object_key
 
 
 class ManufacturerAggregate:
@@ -25,6 +39,7 @@ class ManufacturerAggregate:
         name: str,
         description: Optional[str] = None,
         manufacturer_id: Optional[int] = None,
+        image: Optional[ManufacturerImageAggregate] = None,
     ):
         if not name or len(name.strip()) < 2:
             raise ManufacturerNameTooShort()
@@ -32,6 +47,7 @@ class ManufacturerAggregate:
         self._id = manufacturer_id
         self._name = name.strip()
         self._description = description
+        self._image = image
         self._events: list[DomainEvent] = []
 
     # -----------------------------
@@ -53,6 +69,10 @@ class ManufacturerAggregate:
     @property
     def description(self) -> Optional[str]:
         return self._description
+
+    @property
+    def image(self) -> Optional[ManufacturerImageAggregate]:
+        return self._image
 
     # -----------------------------
     # Events
@@ -98,6 +118,14 @@ class ManufacturerAggregate:
             old_description=old_description,
             new_description=description,
         ))
+
+    def set_image(self, image: ManufacturerImageAggregate):
+        """Установить изображение производителя."""
+        self._image = image
+
+    def remove_image(self):
+        """Удалить изображение производителя."""
+        self._image = None
 
     # -----------------------------
     # Internal

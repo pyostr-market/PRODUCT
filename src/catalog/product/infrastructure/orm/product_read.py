@@ -11,7 +11,9 @@ from src.catalog.product.application.dto.product import (
     ProductReadDTO,
 )
 from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
-from src.catalog.product.domain.repository.product_read import ProductReadRepositoryInterface
+from src.catalog.product.domain.repository.product_read import (
+    ProductReadRepositoryInterface,
+)
 from src.catalog.product.infrastructure.models.product import Product
 from src.catalog.product.infrastructure.models.product_attribute import ProductAttribute
 from src.catalog.product.infrastructure.models.product_attribute_value import (

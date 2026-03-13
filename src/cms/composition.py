@@ -1,15 +1,21 @@
 from src.cms.application.commands.add_page_block import AddPageBlockCommand
-from src.cms.application.commands.create_email_template import CreateEmailTemplateCommand
+from src.cms.application.commands.create_email_template import (
+    CreateEmailTemplateCommand,
+)
 from src.cms.application.commands.create_faq import CreateFaqCommand
 from src.cms.application.commands.create_feature_flag import CreateFeatureFlagCommand
 from src.cms.application.commands.create_page import CreatePageCommand
 from src.cms.application.commands.create_seo import CreateSeoCommand
-from src.cms.application.commands.delete_email_template import DeleteEmailTemplateCommand
+from src.cms.application.commands.delete_email_template import (
+    DeleteEmailTemplateCommand,
+)
 from src.cms.application.commands.delete_faq import DeleteFaqCommand
 from src.cms.application.commands.delete_feature_flag import DeleteFeatureFlagCommand
 from src.cms.application.commands.delete_page import DeletePageCommand
 from src.cms.application.commands.delete_seo import DeleteSeoCommand
-from src.cms.application.commands.update_email_template import UpdateEmailTemplateCommand
+from src.cms.application.commands.update_email_template import (
+    UpdateEmailTemplateCommand,
+)
 from src.cms.application.commands.update_faq import UpdateFaqCommand
 from src.cms.application.commands.update_feature_flag import UpdateFeatureFlagCommand
 from src.cms.application.commands.update_page import UpdatePageCommand

@@ -1,9 +1,9 @@
 from src.cms.application.dto.cms_dto import FeatureFlagCreateDTO, FeatureFlagReadDTO
 from src.cms.domain.aggregates.feature_flag import FeatureFlagAggregate
+from src.cms.domain.exceptions import FeatureFlagKeyAlreadyExists
 from src.cms.domain.repository.feature_flag import FeatureFlagRepository
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.events import AsyncEventBus, build_event
-from src.cms.domain.exceptions import FeatureFlagKeyAlreadyExists
 
 
 class CreateFeatureFlagCommand:

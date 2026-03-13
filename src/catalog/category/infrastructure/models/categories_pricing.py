@@ -1,8 +1,9 @@
-from sqlalchemy import BigInteger, Column, Numeric, ForeignKey
+from sqlalchemy import BigInteger, Column, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 
 from src.core.db.database import Base
 from src.core.db.mixins import TimestampMixin
+
 
 class CategoryPricingPolicy(TimestampMixin, Base):
     __tablename__ = "category_pricing_policies"

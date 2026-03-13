@@ -1,4 +1,13 @@
-from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    Column,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 
 from src.core.db.database import Base

@@ -9,6 +9,10 @@ from src.catalog.manufacturer.infrastructure.orm.manufacturer_audit_queries impo
 )
 from src.core.di.container import ServiceContainer
 from src.core.events import AsyncEventBus, get_event_bus
+from src.uploads.domain.repository.upload_history import UploadHistoryRepository
+from src.uploads.infrastructure.orm.upload_history import (
+    SqlAlchemyUploadHistoryRepository,
+)
 
 from ...core.db.unit_of_work import UnitOfWork
 from .application.commands.create_manufacturer import CreateManufacturerCommand
@@ -43,6 +47,12 @@ container.register(
     AsyncEventBus,
     lambda scope, db: get_event_bus(),
 )
+
+container.register(
+    UploadHistoryRepository,
+    lambda scope, db: SqlAlchemyUploadHistoryRepository(db)
+)
+
 # ----------------------------
 # CQRS registration
 # ----------------------------
@@ -66,6 +76,7 @@ container.register(
         audit_repository=scope.resolve(ManufacturerAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        upload_history_repository=scope.resolve(UploadHistoryRepository, db=db),
     )
 )
 
@@ -76,6 +87,7 @@ container.register(
         audit_repository=scope.resolve(ManufacturerAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),
+        upload_history_repository=scope.resolve(UploadHistoryRepository, db=db),
     )
 )
 

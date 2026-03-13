@@ -20,13 +20,13 @@ from src.catalog.category.application.queries.category_queries import CategoryQu
 from src.catalog.category.application.queries.pricing_policy_queries import (
     CategoryPricingPolicyQueries,
 )
+from src.catalog.category.container import container
 from src.catalog.category.infrastructure.services.admin_queries import (
     CategoryAdminQueries,
 )
 from src.catalog.category.infrastructure.services.pricing_policy_admin_queries import (
     CategoryPricingPolicyAdminQueries,
 )
-from src.catalog.category.container import container
 
 
 class CategoryComposition:

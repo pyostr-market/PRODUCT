@@ -9,13 +9,14 @@
 """
 import pytest
 
-from src.catalog.manufacturer.domain.aggregates.manufacturer import ManufacturerAggregate
+from src.catalog.manufacturer.domain.aggregates.manufacturer import (
+    ManufacturerAggregate,
+)
 from src.catalog.manufacturer.domain.events.manufacturer_events import (
     ManufacturerDescriptionChangedEvent,
     ManufacturerNameChangedEvent,
 )
 from src.catalog.manufacturer.domain.exceptions import ManufacturerNameTooShort
-
 
 # =========================================================
 # Создание агрегата

@@ -1,7 +1,7 @@
 """Тесты для AuthorizationApiClient и PermissionCacheService."""
 
-import pytest
 import httpx
+import pytest
 from httpx import Request, Response
 
 from src.core.system.authorizationApi import (

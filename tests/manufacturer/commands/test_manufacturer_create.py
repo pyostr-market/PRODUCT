@@ -12,7 +12,6 @@ import pytest
 
 from src.catalog.manufacturer.domain.exceptions import ManufacturerNameTooShort
 
-
 # =========================================================
 # Успешное создание
 # =========================================================

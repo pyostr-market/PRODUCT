@@ -16,7 +16,9 @@ from src.catalog.product.application.dto.product import (
 )
 from src.catalog.product.domain.aggregates.category import CategoryAggregate
 from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
-from src.catalog.product.domain.repository.product_read import ProductReadRepositoryInterface
+from src.catalog.product.domain.repository.product_read import (
+    ProductReadRepositoryInterface,
+)
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 from src.core.services.images.storage import S3ImageStorageService
 

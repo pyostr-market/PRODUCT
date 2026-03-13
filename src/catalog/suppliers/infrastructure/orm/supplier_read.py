@@ -4,7 +4,9 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.suppliers.application.dto.supplier import SupplierReadDTO
-from src.catalog.suppliers.domain.repository.supplier_read import SupplierReadRepositoryInterface
+from src.catalog.suppliers.domain.repository.supplier_read import (
+    SupplierReadRepositoryInterface,
+)
 from src.catalog.suppliers.infrastructure.models.supplier import Supplier
 
 

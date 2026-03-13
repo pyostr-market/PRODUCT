@@ -4,7 +4,9 @@ from src.cms.application.dto.cms_dto import PageCreateDTO, PageReadDTO
 from src.cms.domain.aggregates.page import PageAggregate
 from src.cms.domain.events.cms_events import PageCreatedEvent
 from src.cms.domain.repository.page import PageRepository
-from src.cms.domain.services.page_slug_uniqueness_service import PageSlugUniquenessService
+from src.cms.domain.services.page_slug_uniqueness_service import (
+    PageSlugUniquenessService,
+)
 from src.core.db.unit_of_work import UnitOfWork
 from src.core.events import AsyncEventBus, build_event
 
