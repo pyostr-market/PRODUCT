@@ -204,6 +204,7 @@ async def update(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    print(payload)
     image_dto = None
     if payload.image:
         image_dto = CategoryImageOperationDTO(

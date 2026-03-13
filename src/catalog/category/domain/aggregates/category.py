@@ -174,8 +174,9 @@ class CategoryAggregate:
         if description is not None:
             self.change_description(description)
 
-        if parent_id is not None:
-            self.change_parent(parent_id)
+        # parent_id может быть None (означает "без родителя"), поэтому проверяем не None,
+        # а наличие значения в вызывающем коде
+        self.change_parent(parent_id)
 
         if manufacturer_id is not None:
             self.change_manufacturer(manufacturer_id)

@@ -94,3 +94,14 @@ class CategoryPricingPolicyInvalidRateValue(BaseServiceError):
         details: dict | None = None,
     ):
         super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+class CategoryCircularDependency(BaseServiceError):
+    """Исключение при попытке создать циклическую зависимость в дереве категорий."""
+    def __init__(
+        self,
+        msg: str = "Циклическая зависимость: категория не может быть дочерней самой себе или своему потомку",
+        code: str = "category_circular_dependency",
+        status_code: int = 400,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code)

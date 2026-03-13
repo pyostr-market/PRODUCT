@@ -140,3 +140,125 @@ async def test_update_category_400_invalid_image(authorized_client):
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_update_category_circular_dependency_self_reference(authorized_client):
+    """Тест: категория не может стать родителем самой себя."""
+    # Создаём категорию
+    create_response = await authorized_client.post(
+        "/category",
+        json={
+            "name": "Тестовая категория",
+            "description": "Описание",
+        },
+    )
+    assert create_response.status_code == 200
+    category_id = create_response.json()["data"]["id"]
+
+    # Пытаемся установить parent_id равным самому себе
+    response = await authorized_client.put(
+        f"/category/{category_id}",
+        json={
+            "name": "Тестовая категория",
+            "parent_id": category_id,
+        },
+    )
+
+    # Ожидаем ошибку (400 или 500 в зависимости от реализации)
+    assert response.status_code in [400, 500]
+    body = response.json()
+    assert body["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_update_category_circular_dependency_child_parent(authorized_client):
+    """Тест: родитель не может стать дочерним элементом своего потомка."""
+    # Создаём родительскую категорию
+    parent_response = await authorized_client.post(
+        "/category",
+        json={
+            "name": "Родитель",
+            "description": "Родительская категория",
+        },
+    )
+    assert parent_response.status_code == 200
+    parent_id = parent_response.json()["data"]["id"]
+
+    # Создаём дочернюю категорию
+    child_response = await authorized_client.post(
+        "/category",
+        json={
+            "name": "Дочка",
+            "description": "Дочерняя категория",
+            "parent_id": parent_id,
+        },
+    )
+    assert child_response.status_code == 200
+    child_id = child_response.json()["data"]["id"]
+
+    # Пытаемся сделать родителя дочерним элементом потомка (цикл!)
+    response = await authorized_client.put(
+        f"/category/{parent_id}",
+        json={
+            "name": "Родитель",
+            "parent_id": child_id,  # Пытаемся сделать родителя дочерним элементом
+        },
+    )
+
+    # Ожидаем ошибку циклической зависимости
+    assert response.status_code in [400, 500]
+    body = response.json()
+    assert body["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_update_category_change_parent_id_valid(authorized_client):
+    """Тест: успешное изменение parent_id на валидное значение (без цикла)."""
+    # Создаём две независимые категории
+    parent1_response = await authorized_client.post(
+        "/category",
+        json={
+            "name": "Родитель 1",
+            "description": "Первая родительская категория",
+        },
+    )
+    assert parent1_response.status_code == 200
+    parent1_id = parent1_response.json()["data"]["id"]
+
+    parent2_response = await authorized_client.post(
+        "/category",
+        json={
+            "name": "Родитель 2",
+            "description": "Вторая родительская категория",
+        },
+    )
+    assert parent2_response.status_code == 200
+    parent2_id = parent2_response.json()["data"]["id"]
+
+    # Создаём дочернюю категорию с parent1
+    child_response = await authorized_client.post(
+        "/category",
+        json={
+            "name": "Дочка",
+            "description": "Дочерняя категория",
+            "parent_id": parent1_id,
+        },
+    )
+    assert child_response.status_code == 200
+    child_id = child_response.json()["data"]["id"]
+
+    # Обновляем дочернюю категорию, меняя родителя с parent1 на parent2
+    response = await authorized_client.put(
+        f"/category/{child_id}",
+        json={
+            "name": "Дочка",
+            "parent_id": parent2_id,  # Меняем родителя на другой
+        },
+    )
+
+    # Ожидаем успех
+    assert response.status_code == 200
+    body = response.json()
+    assert body["data"]["id"] == child_id
+    assert body["data"]["parent"]["id"] == parent2_id

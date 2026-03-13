@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -8,7 +8,10 @@ from src.catalog.category.domain.aggregates.category import (
     CategoryAggregate,
     CategoryImageAggregate,
 )
-from src.catalog.category.domain.exceptions import CategoryNotFound
+from src.catalog.category.domain.exceptions import (
+    CategoryCircularDependency,
+    CategoryNotFound,
+)
 from src.catalog.category.domain.repository.category import CategoryRepository
 from src.catalog.category.infrastructure.models.categories import Category
 from src.catalog.category.infrastructure.models.category_image import CategoryImage
@@ -22,6 +25,43 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def _has_cycle(self, category_id: int, new_parent_id: Optional[int]) -> bool:
+        """
+        Проверить, создаст ли установка new_parent_id циклическую зависимость.
+
+        Возвращает True, если new_parent_id является потомком category_id
+        (т.е. установка создаст цикл).
+        """
+        if new_parent_id is None:
+            return False
+
+        # Если пытаемся установить родителя равным самой категории — это цикл
+        if new_parent_id == category_id:
+            return True
+
+        # Проверяем, является ли new_parent_id потомком category_id
+        # (т.е. category_id находится в цепочке родителей new_parent_id)
+        current_id = new_parent_id
+        visited = set()
+
+        while current_id is not None:
+            if current_id in visited:
+                # Обнаружен цикл в существующих данных
+                return True
+            visited.add(current_id)
+
+            if current_id == category_id:
+                # category_id является родителем new_parent_id — будет цикл
+                return True
+
+            # Получаем родителя текущей категории
+            stmt = select(Category.parent_id).where(Category.id == current_id)
+            result = await self.db.execute(stmt)
+            parent_id = result.scalar_one_or_none()
+            current_id = parent_id
+
+        return False
 
     async def get(self, category_id: int) -> Optional[CategoryAggregate]:
         stmt = (
@@ -76,6 +116,26 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         return True
 
     async def update(self, aggregate: CategoryAggregate) -> CategoryAggregate:
+        # Проверяем на циклическую зависимость перед обновлением parent_id
+        if aggregate.parent_id is not None:
+            if await self._has_cycle(aggregate.id, aggregate.parent_id):
+                raise CategoryCircularDependency()
+
+        # Сначала удаляем объект из сессии, чтобы SQLAlchemy не синхронизировал
+        # старое состояние parent_id при flush()
+        existing = await self.db.get(Category, aggregate.id)
+        if existing is not None:
+            self.db.expunge(existing)
+
+        # Обновляем parent_id через raw SQL, чтобы полностью обойти
+        # SQLAlchemy unit of work и избежать CircularDependencyError
+        from sqlalchemy import text
+        await self.db.execute(
+            text("UPDATE categories SET parent_id = :parent_id WHERE id = :id"),
+            {"parent_id": aggregate.parent_id, "id": aggregate.id}
+        )
+
+        # Загружаем модель заново БЕЗ relationship на parent для обновления остальных полей
         stmt = (
             select(Category)
             .options(
@@ -89,9 +149,9 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         if not model:
             raise CategoryNotFound()
 
+        # Обновляем простые атрибуты
         model.name = aggregate.name
         model.description = aggregate.description
-        model.parent_id = aggregate.parent_id
         model.manufacturer_id = aggregate.manufacturer_id
 
         # Обновляем изображение
