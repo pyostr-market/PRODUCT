@@ -52,14 +52,14 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         self.db.add(model)
         await self.db.flush()
 
-        for image in aggregate.images:
-            self.db.add(
-                CategoryImage(
-                    category_id=model.id,
-                    upload_id=image.upload_id,
-                    ordering=image.ordering,
-                )
+        # Сохраняем изображение, если есть
+        if aggregate.image:
+            image_model = CategoryImage(
+                category_id=model.id,
+                upload_id=aggregate.image.upload_id,
             )
+            self.db.add(image_model)
+
         await self.db.flush()
 
         aggregate._set_id(model.id)
@@ -80,8 +80,6 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
             select(Category)
             .options(
                 selectinload(Category.images).selectinload(CategoryImage.upload),
-                selectinload(Category.parent),
-                selectinload(Category.manufacturer),
             )
             .where(Category.id == aggregate.id)
         )
@@ -96,19 +94,21 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         model.parent_id = aggregate.parent_id
         model.manufacturer_id = aggregate.manufacturer_id
 
-        # Удаляем старые связи изображений (файлы в S3 остаются)
-        for image_model in model.images:
-            await self.db.delete(image_model)
-
-        # Создаём новые связи
-        for image in aggregate.images:
-            self.db.add(
-                CategoryImage(
-                    category_id=aggregate.id,
-                    upload_id=image.upload_id,
-                    ordering=image.ordering,
+        # Обновляем изображение
+        if aggregate.image:
+            if model.images:
+                # Обновляем существующее
+                model.images[0].upload_id = aggregate.image.upload_id
+            else:
+                # Создаём новое
+                image_model = CategoryImage(
+                    category_id=model.id,
+                    upload_id=aggregate.image.upload_id,
                 )
-            )
+                self.db.add(image_model)
+        elif model.images and not aggregate.image:
+            # Удаляем изображение
+            await self.db.delete(model.images[0])
 
         await self.db.flush()
         return aggregate
@@ -132,20 +132,21 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
                 description=model.manufacturer.description,
             )
 
+        image = None
+        if model.images:
+            img = model.images[0]
+            image = CategoryImageAggregate(
+                upload_id=img.upload_id,
+                object_key=img.upload.file_path if img.upload else None,
+            )
+
         return CategoryAggregate(
             category_id=model.id,
             name=model.name,
             description=model.description,
             parent_id=model.parent_id,
             manufacturer_id=model.manufacturer_id,
-            images=[
-                CategoryImageAggregate(
-                    upload_id=image.upload_id,
-                    ordering=image.ordering,
-                    object_key=image.upload.file_path if image.upload else None,
-                )
-                for image in sorted(model.images, key=lambda i: i.ordering)
-            ],
+            image=image,
             parent=parent,
             manufacturer=manufacturer,
         )

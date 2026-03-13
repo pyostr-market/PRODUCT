@@ -35,17 +35,14 @@ async def test_get_category_200(authorized_client, client):
         json={
             "name": "Категория для get",
             "description": "Описание",
-            "images": [
-                {"upload_id": upload_id_2, "ordering": 2},
-                {"upload_id": upload_id_1, "ordering": 1},
-            ],
+            "image": {"upload_id": upload_id_2},
         },
     )
     assert create.status_code == 200
 
-    # Проверяем, что изображения созданы с правильным ordering
-    create_images = create.json()["data"]["images"]
-    assert len(create_images) == 2
+    # Проверяем, что изображение создано
+    create_image = create.json()["data"]["image"]
+    assert create_image is not None
 
     category_id = create.json()["data"]["id"]
 
@@ -57,12 +54,9 @@ async def test_get_category_200(authorized_client, client):
 
     assert category.id == category_id
     assert category.name == "Категория для get"
-    # Изображения сортируются по ordering (возрастание), поэтому сначала идёт ordering=1, потом ordering=2
-    assert [image.ordering for image in category.images] == [1, 2]
-    # Первое изображение в ответе (с ordering=1)
-    assert category.images[0].upload_id == upload_id_1
-    # Второе изображение в ответе (с ordering=2)
-    assert category.images[1].upload_id == upload_id_2
+    # Проверяем изображение
+    assert category.image is not None
+    assert category.image.upload_id == upload_id_2
 
     # Проверяем, что связанные данные возвращаются (даже если null)
     assert "parent" in body["data"]
@@ -89,7 +83,7 @@ async def test_get_category_200_with_parent(authorized_client, client):
         "/category",
         json={
             "name": "Parent Category",
-            "images": [{"upload_id": upload_id, "ordering": 0}],
+            "image": {"upload_id": upload_id},
         },
     )
     assert parent_resp.status_code == 200, f"Parent category create failed: {parent_resp.json()}"
@@ -110,7 +104,7 @@ async def test_get_category_200_with_parent(authorized_client, client):
         json={
             "name": "Child Category",
             "parent_id": parent_id,
-            "images": [{"upload_id": upload_id_2, "ordering": 0}],
+            "image": {"upload_id": upload_id_2},
         },
     )
     assert child_resp.status_code == 200, f"Child category create failed: {child_resp.json()}"
@@ -156,7 +150,7 @@ async def test_get_category_200_with_manufacturer(authorized_client, client):
         json={
             "name": "Category with Manufacturer",
             "manufacturer_id": manufacturer_id,
-            "images": [{"upload_id": upload_id, "ordering": 0}],
+            "image": {"upload_id": upload_id},
         },
     )
     assert cat_resp.status_code == 200, f"Category create failed: {cat_resp.json()}"

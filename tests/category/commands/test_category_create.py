@@ -19,13 +19,13 @@ async def test_create_category_200(authorized_client):
     assert upload_response.status_code == 200
     upload_id = upload_response.json()["data"]["upload_id"]
 
-    # Создаём категорию с images
+    # Создаём категорию с image
     response = await authorized_client.post(
         "/category",
         json={
             "name": "Электроника",
             "description": "Категория электроники",
-            "images": [{"upload_id": upload_id, "ordering": 0}],
+            "image": {"upload_id": upload_id},
         },
     )
 
@@ -37,8 +37,8 @@ async def test_create_category_200(authorized_client):
     assert category.name == "Электроника"
     assert category.description == "Категория электроники"
     assert isinstance(category.id, int)
-    assert len(category.images) == 1
-    assert category.images[0].upload_id == upload_id
+    assert category.image is not None
+    assert category.image.upload_id == upload_id
 
 
 @pytest.mark.asyncio
@@ -59,7 +59,7 @@ async def test_create_category_400_name_too_short(authorized_client):
         "/category",
         json={
             "name": "A",
-            "images": [{"upload_id": upload_id, "ordering": 0}],
+            "image": {"upload_id": upload_id},
         },
     )
 
@@ -70,13 +70,13 @@ async def test_create_category_400_name_too_short(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_create_category_400_invalid_images(authorized_client):
-    # Передаём некорректные images (не список)
+async def test_create_category_400_invalid_image(authorized_client):
+    # Передаём некорректные image
     response = await authorized_client.post(
         "/category",
         json={
             "name": "Категория",
-            "images": "not-a-list",
+            "image": "not-an-object",
         },
     )
 
@@ -90,7 +90,7 @@ async def test_create_category_400_upload_not_found(authorized_client):
         "/category",
         json={
             "name": "Категория",
-            "images": [{"upload_id": 99999, "ordering": 0}],
+            "image": {"upload_id": 99999},
         },
     )
 

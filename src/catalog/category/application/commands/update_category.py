@@ -46,8 +46,8 @@ class UpdateCategoryCommand:
         user: User,
     ) -> CategoryReadDTO:
 
-        old_image_keys: list[str] = []
-        new_image_keys: list[str] = []
+        old_image_key: str | None = None
+        new_image_key: str | None = None
 
         try:
             async with self.uow:
@@ -56,16 +56,13 @@ class UpdateCategoryCommand:
                 if not aggregate:
                     raise CategoryNotFound()
 
-                old_image_keys = [image.object_key for image in aggregate.images]
+                old_image_key = aggregate.image.object_key if aggregate.image else None
                 old_data = {
                     "name": aggregate.name,
                     "description": aggregate.description,
                     "parent_id": aggregate.parent_id,
                     "manufacturer_id": aggregate.manufacturer_id,
-                    "images": [
-                        {"image_key": image.object_key, "ordering": image.ordering}
-                        for image in aggregate.images
-                    ],
+                    "image": {"upload_id": aggregate.image.upload_id} if aggregate.image else None,
                 }
 
                 aggregate.update(
@@ -75,59 +72,44 @@ class UpdateCategoryCommand:
                     dto.manufacturer_id,
                 )
 
-                if dto.images is not None:
-                    # Обрабатываем операции с изображениями
-                    final_images: list[CategoryImageAggregate] = list(aggregate.images)
-
-                    for op in dto.images:
-                        if op.action == "delete":
-                            # Удаляем изображение из списка
-                            if op.upload_id:
-                                final_images = [
-                                    img for img in final_images
-                                    if img.upload_id != op.upload_id
-                                ]
-                        elif op.action == "create":
-                            # Добавляем новое изображение
-                            if op.upload_id:
-                                upload_id, object_key = await self.data_loader.get_upload_info(op.upload_id)
-                                
-                                final_images.append(CategoryImageAggregate(
-                                    upload_id=upload_id,
-                                    ordering=op.ordering if op.ordering is not None else 0,
-                                    object_key=object_key,
-                                ))
-                                new_image_keys.append(object_key)
-                        elif op.action == "update":
-                            # Обновляем существующее изображение
-                            if op.upload_id:
-                                for img in final_images:
-                                    if img.upload_id == op.upload_id:
-                                        if op.ordering is not None:
-                                            img.ordering = op.ordering
-                                        break
-                        elif op.action == "pass":
-                            # Сохраняем изображение, возможно обновляем ordering
-                            if op.upload_id:
-                                for img in final_images:
-                                    if img.upload_id == op.upload_id:
-                                        if op.ordering is not None:
-                                            img.ordering = op.ordering
-                                        break
-
-                    aggregate.replace_images(final_images)
+                if dto.image is not None:
+                    # Обрабатываем операцию с изображением
+                    op = dto.image
+                    
+                    if op.action == "delete":
+                        # Удаляем изображение
+                        aggregate.remove_image()
+                    elif op.action == "create":
+                        # Добавляем новое изображение
+                        if op.upload_id:
+                            upload_id, object_key = await self.data_loader.get_upload_info(op.upload_id)
+                            new_image_key = object_key
+                            aggregate.set_image(CategoryImageAggregate(
+                                upload_id=upload_id,
+                                object_key=object_key,
+                            ))
+                    elif op.action == "update":
+                        # Обновляем существующее изображение
+                        if op.upload_id:
+                            upload_id, object_key = await self.data_loader.get_upload_info(op.upload_id)
+                            new_image_key = object_key
+                            aggregate.set_image(CategoryImageAggregate(
+                                upload_id=upload_id,
+                                object_key=object_key,
+                            ))
+                    elif op.action == "pass":
+                        # Сохраняем существующее изображение без изменений
+                        pass
 
                 await self.repository.update(aggregate)
 
+                new_image_data = {"upload_id": aggregate.image.upload_id} if aggregate.image else None
                 new_data = {
                     "name": aggregate.name,
                     "description": aggregate.description,
                     "parent_id": aggregate.parent_id,
                     "manufacturer_id": aggregate.manufacturer_id,
-                    "images": [
-                        {"image_key": image.object_key, "ordering": image.ordering}
-                        for image in aggregate.images
-                    ],
+                    "image": new_image_data,
                 }
 
                 if old_data != new_data:
@@ -151,32 +133,27 @@ class UpdateCategoryCommand:
                 if aggregate.manufacturer_id:
                     manufacturer_dto = await self.data_loader.get_manufacturer(aggregate.manufacturer_id)
 
+                result_image = None
+                if aggregate.image:
+                    result_image = CategoryImageReadDTO(
+                        upload_id=aggregate.image.upload_id,
+                        image_key=aggregate.image.object_key or "",
+                        image_url=self.image_storage.build_public_url(aggregate.image.object_key) if aggregate.image.object_key else "",
+                    )
+
                 result = CategoryReadDTO(
                     id=aggregate.id,
                     name=aggregate.name,
                     description=aggregate.description,
-                    images=[
-                        CategoryImageReadDTO(
-                            upload_id=image.upload_id,
-                            ordering=image.ordering,
-                            image_key=image.object_key,
-                            image_url=self.image_storage.build_public_url(image.object_key),
-                        )
-                        for image in sorted(aggregate.images, key=lambda i: i.ordering)
-                    ],
+                    image=result_image,
                     parent=parent_dto,
                     manufacturer=manufacturer_dto,
                 )
         except Exception:
-            for key in new_image_keys:
-                await self.image_storage.delete_object(key)
             raise
 
-        if dto.images is not None:
-            new_keys_set = set(new_image_keys)
-            for key in old_image_keys:
-                if key not in new_keys_set:
-                    await self.image_storage.delete_object(key)
+        if new_image_key and old_image_key and old_image_key != new_image_key:
+            await self.image_storage.delete_object(old_image_key)
 
         changed_fields = {
             key: value
@@ -197,7 +174,7 @@ class UpdateCategoryCommand:
                     },
                 )
             ]
-            if "images" in changed_fields:
+            if "image" in changed_fields:
                 events.append(
                     build_event(
                         event_type="field_update",
@@ -207,7 +184,7 @@ class UpdateCategoryCommand:
                         entity_id=result.id,
                         data={
                             "category_id": result.id,
-                            "images": changed_fields["images"],
+                            "image": changed_fields["image"],
                         },
                     )
                 )

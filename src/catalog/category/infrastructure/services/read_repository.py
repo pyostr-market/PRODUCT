@@ -43,19 +43,20 @@ class CategoryReadRepository:
                 description=model.manufacturer.description,
             )
 
+        image_dto = None
+        if model.images:
+            img = model.images[0]
+            image_dto = CategoryImageReadDTO(
+                image_key=img.upload.file_path,
+                image_url=self.image_storage.build_public_url(img.upload.file_path),
+                upload_id=img.upload_id,
+            )
+
         return CategoryReadDTO(
             id=model.id,
             name=model.name,
             description=model.description,
-            images=[
-                CategoryImageReadDTO(
-                    ordering=image.ordering,
-                    image_key=image.upload.file_path,
-                    image_url=self.image_storage.build_public_url(image.upload.file_path),
-                    upload_id=image.upload_id,
-                )
-                for image in sorted(model.images, key=lambda i: i.ordering)
-            ],
+            image=image_dto,
             parent_id=model.parent_id,
             parent=parent_dto,
             manufacturer=manufacturer_dto,

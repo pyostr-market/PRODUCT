@@ -48,16 +48,14 @@ class CreateCategoryCommand:
         dto: CategoryCreateDTO,
         user: User,
     ) -> CategoryReadDTO:
-        uploaded_images: list[CategoryImageAggregate] = []
+        uploaded_image: CategoryImageAggregate | None = None
 
-        for image in dto.images:
-            upload_id, object_key = await self.data_loader.get_upload_info(image.upload_id)
-            
-            uploaded_images.append(CategoryImageAggregate(
+        if dto.image:
+            upload_id, object_key = await self.data_loader.get_upload_info(dto.image.upload_id)
+            uploaded_image = CategoryImageAggregate(
                 upload_id=upload_id,
-                ordering=image.ordering,
                 object_key=object_key,
-            ))
+            )
 
         try:
             async with self.uow:
@@ -66,10 +64,14 @@ class CreateCategoryCommand:
                     description=dto.description,
                     parent_id=dto.parent_id,
                     manufacturer_id=dto.manufacturer_id,
-                    images=uploaded_images,
+                    image=uploaded_image,
                 )
 
                 await self.repository.create(aggregate)
+
+                image_data = None
+                if aggregate.image:
+                    image_data = {"upload_id": aggregate.image.upload_id}
 
                 await self.audit_repository.log(
                     CategoryAuditDTO(
@@ -81,10 +83,7 @@ class CreateCategoryCommand:
                             "description": aggregate.description,
                             "parent_id": aggregate.parent_id,
                             "manufacturer_id": aggregate.manufacturer_id,
-                            "images": [
-                                {"upload_id": image.upload_id, "ordering": image.ordering}
-                                for image in aggregate.images
-                            ],
+                            "image": image_data,
                         },
                         user_id=user.id,
                         fio=user.fio,
@@ -100,19 +99,19 @@ class CreateCategoryCommand:
                 if aggregate.manufacturer_id:
                     manufacturer_dto = await self.data_loader.get_manufacturer(aggregate.manufacturer_id)
 
+                result_image = None
+                if aggregate.image:
+                    result_image = CategoryImageReadDTO(
+                        image_key="",
+                        image_url="",
+                        upload_id=aggregate.image.upload_id,
+                    )
+
                 result = CategoryReadDTO(
                     id=aggregate.id,
                     name=aggregate.name,
                     description=aggregate.description,
-                    images=[
-                        CategoryImageReadDTO(
-                            ordering=image.ordering,
-                            image_key="",  # Будет заполнено из UploadHistory
-                            image_url="",  # Будет заполнено из UploadHistory
-                            upload_id=image.upload_id,
-                        )
-                        for image in sorted(aggregate.images, key=lambda i: i.ordering)
-                    ],
+                    image=result_image,
                     parent=parent_dto,
                     manufacturer=manufacturer_dto,
                 )
@@ -148,7 +147,7 @@ class CreateCategoryCommand:
 
     def _build_category_created_events(self, aggregate: CategoryAggregate) -> list[dict[str, Any]]:
         """Построить события для созданной категории."""
-        return [
+        events = [
             build_event(
                 event_type="crud",
                 method="create",
@@ -165,21 +164,24 @@ class CreateCategoryCommand:
                     },
                 },
             ),
-            build_event(
-                event_type="crud",
-                method="create",
-                app="images",
-                entity="category_images",
-                entity_id=aggregate.id,
-                data={
-                    "category_id": aggregate.id,
-                    "images": [
-                        {"upload_id": image.upload_id, "ordering": image.ordering}
-                        for image in aggregate.images
-                    ],
-                },
-            ),
         ]
+        
+        if aggregate.image:
+            events.append(
+                build_event(
+                    event_type="crud",
+                    method="create",
+                    app="images",
+                    entity="category_images",
+                    entity_id=aggregate.id,
+                    data={
+                        "category_id": aggregate.id,
+                        "image": {"upload_id": aggregate.image.upload_id},
+                    },
+                )
+            )
+        
+        return events
 
     def _build_image_event(
         self,
@@ -196,6 +198,6 @@ class CreateCategoryCommand:
             entity_id=category_id,
             data={
                 "category_id": category_id,
-                "images": [{"upload_id": upload_id}],
+                "image": {"upload_id": upload_id},
             },
         )

@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class CategoryImageReadDTO:
-    ordering: int
     image_key: str
     image_url: Optional[str] = None
     upload_id: Optional[int] = None
@@ -19,7 +18,6 @@ class CategoryImageReadDTO:
 @dataclass
 class CategoryImageInputDTO:
     upload_id: int  # ID загруженного изображения из UploadHistory
-    ordering: int = 0
 
 
 @dataclass
@@ -28,7 +26,6 @@ class CategoryImageOperationDTO:
     action: Literal["create", "update", "pass", "delete"]
     upload_id: Optional[int] = None  # ID изображения из UploadHistory
     image_url: Optional[str] = None  # URL изображения (альтернатива upload_id)
-    ordering: Optional[int] = None
 
 
 @dataclass
@@ -36,7 +33,7 @@ class CategoryReadDTO:
     id: int
     name: str
     description: Optional[str]
-    images: list[CategoryImageReadDTO]
+    image: Optional[CategoryImageReadDTO] = None
     parent_id: Optional[int] = None
     parent: Optional['CategoryAggregate'] = None
     manufacturer: Optional['ManufacturerAggregate'] = None
@@ -53,7 +50,7 @@ class CategoryCreateDTO:
     description: Optional[str]
     parent_id: Optional[int]
     manufacturer_id: Optional[int]
-    images: list[CategoryImageInputDTO]
+    image: Optional[CategoryImageInputDTO] = None
 
 
 @dataclass
@@ -62,4 +59,4 @@ class CategoryUpdateDTO:
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
-    images: Optional[list[CategoryImageOperationDTO]] = None
+    image: Optional[CategoryImageOperationDTO] = None

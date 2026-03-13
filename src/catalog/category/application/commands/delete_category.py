@@ -27,7 +27,7 @@ class DeleteCategoryCommand:
         user: User,
     ) -> bool:
 
-        image_keys: list[str] = []
+        image_key: str | None = None
 
         async with self.uow:
             aggregate = await self.repository.get(category_id)
@@ -35,17 +35,14 @@ class DeleteCategoryCommand:
             if not aggregate:
                 raise CategoryNotFound()
 
-            image_keys = [image.object_key for image in aggregate.images]
+            image_key = aggregate.image.object_key if aggregate.image else None
 
             old_data = {
                 "name": aggregate.name,
                 "description": aggregate.description,
                 "parent_id": aggregate.parent_id,
                 "manufacturer_id": aggregate.manufacturer_id,
-                "images": [
-                    {"image_key": image.object_key, "ordering": image.ordering}
-                    for image in aggregate.images
-                ],
+                "image": {"upload_id": aggregate.image.upload_id} if aggregate.image else None,
             }
 
             await self.repository.delete(category_id)
@@ -61,8 +58,8 @@ class DeleteCategoryCommand:
                 )
             )
 
-        for key in image_keys:
-            await self.image_storage.delete_object(key)
+        if image_key:
+            await self.image_storage.delete_object(image_key)
 
         self.event_bus.publish_many_nowait(
             [

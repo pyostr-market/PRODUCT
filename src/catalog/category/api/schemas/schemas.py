@@ -24,7 +24,6 @@ class CategoryImageReadSchema(BaseModel):
 
     upload_id: Optional[int] = None  # ID из UploadHistory
     image_url: str  # Публичный URL
-    ordering: int
 
 
 class CategoryImageReferenceSchema(BaseModel):
@@ -32,7 +31,6 @@ class CategoryImageReferenceSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     upload_id: int  # ID из UploadHistory
-    ordering: int = 0
 
 
 class CategoryImageActionSchema(BaseModel):
@@ -42,7 +40,6 @@ class CategoryImageActionSchema(BaseModel):
     action: Literal["create", "update", "pass", "delete"]
     upload_id: Optional[int] = None  # ID изображения из UploadHistory
     image_url: Optional[str] = None  # URL изображения (альтернатива upload_id)
-    ordering: Optional[int] = None
 
 
 class CategoryCreateSchema(BaseModel):
@@ -50,7 +47,7 @@ class CategoryCreateSchema(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
-    images: List[CategoryImageReferenceSchema] = Field(default_factory=list)
+    image: Optional[CategoryImageReferenceSchema] = None
 
     @field_validator("name")
     @classmethod
@@ -71,7 +68,7 @@ class CategoryUpdateSchema(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
-    images: Optional[List[CategoryImageActionSchema]] = None
+    image: Optional[CategoryImageActionSchema] = None
 
     @field_validator("name")
     @classmethod
@@ -95,7 +92,7 @@ class CategoryReadSchema(BaseModel):
     id: int
     name: str
     description: Optional[str]
-    images: List[CategoryImageReadSchema]
+    image: Optional[CategoryImageReadSchema] = None
     parent: Optional[CategoryNestedSchema] = None
     manufacturer: Optional[ManufacturerNestedSchema] = None
 
@@ -150,7 +147,7 @@ class CategoryTreeSchema(BaseModel):
     id: int
     name: str
     description: Optional[str]
-    images: List[CategoryImageReadSchema]
+    image: Optional[CategoryImageReadSchema] = None
     parent_id: Optional[int] = None
     manufacturer: Optional[ManufacturerNestedSchema] = None
     children: List["CategoryTreeSchema"] = Field(default_factory=list)

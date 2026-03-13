@@ -23,7 +23,7 @@ async def test_delete_category_200(authorized_client, image_storage_mock):
         json={
             "name": "Удаляемая категория",
             "description": "Описание",
-            "images": [{"upload_id": upload_id, "ordering": 0}],
+            "image": {"upload_id": upload_id},
         },
     )
 

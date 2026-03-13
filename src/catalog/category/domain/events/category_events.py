@@ -74,7 +74,6 @@ class CategoryImageAddedEvent(DomainEvent):
 
     category_id: int
     upload_id: int
-    ordering: int
 
 
 @dataclass
@@ -83,15 +82,6 @@ class CategoryImageRemovedEvent(DomainEvent):
 
     category_id: int
     upload_id: int
-
-
-@dataclass
-class CategoryImagesReplacedEvent(DomainEvent):
-    """Событие: изображения категории заменены."""
-
-    category_id: int
-    old_image_ids: list[int]
-    new_image_ids: list[int]
 
 
 @dataclass

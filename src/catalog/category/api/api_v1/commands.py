@@ -31,7 +31,7 @@ category_commands_router = APIRouter(
     status_code=200,
     summary="Создать категорию",
     description="""
-    Создаёт новую категорию с изображениями.
+    Создаёт новую категорию с изображением.
 
     Права:
     - Требуется permission: `category:create`
@@ -39,19 +39,15 @@ category_commands_router = APIRouter(
     Сценарии:
     - Инициализация новой ветки каталога.
     - Создание категории с привязкой к производителю.
-    - Загрузка набора изображений с явным порядком отображения.
+    - Загрузка изображения категории.
 
-    **Формат `images`** (массив объектов с upload_id):
+    **Формат `image`** (объект с upload_id):
     ```json
-    [
-      {"upload_id": 1, "ordering": 0},
-      {"upload_id": 2, "ordering": 1}
-    ]
+    {"upload_id": 1}
     ```
 
-    Каждый элемент массива содержит:
+    Где:
     - `upload_id`: ID предварительно загруженного изображения через UploadHistory
-    - `ordering`: порядок сортировки (int)
     """,
     response_description="Созданная категория в стандартной обёртке API",
     responses={
@@ -67,13 +63,10 @@ category_commands_router = APIRouter(
                             "description": "Смартфоны и аксессуары",
                             "parent_id": None,
                             "manufacturer_id": 3,
-                            "images": [
-                                {
-                                    "upload_id": 10,
-                                    "ordering": 0,
-                                    "image_url": "https://cdn.example.com/category/smartphones-main.jpg",
-                                }
-                            ],
+                            "image": {
+                                "upload_id": 10,
+                                "image_url": "https://cdn.example.com/category/smartphones-main.jpg",
+                            },
                             "parent": None,
                             "manufacturer": {
                                 "id": 3,
@@ -95,7 +88,7 @@ category_commands_router = APIRouter(
                             "code": "category_invalid_image",
                             "message": "Некорректный файл изображения категории",
                             "details": {
-                                "reason": "invalid_images",
+                                "reason": "invalid_image",
                             },
                         },
                     }
@@ -111,10 +104,9 @@ async def create(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    images_dto = [
-        CategoryImageInputDTO(upload_id=img.upload_id, ordering=img.ordering)
-        for img in payload.images
-    ] if payload.images else []
+    image_dto = None
+    if payload.image:
+        image_dto = CategoryImageInputDTO(upload_id=payload.image.upload_id)
 
     commands = CategoryComposition.build_create_command(db)
     dto = await commands.execute(
@@ -123,7 +115,7 @@ async def create(
             description=payload.description,
             parent_id=normalize_optional_fk(payload.parent_id),
             manufacturer_id=normalize_optional_fk(payload.manufacturer_id),
-            images=images_dto,
+            image=image_dto,
         ),
         user=user,
     )
@@ -142,24 +134,19 @@ async def create(
     Сценарии:
     - Переименование или смена описания категории.
     - Перепривязка к родительской категории или производителю.
-    - Полная замена набора изображений категории.
+    - Обновление изображения категории.
 
-    Работа с изображениями:
-    - Изображения передаются через `images` (JSON-массив операций).
-    - Каждая операция имеет поле `action`: `create`, `update`, `delete`, `pass`.
+    Работа с изображением:
+    - Изображение передаётся через `image` (JSON-объект операции).
+    - Операция имеет поле `action`: `create`, `update`, `delete`, `pass`.
     - `create` — добавить изображение (требуется `upload_id`).
     - `update` — обновить изображение (требуется `upload_id`).
     - `delete` — удалить изображение.
     - `pass` — сохранить существующее изображение (требуется `upload_id`).
 
-    Пример `images`:
+    Пример `image`:
     ```json
-    [
-      {"action": "pass", "upload_id": 123, "ordering": 0},
-      {"action": "update", "upload_id": 124, "ordering": 1},
-      {"action": "delete", "upload_id": 456},
-      {"action": "create", "upload_id": 789, "ordering": 2}
-    ]
+    {"action": "create", "upload_id": 789}
     ```
     """,
     response_description="Обновлённая категория в стандартной обёртке API",
@@ -176,13 +163,10 @@ async def create(
                             "description": "Обновлённое описание",
                             "parent_id": None,
                             "manufacturer_id": 3,
-                            "images": [
-                                {
-                                    "upload_id": 10,
-                                    "ordering": 0,
-                                    "image_url": "https://cdn.example.com/category/smartphones-updated.jpg",
-                                }
-                            ],
+                            "image": {
+                                "upload_id": 10,
+                                "image_url": "https://cdn.example.com/category/smartphones-updated.jpg",
+                            },
                             "parent": None,
                             "manufacturer": {
                                 "id": 3,
@@ -203,7 +187,7 @@ async def create(
                         "error": {
                             "code": "category_invalid_image",
                             "message": "Некорректный файл изображения категории",
-                            "details": {"reason": "invalid_images"},
+                            "details": {"reason": "invalid_image"},
                         },
                     }
                 }
@@ -220,17 +204,13 @@ async def update(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    images_dto = None
-    if payload.images:
-        images_dto = [
-            CategoryImageOperationDTO(
-                action=img.action,
-                upload_id=img.upload_id,
-                image_url=img.image_url,
-                ordering=img.ordering,
-            )
-            for img in payload.images
-        ]
+    image_dto = None
+    if payload.image:
+        image_dto = CategoryImageOperationDTO(
+            action=payload.image.action,
+            upload_id=payload.image.upload_id,
+            image_url=payload.image.image_url,
+        )
 
     commands = CategoryComposition.build_update_command(db)
     dto = await commands.execute(
@@ -240,7 +220,7 @@ async def update(
             description=payload.description,
             parent_id=normalize_optional_fk(payload.parent_id),
             manufacturer_id=normalize_optional_fk(payload.manufacturer_id),
-            images=images_dto,
+            image=image_dto,
         ),
         user=user,
     )

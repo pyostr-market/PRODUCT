@@ -19,9 +19,8 @@ class CategoryQueries:
         self.image_storage = image_storage
 
     def _attach_image_url(self, dto):
-        dto.images = sorted(dto.images, key=lambda i: i.ordering)
-        for image in dto.images:
-            image.image_url = self.image_storage.build_public_url(image.image_key)
+        if dto.image:
+            dto.image.image_url = self.image_storage.build_public_url(dto.image.image_key)
         return dto
 
     async def get_by_id(self, category_id: int):

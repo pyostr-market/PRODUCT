@@ -28,11 +28,13 @@ class Category(TimestampMixin, Base):
         "Category",
         remote_side=[id],
         back_populates="children",
+        foreign_keys=[parent_id],
     )
     children = relationship(
         "Category",
         back_populates="parent",
         cascade="all, delete",
+        foreign_keys=[parent_id],
     )
 
     manufacturer = relationship(

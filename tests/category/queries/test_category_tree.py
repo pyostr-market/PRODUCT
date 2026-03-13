@@ -42,7 +42,7 @@ async def test_get_category_tree_200(authorized_client, client):
         json={
             "name": "Root Category 1",
             "description": "First root category",
-            "images": [{"upload_id": upload_id_1, "ordering": 0}],
+            "image": {"upload_id": upload_id_1},
         },
     )
     assert root1_resp.status_code == 200
@@ -54,7 +54,7 @@ async def test_get_category_tree_200(authorized_client, client):
         json={
             "name": "Root Category 2",
             "description": "Second root category",
-            "images": [{"upload_id": upload_id_2, "ordering": 0}],
+            "image": {"upload_id": upload_id_2},
         },
     )
     assert root2_resp.status_code == 200
@@ -67,7 +67,7 @@ async def test_get_category_tree_200(authorized_client, client):
             "name": "Child Category 1",
             "description": "Child of root 1",
             "parent_id": root1_id,
-            "images": [{"upload_id": upload_id_3, "ordering": 0}],
+            "image": {"upload_id": upload_id_3},
         },
     )
     assert child1_resp.status_code == 200
@@ -144,7 +144,7 @@ async def test_get_category_tree_schema(authorized_client, client):
         "/category",
         json={
             "name": "Schema Test Category",
-            "images": [{"upload_id": upload_id, "ordering": 0}],
+            "image": {"upload_id": upload_id},
         },
     )
     assert cat_resp.status_code == 200

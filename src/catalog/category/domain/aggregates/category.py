@@ -6,7 +6,6 @@ from src.catalog.category.domain.events.category_events import (
     CategoryDescriptionChangedEvent,
     CategoryImageAddedEvent,
     CategoryImageRemovedEvent,
-    CategoryImagesReplacedEvent,
     CategoryManufacturerChangedEvent,
     CategoryNameChangedEvent,
     CategoryParentChangedEvent,
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
 @dataclass
 class CategoryImageAggregate:
     upload_id: int  # ID из UploadHistory
-    ordering: int
     object_key: str | None = None  # Ключ объекта в S3 (file_path из UploadHistory)
 
 
@@ -42,7 +40,7 @@ class CategoryAggregate:
         description: Optional[str] = None,
         parent_id: Optional[int] = None,
         manufacturer_id: Optional[int] = None,
-        images: Optional[list[CategoryImageAggregate]] = None,
+        image: Optional[CategoryImageAggregate] = None,
         category_id: Optional[int] = None,
         parent: Optional['CategoryAggregate'] = None,
         manufacturer: Optional['ManufacturerAggregate'] = None,
@@ -55,7 +53,7 @@ class CategoryAggregate:
         self._description = description
         self._parent_id = parent_id
         self._manufacturer_id = manufacturer_id
-        self._images = sorted(images or [], key=lambda i: i.ordering)
+        self._image = image
         self._parent = parent
         self._manufacturer = manufacturer
         self._events: list[DomainEvent] = []
@@ -81,8 +79,8 @@ class CategoryAggregate:
         return self._manufacturer_id
 
     @property
-    def images(self) -> list[CategoryImageAggregate]:
-        return self._images
+    def image(self) -> Optional[CategoryImageAggregate]:
+        return self._image
 
     @property
     def parent(self) -> Optional['CategoryAggregate']:
@@ -145,36 +143,19 @@ class CategoryAggregate:
             new_manufacturer_id=manufacturer_id,
         ))
 
-    def add_image(self, image: CategoryImageAggregate):
-        """Добавить изображение к категории."""
-        self._images.append(image)
+    def set_image(self, image: CategoryImageAggregate):
+        """Установить изображение категории."""
+        self._image = image
         self._record_event(CategoryImageAddedEvent(
             category_id=self._id,
             upload_id=image.upload_id,
-            ordering=image.ordering,
         ))
 
-    def remove_image_by_upload_id(self, upload_id: int):
-        """Удалить изображение по upload_id."""
-        for i, image in enumerate(self._images):
-            if image.upload_id == upload_id:
-                self._images.pop(i)
-                self._record_event(CategoryImageRemovedEvent(
-                    category_id=self._id,
-                    upload_id=upload_id,
-                ))
-                break
-
-    def replace_images(self, images: list[CategoryImageAggregate]):
-        """Заменить все изображения."""
-        old_image_ids = [img.upload_id for img in self._images]
-        new_image_ids = [img.upload_id for img in images]
-        
-        self._images = sorted(images, key=lambda i: i.ordering)
-        self._record_event(CategoryImagesReplacedEvent(
+    def remove_image(self):
+        """Удалить изображение категории."""
+        self._image = None
+        self._record_event(CategoryImageRemovedEvent(
             category_id=self._id,
-            old_image_ids=old_image_ids,
-            new_image_ids=new_image_ids,
         ))
 
     def _set_id(self, category_id: int):
