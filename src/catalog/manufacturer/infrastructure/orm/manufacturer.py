@@ -102,7 +102,16 @@ class SqlAlchemyManufacturerRepository(ManufacturerRepository):
         return True
 
     async def update(self, aggregate: ManufacturerAggregate) -> ManufacturerAggregate:
-        model = await self.db.get(Manufacturer, aggregate.id)
+        stmt = (
+            select(Manufacturer)
+            .options(
+                selectinload(Manufacturer.image)
+                .selectinload(ManufacturerImage.upload)
+            )
+            .where(Manufacturer.id == aggregate.id)
+        )
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
 
         if not model:
             raise ManufacturerNotFound()

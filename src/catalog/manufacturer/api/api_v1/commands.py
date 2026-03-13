@@ -1,16 +1,15 @@
-import json
-from typing import Annotated, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.manufacturer.api.schemas.schemas import (
+    ManufacturerCreateSchema,
     ManufacturerReadSchema,
+    ManufacturerUpdateSchema,
 )
 from src.catalog.manufacturer.application.dto.manufacturer import (
     ManufacturerCreateDTO,
-    ManufacturerImageInputDTO,
-    ManufacturerImageOperationDTO,
     ManufacturerUpdateDTO,
 )
 from src.catalog.manufacturer.composition import ManufacturerComposition
@@ -22,91 +21,6 @@ from src.core.db.database import get_db
 manufacturer_commands_router = APIRouter(
     tags=["Производители"],
 )
-
-
-async def _parse_image_json(
-    image_json: str | None,
-) -> Optional[ManufacturerImageInputDTO]:
-    """
-    Парсинг JSON объекта изображения для создания производителя.
-
-    Формат image_json:
-    ```json
-    {"upload_id": 1}
-    ```
-    """
-    if not image_json:
-        return None
-
-    try:
-        payload = json.loads(image_json)
-    except json.JSONDecodeError as exc:
-        from src.catalog.manufacturer.domain.exceptions import (
-            ManufacturerInvalidPayload,
-        )
-        raise ManufacturerInvalidPayload(details={"reason": "invalid_image_json", "error": str(exc)})
-
-    if not isinstance(payload, dict):
-        from src.catalog.manufacturer.domain.exceptions import (
-            ManufacturerInvalidPayload,
-        )
-        raise ManufacturerInvalidPayload(details={"reason": "image_must_be_object"})
-
-    upload_id = payload.get("upload_id")
-    if not upload_id:
-        from src.catalog.manufacturer.domain.exceptions import (
-            ManufacturerInvalidPayload,
-        )
-        raise ManufacturerInvalidPayload(details={"reason": "missing_upload_id"})
-
-    try:
-        upload_id = int(upload_id)
-    except (ValueError, TypeError):
-        from src.catalog.manufacturer.domain.exceptions import (
-            ManufacturerInvalidPayload,
-        )
-        raise ManufacturerInvalidPayload(details={"reason": "upload_id_must_be_int"})
-
-    return ManufacturerImageInputDTO(upload_id=upload_id)
-
-
-async def _build_image_operation_dto(
-    image_json: str | None,
-) -> Optional[ManufacturerImageOperationDTO]:
-    """
-    Построение DTO для операции с изображением при обновлении производителя.
-
-    image_json - JSON-объект операции {action, upload_id}
-    """
-    if not image_json:
-        return None
-
-    try:
-        payload = json.loads(image_json)
-    except json.JSONDecodeError as exc:
-        from src.catalog.manufacturer.domain.exceptions import (
-            ManufacturerInvalidPayload,
-        )
-        raise ManufacturerInvalidPayload(details={"reason": "invalid_image_json", "error": str(exc)})
-
-    if not isinstance(payload, dict):
-        from src.catalog.manufacturer.domain.exceptions import (
-            ManufacturerInvalidPayload,
-        )
-        raise ManufacturerInvalidPayload(details={"reason": "image_must_be_object"})
-
-    action = payload.get("action")
-    if action not in ("create", "delete", "pass", "update"):
-        from src.catalog.manufacturer.domain.exceptions import (
-            ManufacturerInvalidPayload,
-        )
-        raise ManufacturerInvalidPayload(details={"reason": "invalid_action", "action": action})
-
-    return ManufacturerImageOperationDTO(
-        action=action,  # type: ignore[arg-type]
-        upload_id=payload.get("upload_id"),
-        image_url=payload.get("image_url"),
-    )
 
 
 # CREATE
@@ -124,9 +38,9 @@ async def _build_image_operation_dto(
     - Добавление нового бренда в справочник.
     - Подготовка данных для привязки категорий к производителю.
 
-    **Формат `image_json`** (объект с upload_id):
+    **Формат `image`** (объект с upload_id):
     ```json
-    {"action": "create", "upload_id": 4275}
+    {"upload_id": 4275}
     ```
 
     Где:
@@ -160,20 +74,21 @@ async def _build_image_operation_dto(
     dependencies=[Depends(require_permissions("manufacturer:create"))],
 )
 async def create(
-    name: Annotated[str, Form(...)],
-    description: Annotated[Optional[str], Form()] = None,
-    image_json: Annotated[Optional[str], Form()] = None,
+    payload: ManufacturerCreateSchema,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    image_dto = await _parse_image_json(image_json) if image_json else None
-
     commands = ManufacturerComposition.build_create_command(db)
+
+    image_dto = None
+    if payload.image:
+        from src.catalog.manufacturer.application.dto.manufacturer import ManufacturerImageInputDTO
+        image_dto = ManufacturerImageInputDTO(upload_id=payload.image.upload_id)
 
     dto = await commands.execute(
         ManufacturerCreateDTO(
-            name=name,
-            description=description,
+            name=payload.name,
+            description=payload.description,
             image=image_dto,
         ),
         user=user,
@@ -198,14 +113,14 @@ async def create(
     - Обновление описания производителя.
 
     Работа с изображением:
-    - Изображение передаётся через `image_json` (JSON-объект операции).
+    - Изображение передаётся через `image` (JSON-объект операции).
     - Операция имеет поле `action`: `create`, `update`, `delete`, `pass`.
     - `create` — добавить/заменить изображение (требуется `upload_id`).
     - `update` — обновить изображение (требуется `upload_id`).
     - `delete` — удалить изображение.
     - `pass` — сохранить существующее изображение.
 
-    Пример `image_json`:
+    Пример `image`:
     ```json
     {"action": "create", "upload_id": 4275}
     ```
@@ -240,21 +155,26 @@ async def create(
 )
 async def update(
     manufacturer_id: int,
-    name: Annotated[Optional[str], Form()] = None,
-    description: Annotated[Optional[str], Form()] = None,
-    image_json: Annotated[Optional[str], Form()] = None,
+    payload: ManufacturerUpdateSchema,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    image_dto = await _build_image_operation_dto(image_json) if image_json else None
+    image_dto = None
+    if payload.image:
+        from src.catalog.manufacturer.application.dto.manufacturer import ManufacturerImageOperationDTO
+        image_dto = ManufacturerImageOperationDTO(
+            action=payload.image.action,
+            upload_id=payload.image.upload_id,
+            image_url=payload.image.image_url,
+        )
 
     commands = ManufacturerComposition.build_update_command(db)
 
     dto = await commands.execute(
         manufacturer_id,
         ManufacturerUpdateDTO(
-            name=name,
-            description=description,
+            name=payload.name,
+            description=payload.description,
             image=image_dto,
         ),
         user=user,

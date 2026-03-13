@@ -1,0 +1,606 @@
+# Спецификация API производителей (Manufacturers API)
+
+## Обзор
+
+API для управления справочником производителей (брендов) товаров.
+
+**Базовый путь:** `/manufacturer`
+
+---
+
+## 1. Создание производителя
+
+### Метод и путь
+```
+POST /manufacturer
+```
+
+### Описание
+Создаёт нового производителя в справочнике.
+
+### Необходимые права
+- Permission: `manufacturer:create`
+
+### Входные данные (JSON Body)
+
+| Поле | Тип | Обязательное | Описание | Ограничения |
+|------|-----|--------------|----------|-------------|
+| `name` | string | Да | Название производителя | 2-150 символов, trim пробелов |
+| `description` | string | Нет | Описание производителя | Макс. 255 символов |
+| `image` | object | Нет | Изображение производителя | Объект с upload_id |
+
+#### Структура объекта `image`:
+```json
+{
+  "upload_id": 4275
+}
+```
+
+Где `upload_id` — ID предварительно загруженного изображения через UploadHistory.
+
+### Пример запроса
+```http
+POST /manufacturer HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{
+  "name": "Acme Devices",
+  "description": "Мировой производитель электроники",
+  "image": {
+    "upload_id": 4275
+  }
+}
+```
+
+### Пример запроса без изображения
+```http
+POST /manufacturer HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{
+  "name": "Simple Brand",
+  "description": "Описание бренда"
+}
+```
+
+### Возможные ответы
+
+#### 200 OK — Успешное создание
+```json
+{
+  "success": true,
+  "data": {
+    "id": 3,
+    "name": "Acme Devices",
+    "description": "Мировой производитель электроники",
+    "image": {
+      "upload_id": 4275,
+      "image_url": "https://cdn.example.com/manufacturers/acme-main.jpg"
+    }
+  }
+}
+```
+
+#### 400 Bad Request — Некорректные данные
+```json
+{
+  "success": false,
+  "error": {
+    "code": "manufacturer_name_too_short",
+    "message": "Имя слишком короткое",
+    "details": {}
+  }
+}
+```
+
+**Коды ошибок:**
+- `manufacturer_name_too_short` — имя короче 2 символов или пустое
+
+#### 403 Forbidden — Недостаточно прав
+```json
+{
+  "success": false,
+  "error": {
+    "code": "forbidden",
+    "message": "Недостаточно прав для выполнения операции",
+    "details": {}
+  }
+}
+```
+
+#### 409 Conflict — Производитель уже существует
+```json
+{
+  "success": false,
+  "error": {
+    "code": "manufacturer_already_exist",
+    "message": "Производитель уже существует",
+    "details": {}
+  }
+}
+```
+
+#### 422 Unprocessable Entity — Ошибка валидации
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "name"],
+      "msg": "Имя слишком короткое",
+      "type": "value_error"
+    }
+  ]
+}
+```
+
+---
+
+## 2. Получение производителя по ID
+
+### Метод и путь
+```
+GET /manufacturer/{manufacturer_id}
+```
+
+### Описание
+Возвращает данные производителя по его идентификатору.
+
+### Необходимые права
+- Не требуются (доступно авторизованным пользователям)
+
+### Параметры пути
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `manufacturer_id` | integer | ID производителя |
+
+### Пример запроса
+```http
+GET /manufacturer/3 HTTP/1.1
+Authorization: Bearer <access_token>
+```
+
+### Возможные ответы
+
+#### 200 OK — Производитель найден
+```json
+{
+  "success": true,
+  "data": {
+    "id": 3,
+    "name": "Acme Devices",
+    "description": "Мировой производитель электроники",
+    "image": {
+      "upload_id": 4275,
+      "image_url": "https://cdn.example.com/manufacturers/acme-main.jpg"
+    }
+  }
+}
+```
+
+#### 404 Not Found — Производитель не найден
+```json
+{
+  "success": false,
+  "error": {
+    "code": "manufacturer_not_found",
+    "message": "Производитель не найден",
+    "details": {}
+  }
+}
+```
+
+---
+
+## 3. Получение списка производителей
+
+### Метод и путь
+```
+GET /manufacturer
+```
+
+### Описание
+Возвращает список производителей с поддержкой фильтрации и пагинации.
+
+### Необходимые права
+- Не требуются (доступно авторизованным пользователям)
+
+### Query параметры
+
+| Параметр | Тип | Обязательное | Описание | Ограничения |
+|----------|-----|--------------|----------|-------------|
+| `name` | string | Нет | Фильтр по имени (частичное совпадение, case-insensitive) | — |
+| `limit` | integer | Нет | Количество записей | Макс. 100, по умолчанию 10 |
+| `offset` | integer | Нет | Смещение (пагинация) | По умолчанию 0 |
+
+### Пример запроса
+```http
+GET /manufacturer?name=apple&limit=5&offset=0 HTTP/1.1
+Authorization: Bearer <access_token>
+```
+
+### Пример запроса без фильтров
+```http
+GET /manufacturer HTTP/1.1
+Authorization: Bearer <access_token>
+```
+
+### Возможные ответы
+
+#### 200 OK — Список успешно получен
+```json
+{
+  "success": true,
+  "data": {
+    "total": 2,
+    "items": [
+      {
+        "id": 3,
+        "name": "Acme Devices",
+        "description": "Мировой производитель электроники",
+        "image": {
+          "upload_id": 4275,
+          "image_url": "https://cdn.example.com/manufacturers/acme-main.jpg"
+        }
+      },
+      {
+        "id": 4,
+        "name": "Nova Tech",
+        "description": null,
+        "image": null
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 4. Обновление производителя
+
+### Метод и путь
+```
+PUT /manufacturer/{manufacturer_id}
+```
+
+### Описание
+Обновляет существующего производителя. Поддерживает частичное обновление (можно передать только изменяемые поля).
+
+### Необходимые права
+- Permission: `manufacturer:update`
+
+### Параметры пути
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `manufacturer_id` | integer | ID производителя |
+
+### Входные данные (JSON Body)
+
+| Поле | Тип | Обязательное | Описание | Ограничения |
+|------|-----|--------------|----------|-------------|
+| `name` | string | Нет | Новое название производителя | 2-150 символов, trim пробелов |
+| `description` | string | Нет | Новое описание производителя | Макс. 255 символов |
+| `image` | object | Нет | Операция с изображением | См. ниже |
+
+#### Структура объекта `image` (операция с изображением):
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|--------------|----------|
+| `action` | string | Да | Тип операции: `create`, `update`, `delete`, `pass` |
+| `upload_id` | integer | Нет | ID загруженного изображения (для create/update) |
+| `image_url` | string | Нет | URL изображения (альтернатива upload_id) |
+
+**Действия:**
+- `create` — добавить/заменить изображение (требуется `upload_id`)
+- `update` — обновить изображение (требуется `upload_id`)
+- `delete` — удалить изображение
+- `pass` — сохранить существующее изображение без изменений
+
+### Пример запроса (обновление имени)
+```http
+PUT /manufacturer/3 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{
+  "name": "Acme Devices International"
+}
+```
+
+### Пример запроса (обновление описания)
+```http
+PUT /manufacturer/3 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{
+  "description": "Обновлённое описание бренда"
+}
+```
+
+### Пример запроса (обновление обоих полей)
+```http
+PUT /manufacturer/3 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{
+  "name": "Acme Devices International",
+  "description": "Обновлённое описание бренда"
+}
+```
+
+### Пример запроса (добавление изображения)
+```http
+PUT /manufacturer/3 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{
+  "image": {
+    "action": "create",
+    "upload_id": 4275
+  }
+}
+```
+
+### Пример запроса (удаление изображения)
+```http
+PUT /manufacturer/3 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{
+  "image": {
+    "action": "delete"
+  }
+}
+```
+
+### Пример запроса (пустое обновление)
+```http
+PUT /manufacturer/3 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{}
+```
+
+### Возможные ответы
+
+#### 200 OK — Успешное обновление
+```json
+{
+  "success": true,
+  "data": {
+    "id": 3,
+    "name": "Acme Devices International",
+    "description": "Обновлённое описание бренда",
+    "image": {
+      "upload_id": 4275,
+      "image_url": "https://cdn.example.com/manufacturers/acme-main.jpg"
+    }
+  }
+}
+```
+
+#### 400 Bad Request — Некорректные данные
+```json
+{
+  "success": false,
+  "error": {
+    "code": "manufacturer_name_too_short",
+    "message": "Имя слишком короткое",
+    "details": {}
+  }
+}
+```
+
+#### 403 Forbidden — Недостаточно прав
+```json
+{
+  "success": false,
+  "error": {
+    "code": "forbidden",
+    "message": "Недостаточно прав для выполнения операции",
+    "details": {}
+  }
+}
+```
+
+#### 404 Not Found — Производитель не найден
+```json
+{
+  "success": false,
+  "error": {
+    "code": "manufacturer_not_found",
+    "message": "Производитель не найден",
+    "details": {}
+  }
+}
+```
+
+#### 409 Conflict — Конфликт уникальности имени
+```json
+{
+  "success": false,
+  "error": {
+    "code": "manufacturer_already_exist",
+    "message": "Производитель уже существует",
+    "details": {}
+  }
+}
+```
+
+#### 422 Unprocessable Entity — Ошибка валидации
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "name"],
+      "msg": "Имя слишком короткое",
+      "type": "value_error"
+    }
+  ]
+}
+```
+
+---
+
+## 5. Удаление производителя
+
+### Метод и путь
+```
+DELETE /manufacturer/{manufacturer_id}
+```
+
+### Описание
+Удаляет производителя по идентификатору.
+
+### Необходимые права
+- Permission: `manufacturer:delete`
+
+### Параметры пути
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `manufacturer_id` | integer | ID производителя |
+
+### Пример запроса
+```http
+DELETE /manufacturer/3 HTTP/1.1
+Authorization: Bearer <access_token>
+```
+
+### Возможные ответы
+
+#### 200 OK — Успешное удаление
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true
+  }
+}
+```
+
+#### 403 Forbidden — Недостаточно прав
+```json
+{
+  "success": false,
+  "error": {
+    "code": "forbidden",
+    "message": "Недостаточно прав для выполнения операции",
+    "details": {}
+  }
+}
+```
+
+#### 404 Not Found — Производитель не найден
+```json
+{
+  "success": false,
+  "error": {
+    "code": "manufacturer_not_found",
+    "message": "Производитель не найден",
+    "details": {}
+  }
+}
+```
+
+---
+
+## Сводная таблица прав доступа
+
+| Endpoint | Метод | Permission |
+|----------|-------|------------|
+| `/manufacturer` | POST | `manufacturer:create` |
+| `/manufacturer` | GET | — |
+| `/manufacturer/{id}` | GET | — |
+| `/manufacturer/{id}` | PUT | `manufacturer:update` |
+| `/manufacturer/{id}` | DELETE | `manufacturer:delete` |
+
+---
+
+## Валидация данных
+
+### Поле `name`
+- **Минимальная длина:** 2 символа
+- **Максимальная длина:** 150 символов
+- **Обработка:** автоматический trim пробелов по краям
+- **Уникальность:** имя должно быть уникальным (case-sensitive)
+- **Символы:** разрешены буквы (латиница, кириллица), цифры, специальные символы
+
+### Поле `description`
+- **Максимальная длина:** 255 символов
+- **Обязательность:** необязательное поле
+
+### Поле `image.upload_id`
+- **Тип:** integer
+- **Требование:** должен ссылаться на существующую запись в UploadHistory
+
+---
+
+## Коды ошибок API
+
+| Код HTTP | Код ошибки | Описание |
+|----------|------------|----------|
+| 400 | `manufacturer_name_too_short` | Имя слишком короткое или пустое |
+| 400 | `manufacturer_invalid_payload` | Некорректный payload |
+| 403 | `forbidden` | Недостаточно прав |
+| 404 | `manufacturer_not_found` | Производитель не найден |
+| 409 | `manufacturer_already_exist` | Производитель с таким именем уже существует |
+| 422 | — | Ошибка валидации Pydantic |
+
+---
+
+## Примеры использования
+
+### Пример 1: Создание производителя с изображением
+```bash
+curl -X POST https://api.example.com/manufacturer \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "name": "Tesla",
+    "description": "Американский производитель электромобилей",
+    "image": {"upload_id": 1234}
+  }'
+```
+
+### Пример 2: Поиск производителей по названию
+```bash
+curl -X GET "https://api.example.com/manufacturer?name=tesla&limit=10" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Пример 3: Обновление имени производителя
+```bash
+curl -X PUT https://api.example.com/manufacturer/3 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "name": "Tesla Inc."
+  }'
+```
+
+### Пример 4: Удаление производителя
+```bash
+curl -X DELETE https://api.example.com/manufacturer/3 \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## Примечания
+
+1. **Регистронезависимый поиск:** Поиск по параметру `name` выполняется без учёта регистра (case-insensitive).
+
+2. **Частичное обновление:** При обновлении можно передавать только те поля, которые нужно изменить.
+
+3. **Каскадное удаление:** При удалении производителя связанные категории могут быть удалены или их поле `manufacturer_id` может быть установлено в NULL (в зависимости от настройки ForeignKey).
+
+4. **Изображения:** Перед добавлением изображения к производителю, оно должно быть предварительно загружено через API загрузок (UploadHistory).

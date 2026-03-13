@@ -1,6 +1,8 @@
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+
+from src.catalog.manufacturer.domain.exceptions import ManufacturerNameTooShort
 
 
 class ManufacturerImageReadSchema(BaseModel):
@@ -31,11 +33,39 @@ class ManufacturerCreateSchema(BaseModel):
     description: Optional[str] = None
     image: Optional[ManufacturerImageReferenceSchema] = None
 
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ManufacturerNameTooShort()
+        return v.strip()
+
+    @model_validator(mode="after")
+    def check_name_length(self):
+        if len(self.name) < 2:
+            raise ManufacturerNameTooShort()
+        return self
+
 
 class ManufacturerUpdateSchema(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     image: Optional[ManufacturerImageActionSchema] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            if not v.strip():
+                raise ManufacturerNameTooShort()
+            return v.strip()
+        return v
+
+    @model_validator(mode="after")
+    def check_name_length(self):
+        if self.name is not None and len(self.name) < 2:
+            raise ManufacturerNameTooShort()
+        return self
 
 
 class ManufacturerReadSchema(BaseModel):
