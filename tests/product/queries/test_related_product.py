@@ -2,17 +2,11 @@ import json
 
 import pytest
 
-JPEG_BYTES = b"\xff\xd8\xff\xe0category-image"
-
 
 async def _create_category(authorized_client, name: str) -> int:
     response = await authorized_client.post(
         "/category",
-        data={
-            "name": name,
-            "orderings": "0",
-        },
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": name},
     )
     assert response.status_code == 200
     return response.json()["data"]["id"]

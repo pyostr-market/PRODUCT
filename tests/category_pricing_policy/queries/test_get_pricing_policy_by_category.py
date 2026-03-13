@@ -9,7 +9,7 @@ async def test_get_pricing_policy_by_category_200(authorized_client):
     # Создаём категорию
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для получения по ID"},
+        json={"name": "Категория для получения по ID"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -50,7 +50,7 @@ async def test_get_pricing_policy_by_category_404_not_found(authorized_client):
     # Создаём категорию без политики
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория без политики"},
+        json={"name": "Категория без политики"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]

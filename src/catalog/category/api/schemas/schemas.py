@@ -1,6 +1,8 @@
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from src.catalog.category.domain.exceptions import CategoryNameTooShort
 
 
 class ManufacturerNestedSchema(BaseModel):
@@ -50,6 +52,19 @@ class CategoryCreateSchema(BaseModel):
     manufacturer_id: Optional[int] = None
     images: List[CategoryImageReferenceSchema] = Field(default_factory=list)
 
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise CategoryNameTooShort()
+        return v.strip()
+
+    @model_validator(mode="after")
+    def check_name_length(self):
+        if len(self.name) < 2:
+            raise CategoryNameTooShort()
+        return self
+
 
 class CategoryUpdateSchema(BaseModel):
     name: Optional[str] = None
@@ -57,6 +72,21 @@ class CategoryUpdateSchema(BaseModel):
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
     images: Optional[List[CategoryImageActionSchema]] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            if not v.strip():
+                raise CategoryNameTooShort()
+            return v.strip()
+        return v
+
+    @model_validator(mode="after")
+    def check_name_length(self):
+        if self.name is not None and len(self.name) < 2:
+            raise CategoryNameTooShort()
+        return self
 
 
 class CategoryReadSchema(BaseModel):

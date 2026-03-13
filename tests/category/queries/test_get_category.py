@@ -32,13 +32,13 @@ async def test_get_category_200(authorized_client, client):
 
     create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Категория для get",
             "description": "Описание",
-            "images_json": json.dumps([
+            "images": [
                 {"upload_id": upload_id_2, "ordering": 2},
                 {"upload_id": upload_id_1, "ordering": 1},
-            ]),
+            ],
         },
     )
     assert create.status_code == 200
@@ -87,9 +87,9 @@ async def test_get_category_200_with_parent(authorized_client, client):
     # Создаём родительскую категорию
     parent_resp = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Parent Category",
-            "images_json": json.dumps([{"upload_id": upload_id, "ordering": 0}]),
+            "images": [{"upload_id": upload_id, "ordering": 0}],
         },
     )
     assert parent_resp.status_code == 200, f"Parent category create failed: {parent_resp.json()}"
@@ -107,10 +107,10 @@ async def test_get_category_200_with_parent(authorized_client, client):
     # Создаём дочернюю категорию
     child_resp = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Child Category",
-            "parent_id": str(parent_id),
-            "images_json": json.dumps([{"upload_id": upload_id_2, "ordering": 0}]),
+            "parent_id": parent_id,
+            "images": [{"upload_id": upload_id_2, "ordering": 0}],
         },
     )
     assert child_resp.status_code == 200, f"Child category create failed: {child_resp.json()}"
@@ -153,10 +153,10 @@ async def test_get_category_200_with_manufacturer(authorized_client, client):
     # Создаём категорию с производителем
     cat_resp = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Category with Manufacturer",
-            "manufacturer_id": str(manufacturer_id),
-            "images_json": json.dumps([{"upload_id": upload_id, "ordering": 0}]),
+            "manufacturer_id": manufacturer_id,
+            "images": [{"upload_id": upload_id, "ordering": 0}],
         },
     )
     assert cat_resp.status_code == 200, f"Category create failed: {cat_resp.json()}"

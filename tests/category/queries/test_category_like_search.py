@@ -9,21 +9,18 @@
 """
 import pytest
 
-JPEG_BYTES = b"\xff\xd8\xff\xe0test-image"
 
-
-async def _create_category(client, name: str, parent_id: int = None, manufacturer_id: int = None):
+async def _create_category(authorized_client, name: str, parent_id: int = None, manufacturer_id: int = None):
     """Вспомогательная функция для создания категории."""
-    data = {"name": name, "orderings": "0"}
+    data = {"name": name}
     if parent_id:
-        data["parent_id"] = str(parent_id)
+        data["parent_id"] = parent_id
     if manufacturer_id:
-        data["manufacturer_id"] = str(manufacturer_id)
-    
-    return await client.post(
+        data["manufacturer_id"] = manufacturer_id
+
+    return await authorized_client.post(
         "/category",
-        data=data,
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json=data,
     )
 
 

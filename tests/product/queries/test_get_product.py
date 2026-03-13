@@ -4,8 +4,6 @@ import pytest
 
 from src.catalog.product.api.schemas.schemas import ProductReadSchema
 
-JPEG_BYTES = b"\xff\xd8\xff\xe0test-image"
-
 
 @pytest.mark.asyncio
 async def test_get_product_200(authorized_client, client):
@@ -42,8 +40,7 @@ async def test_get_product_200_with_category_and_supplier(authorized_client, cli
     # Создаём категорию
     cat_resp = await authorized_client.post(
         "/category",
-        data={"name": "Test Category", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Test Category"},
     )
     assert cat_resp.status_code == 200, f"Category create failed: {cat_resp.json()}"
     category_id = cat_resp.json()["data"]["id"]

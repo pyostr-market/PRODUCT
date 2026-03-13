@@ -20,10 +20,10 @@ async def test_delete_category_200(authorized_client, image_storage_mock):
     # Создаём категорию
     create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Удаляемая категория",
             "description": "Описание",
-            "images_json": json.dumps([{"upload_id": upload_id, "ordering": 0}]),
+            "images": [{"upload_id": upload_id, "ordering": 0}],
         },
     )
 

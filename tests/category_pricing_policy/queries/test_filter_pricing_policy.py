@@ -11,7 +11,7 @@ async def test_filter_pricing_policies_200_all(authorized_client):
     for i in range(3):
         cat_response = await authorized_client.post(
             "/category",
-            data={"name": f"Категория {i}"},
+            json={"name": f"Категория {i}"},
         )
         assert cat_response.status_code == 200
         category_ids.append(cat_response.json()["data"]["id"])
@@ -47,7 +47,7 @@ async def test_filter_pricing_policies_200_by_category_id(authorized_client):
     for i in range(3):
         cat_response = await authorized_client.post(
             "/category",
-            data={"name": f"Категория {i}"},
+            json={"name": f"Категория {i}"},
         )
         assert cat_response.status_code == 200
         category_ids.append(cat_response.json()["data"]["id"])
@@ -84,7 +84,7 @@ async def test_filter_pricing_policies_200_pagination(authorized_client):
     for i in range(5):
         cat_response = await authorized_client.post(
             "/category",
-            data={"name": f"Категория {i}"},
+            json={"name": f"Категория {i}"},
         )
         assert cat_response.status_code == 200
         category_ids.append(cat_response.json()["data"]["id"])

@@ -1,18 +1,14 @@
 import pytest
 
-JPEG_BYTES = b"\xff\xd8\xff\xe0audit-image"
-
 
 @pytest.mark.asyncio
 async def test_audit_logs_after_create(authorized_client):
     create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "AuditCategory",
             "description": "Audit",
-            "orderings": "0",
         },
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
     )
 
     assert create.status_code == 200
@@ -38,11 +34,9 @@ async def test_audit_logs_after_create(authorized_client):
 async def test_audit_filter_by_category_id(authorized_client):
     create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "FilterAuditCategory",
-            "orderings": "0",
         },
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
     )
 
     category_id = create.json()["data"]["id"]
@@ -67,8 +61,7 @@ async def test_audit_filter_by_action(authorized_client):
     """Фильтр audit-логов по action"""
     await authorized_client.post(
         "/category",
-        data={"name": "ActionCategory", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "ActionCategory"},
     )
 
     response = await authorized_client.get("/category/admin/audit?action=create")
@@ -88,8 +81,7 @@ async def test_audit_pagination(authorized_client):
     for i in range(5):
         await authorized_client.post(
             "/category",
-            data={"name": f"PaginatedCategory{i}", "orderings": "0"},
-            files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+            json={"name": f"PaginatedCategory{i}"},
         )
 
     response = await authorized_client.get("/category/admin/audit?limit=2")

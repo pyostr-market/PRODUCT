@@ -9,7 +9,7 @@ async def test_create_pricing_policy_200(authorized_client):
     # Сначала создаём категорию
     category_response = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Тестовая категория",
             "description": "Категория для тестирования политики цен",
         },
@@ -48,7 +48,7 @@ async def test_create_pricing_policy_200_minimal_data(authorized_client):
     """Создание политики с минимальными данными (только category_id и tax_rate)."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для минимального теста"},
+        json={"name": "Категория для минимального теста"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -96,7 +96,7 @@ async def test_create_pricing_policy_400_invalid_markup_percent(authorized_clien
     """Ошибка при создании политики с markup_percent > 100."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста валидации"},
+        json={"name": "Категория для теста валидации"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -122,7 +122,7 @@ async def test_create_pricing_policy_400_negative_markup_percent(authorized_clie
     """Ошибка при создании политики с отрицательным markup_percent."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста валидации"},
+        json={"name": "Категория для теста валидации"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -147,7 +147,7 @@ async def test_create_pricing_policy_400_invalid_commission_percent(authorized_c
     """Ошибка при создании политики с commission_percent > 100."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста валидации"},
+        json={"name": "Категория для теста валидации"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -172,7 +172,7 @@ async def test_create_pricing_policy_400_invalid_discount_percent(authorized_cli
     """Ошибка при создании политики с discount_percent > 100."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста валидации"},
+        json={"name": "Категория для теста валидации"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -197,7 +197,7 @@ async def test_create_pricing_policy_400_invalid_tax_rate(authorized_client):
     """Ошибка при создании политики с tax_rate > 100."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста валидации"},
+        json={"name": "Категория для теста валидации"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -221,7 +221,7 @@ async def test_create_pricing_policy_400_negative_tax_rate(authorized_client):
     """Ошибка при создании политики с отрицательным tax_rate."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста валидации"},
+        json={"name": "Категория для теста валидации"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -245,7 +245,7 @@ async def test_create_pricing_policy_409_already_exists(authorized_client):
     """Ошибка при создании второй политики для той же категории."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста дубликата"},
+        json={"name": "Категория для теста дубликата"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -298,7 +298,7 @@ async def test_create_pricing_policy_200_boundary_values(authorized_client):
     """Создание политики с граничными значениями (0 и 100)."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста границ"},
+        json={"name": "Категория для теста границ"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]

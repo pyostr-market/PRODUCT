@@ -243,8 +243,7 @@ async def test_create_product_200_with_category(authorized_client, image_storage
     # Сначала создаём категорию
     cat_resp = await authorized_client.post(
         "/category",
-        data={"name": "Test Category", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Test Category"},
     )
     assert cat_resp.status_code == 200
     category_id = cat_resp.json()["data"]["id"]

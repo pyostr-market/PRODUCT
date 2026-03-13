@@ -9,7 +9,7 @@ async def test_get_pricing_policy_200(authorized_client):
     # Создаём категорию
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для получения"},
+        json={"name": "Категория для получения"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]

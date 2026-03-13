@@ -39,10 +39,10 @@ async def test_get_category_tree_200(authorized_client, client):
     # Создаём корневую категорию 1
     root1_resp = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Root Category 1",
             "description": "First root category",
-            "images_json": json.dumps([{"upload_id": upload_id_1, "ordering": 0}]),
+            "images": [{"upload_id": upload_id_1, "ordering": 0}],
         },
     )
     assert root1_resp.status_code == 200
@@ -51,10 +51,10 @@ async def test_get_category_tree_200(authorized_client, client):
     # Создаём корневую категорию 2
     root2_resp = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Root Category 2",
             "description": "Second root category",
-            "images_json": json.dumps([{"upload_id": upload_id_2, "ordering": 0}]),
+            "images": [{"upload_id": upload_id_2, "ordering": 0}],
         },
     )
     assert root2_resp.status_code == 200
@@ -63,11 +63,11 @@ async def test_get_category_tree_200(authorized_client, client):
     # Создаём дочернюю категорию для root1
     child1_resp = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Child Category 1",
             "description": "Child of root 1",
-            "parent_id": str(root1_id),
-            "images_json": json.dumps([{"upload_id": upload_id_3, "ordering": 0}]),
+            "parent_id": root1_id,
+            "images": [{"upload_id": upload_id_3, "ordering": 0}],
         },
     )
     assert child1_resp.status_code == 200
@@ -142,9 +142,9 @@ async def test_get_category_tree_schema(authorized_client, client):
     # Создаём категорию
     cat_resp = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Schema Test Category",
-            "images_json": json.dumps([{"upload_id": upload_id, "ordering": 0}]),
+            "images": [{"upload_id": upload_id, "ordering": 0}],
         },
     )
     assert cat_resp.status_code == 200

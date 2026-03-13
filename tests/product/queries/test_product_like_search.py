@@ -10,8 +10,6 @@
 """
 import pytest
 
-JPEG_BYTES = b"\xff\xd8\xff\xe0test-image"
-
 
 # =========================================================
 # LIKE-поиск: регистронезависимость
@@ -277,15 +275,13 @@ async def test_product_search_with_category_filter(authorized_client, client):
     # Создаём категории
     cat1_resp = await authorized_client.post(
         "/category",
-        data={"name": "Phones", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Phones"},
     )
     cat2_resp = await authorized_client.post(
         "/category",
-        data={"name": "Laptops", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Laptops"},
     )
-    
+
     cat1_id = cat1_resp.json()["data"]["id"]
     cat2_id = cat2_resp.json()["data"]["id"]
 
@@ -347,11 +343,10 @@ async def test_product_search_combined_filters(authorized_client, client):
     # Создаём категорию и тип
     cat_resp = await authorized_client.post(
         "/category",
-        data={"name": "Mobile", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Mobile"},
     )
     type_resp = await authorized_client.post("/product/type", json={"name": "Phone", "parent_id": None})
-    
+
     cat_id = cat_resp.json()["data"]["id"]
     type_id = type_resp.json()["data"]["id"]
 
@@ -419,8 +414,7 @@ async def test_product_search_returns_related_data(authorized_client, client):
     # Создаём категорию
     cat_resp = await authorized_client.post(
         "/category",
-        data={"name": "Test Category", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Test Category"},
     )
     cat_id = cat_resp.json()["data"]["id"]
 

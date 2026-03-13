@@ -22,10 +22,10 @@ async def test_update_category_200_full_update(authorized_client):
     # Создаём категорию
     create_response = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Старая категория",
             "description": "Старое описание",
-            "images_json": json.dumps([{"upload_id": old_upload_id, "ordering": 0}]),
+            "images": [{"upload_id": old_upload_id, "ordering": 0}],
         },
     )
     assert create_response.status_code == 200
@@ -46,13 +46,13 @@ async def test_update_category_200_full_update(authorized_client):
     # Обновляем категорию с операциями над изображениями
     response = await authorized_client.put(
         f"/category/{category_id}",
-        data={
+        json={
             "name": "Новая категория",
             "description": "Новое описание",
-            "images_json": json.dumps([
+            "images": [
                 {"action": "delete", "upload_id": old_upload_id},
                 {"action": "create", "upload_id": new_upload_id, "ordering": 0},
-            ]),
+            ],
         },
     )
 
@@ -85,10 +85,10 @@ async def test_update_category_200_pass_image(authorized_client):
     # Создаём категорию
     create_response = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "Категория",
             "description": "Описание",
-            "images_json": json.dumps([{"upload_id": upload_id, "ordering": 0}]),
+            "images": [{"upload_id": upload_id, "ordering": 0}],
         },
     )
     assert create_response.status_code == 200
@@ -97,11 +97,11 @@ async def test_update_category_200_pass_image(authorized_client):
     # Обновляем категорию, сохраняя изображение (pass)
     response = await authorized_client.put(
         f"/category/{category_id}",
-        data={
+        json={
             "name": "Обновлённая категория",
-            "images_json": json.dumps([
+            "images": [
                 {"action": "pass", "upload_id": upload_id, "ordering": 0},
-            ]),
+            ],
         },
     )
 
@@ -116,7 +116,7 @@ async def test_update_category_200_pass_image(authorized_client):
 async def test_update_category_404_not_found(authorized_client):
     response = await authorized_client.put(
         "/category/999999",
-        data={
+        json={
             "name": "Not found",
             "description": "Nope",
         },
@@ -129,16 +129,13 @@ async def test_update_category_404_not_found(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_update_category_400_invalid_images_json(authorized_client):
+async def test_update_category_400_invalid_images(authorized_client):
     response = await authorized_client.put(
         "/category/999999",
-        data={
+        json={
             "name": "Test",
-            "images_json": "not-a-json",
+            "images": "not-a-list",
         },
     )
 
-    assert response.status_code == 400
-    body = response.json()
-    assert body["success"] is False
-    assert body["error"]["code"] == "category_invalid_image"
+    assert response.status_code == 422

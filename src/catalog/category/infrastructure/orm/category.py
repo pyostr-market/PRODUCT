@@ -76,7 +76,17 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         return True
 
     async def update(self, aggregate: CategoryAggregate) -> CategoryAggregate:
-        model = await self.db.get(Category, aggregate.id)
+        stmt = (
+            select(Category)
+            .options(
+                selectinload(Category.images).selectinload(CategoryImage.upload),
+                selectinload(Category.parent),
+                selectinload(Category.manufacturer),
+            )
+            .where(Category.id == aggregate.id)
+        )
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
 
         if not model:
             raise CategoryNotFound()
@@ -87,9 +97,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         model.manufacturer_id = aggregate.manufacturer_id
 
         # Удаляем старые связи изображений (файлы в S3 остаются)
-        stmt = select(CategoryImage).where(CategoryImage.category_id == aggregate.id)
-        result = await self.db.execute(stmt)
-        for image_model in result.scalars().all():
+        for image_model in model.images:
             await self.db.delete(image_model)
 
         # Создаём новые связи

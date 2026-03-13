@@ -7,7 +7,7 @@ async def test_audit_logs_after_create_pricing_policy(authorized_client):
     # Сначала создадим категорию
     category_create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "AuditPricingCategory",
             "description": "Category for pricing policy audit test",
             "orderings": "0",
@@ -62,7 +62,7 @@ async def test_audit_logs_after_update_pricing_policy(authorized_client):
     # Создаём категорию
     category_create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "UpdateAuditCategory",
             "orderings": "0",
         },
@@ -128,7 +128,7 @@ async def test_audit_logs_after_delete_pricing_policy(authorized_client):
     # Создаём категорию
     category_create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "DeleteAuditCategory",
             "orderings": "0",
         },
@@ -181,7 +181,7 @@ async def test_audit_filter_by_pricing_policy_id(authorized_client):
     # Создаём категорию
     category_create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "FilterAuditCategory",
             "orderings": "0",
         },
@@ -222,7 +222,7 @@ async def test_audit_filter_by_action(authorized_client):
     # Создаём категорию
     category_create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "ActionFilterCategory",
             "orderings": "0",
         },
@@ -260,7 +260,7 @@ async def test_audit_filter_by_user_id(authorized_client):
     # Создаём категорию
     category_create = await authorized_client.post(
         "/category",
-        data={
+        json={
             "name": "UserFilterCategory",
             "orderings": "0",
         },
@@ -298,7 +298,7 @@ async def test_audit_pagination(authorized_client):
     for i in range(5):
         category_create = await authorized_client.post(
             "/category",
-            data={
+            json={
                 "name": f"PaginationCategory{i}",
                 "orderings": "0",
             },

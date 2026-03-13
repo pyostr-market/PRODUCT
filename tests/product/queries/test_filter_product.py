@@ -2,8 +2,6 @@ import json
 
 import pytest
 
-JPEG_BYTES = b"\xff\xd8\xff\xe0test-image"
-
 
 @pytest.mark.asyncio
 async def test_filter_product_list_200(authorized_client, client):
@@ -66,8 +64,7 @@ async def test_filter_product_with_category(authorized_client, client):
     # Создаём категорию
     cat_resp = await authorized_client.post(
         "/category",
-        data={"name": "Filter Category", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Filter Category"},
     )
     assert cat_resp.status_code == 200, f"Category create failed: {cat_resp.json()}"
     category_id = cat_resp.json()["data"]["id"]

@@ -7,7 +7,7 @@ async def test_delete_pricing_policy_200(authorized_client):
     # Создаём категорию
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для удаления"},
+        json={"name": "Категория для удаления"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -64,7 +64,7 @@ async def test_delete_pricing_policy_verify_removed(authorized_client):
     # Создаём категорию
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для проверки удаления"},
+        json={"name": "Категория для проверки удаления"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -100,7 +100,7 @@ async def test_delete_pricing_policy_cascade_with_category(authorized_client):
     # Создаём категорию
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для каскадного удаления"},
+        json={"name": "Категория для каскадного удаления"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]

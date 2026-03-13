@@ -9,7 +9,7 @@ async def test_update_pricing_policy_200_full_update(authorized_client):
     # Создаём категорию
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для обновления"},
+        json={"name": "Категория для обновления"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -60,7 +60,7 @@ async def test_update_pricing_policy_200_partial_update(authorized_client):
     """Успешное частичное обновление политики (только tax_rate)."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для частичного обновления"},
+        json={"name": "Категория для частичного обновления"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -99,7 +99,7 @@ async def test_update_pricing_policy_200_set_null(authorized_client):
     """Успешное обнуление полей политики."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для обнуления"},
+        json={"name": "Категория для обнуления"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -151,7 +151,7 @@ async def test_update_pricing_policy_400_invalid_markup_percent(authorized_clien
     """Ошибка при обновлении с некорректным markup_percent."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста"},
+        json={"name": "Категория для теста"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -184,7 +184,7 @@ async def test_update_pricing_policy_400_negative_tax_rate(authorized_client):
     """Ошибка при обновлении с отрицательным tax_rate."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста"},
+        json={"name": "Категория для теста"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -217,7 +217,7 @@ async def test_update_pricing_policy_400_invalid_commission_percent(authorized_c
     """Ошибка при обновлении с commission_percent > 100."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста"},
+        json={"name": "Категория для теста"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -264,7 +264,7 @@ async def test_update_pricing_policy_200_boundary_zero(authorized_client):
     """Обновление с нулевыми значениями."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста"},
+        json={"name": "Категория для теста"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]
@@ -300,7 +300,7 @@ async def test_update_pricing_policy_200_boundary_hundred(authorized_client):
     """Обновление со значениями 100."""
     category_response = await authorized_client.post(
         "/category",
-        data={"name": "Категория для теста"},
+        json={"name": "Категория для теста"},
     )
     assert category_response.status_code == 200
     category_id = category_response.json()["data"]["id"]

@@ -1,7 +1,5 @@
 import pytest
 
-JPEG_BYTES = b"\xff\xd8\xff\xe0test-image"
-
 
 @pytest.mark.asyncio
 async def test_filter_category_list_200(authorized_client, client):
@@ -10,11 +8,7 @@ async def test_filter_category_list_200(authorized_client, client):
     for name in names:
         r = await authorized_client.post(
             "/category",
-            data={
-                "name": name,
-                "orderings": "0",
-            },
-            files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+            json={"name": name},
         )
         assert r.status_code == 200
 
@@ -26,7 +20,7 @@ async def test_filter_category_list_200(authorized_client, client):
 
     assert data["total"] >= 3
     assert len(data["items"]) >= 3
-    
+
     # Проверяем наличие связанных данных (могут быть null)
     for item in data["items"]:
         assert "parent" in item
@@ -38,8 +32,7 @@ async def test_filter_category_by_name(authorized_client, client):
     async def create(name: str):
         await authorized_client.post(
             "/category",
-            data={"name": name, "orderings": "0"},
-            files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+            json={"name": name},
         )
 
     await create("FilterBooks")
@@ -67,17 +60,15 @@ async def test_filter_category_with_parent(authorized_client, client):
     # Создаём родительскую категорию
     parent_resp = await authorized_client.post(
         "/category",
-        data={"name": "Filter Parent", "orderings": "0"},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Filter Parent"},
     )
     assert parent_resp.status_code == 200
     parent_id = parent_resp.json()["data"]["id"]
-    
+
     # Создаём дочернюю категорию
     child_resp = await authorized_client.post(
         "/category",
-        data={"name": "Filter Child", "orderings": "0", "parent_id": str(parent_id)},
-        files=[("images", ("test.jpg", JPEG_BYTES, "image/jpeg"))],
+        json={"name": "Filter Child", "parent_id": parent_id},
     )
     assert child_resp.status_code == 200
 
