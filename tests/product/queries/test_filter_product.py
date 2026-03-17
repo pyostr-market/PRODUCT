@@ -34,7 +34,6 @@ async def test_filter_product_list_200(authorized_client, client):
         # Проверяем наличие связанных данных (могут быть null)
         assert "category" in item
         assert "supplier" in item
-        assert "product_type" in item
 
 
 @pytest.mark.asyncio

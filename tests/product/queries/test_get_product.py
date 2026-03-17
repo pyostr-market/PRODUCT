@@ -31,7 +31,6 @@ async def test_get_product_200(authorized_client, client):
     # Проверяем, что связанные данные возвращаются (даже если null)
     assert "category" in body["data"]
     assert "supplier" in body["data"]
-    assert "product_type" in body["data"]
 
 
 @pytest.mark.asyncio
@@ -66,10 +65,9 @@ async def test_get_product_200_with_category_and_supplier(authorized_client, cli
     assert body["data"]["category"] is not None
     assert body["data"]["category"]["id"] == category_id
     assert body["data"]["category"]["name"] == "Test Category"
-    
-    # supplier и product_type должны быть null
+
+    # supplier должен быть null
     assert body["data"]["supplier"] is None
-    assert body["data"]["product_type"] is None
 
 
 @pytest.mark.asyncio

@@ -44,7 +44,6 @@ class DeleteProductCommand:
                 "price": str(aggregate.price),
                 "category_id": aggregate.category_id,
                 "supplier_id": aggregate.supplier_id,
-                "product_type_id": aggregate.product_type_id,
                 "images": [
                     {"image_key": image.object_key, "is_main": image.is_main}
                     for image in aggregate.images

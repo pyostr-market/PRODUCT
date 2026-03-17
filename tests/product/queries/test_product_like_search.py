@@ -303,57 +303,24 @@ async def test_product_search_with_category_filter(authorized_client, client):
 
 
 # =========================================================
-# LIKE-поиск: комбинация с фильтром по product_type
-# =========================================================
-
-@pytest.mark.asyncio
-async def test_product_search_with_product_type_filter(authorized_client, client):
-    """Поиск товаров с фильтром по product_type"""
-    # Создаём типы продуктов
-    type1_resp = await authorized_client.post("/product/type", json={"name": "Smartphone", "parent_id": None})
-    type2_resp = await authorized_client.post("/product/type", json={"name": "Laptop", "parent_id": None})
-    
-    type1_id = type1_resp.json()["data"]["id"]
-    type2_id = type2_resp.json()["data"]["id"]
-
-    # Создаём товары
-    await authorized_client.post("/product", data={"name": "iPhone", "price": "999.00", "product_type_id": str(type1_id)})
-    await authorized_client.post("/product", data={"name": "Samsung", "price": "899.00", "product_type_id": str(type1_id)})
-    await authorized_client.post("/product", data={"name": "MacBook", "price": "1999.00", "product_type_id": str(type2_id)})
-
-    # Ищем в типе Smartphone
-    response = await client.get(f"/product?name=&product_type_id={type1_id}")
-    assert response.status_code == 200
-
-    body = response.json()
-    data = body["data"]
-
-    assert data["total"] == 2
-    for item in data["items"]:
-        assert item["product_type"]["id"] == type1_id
-
-
-# =========================================================
-# LIKE-поиск: комбинация name + category + product_type
+# LIKE-поиск: комбинация name + category
 # =========================================================
 
 @pytest.mark.asyncio
 async def test_product_search_combined_filters(authorized_client, client):
-    """Комбинированный поиск: name + category_id + product_type_id"""
-    # Создаём категорию и тип
+    """Комбинированный поиск: name + category_id"""
+    # Создаём категорию
     cat_resp = await authorized_client.post(
         "/category",
         json={"name": "Mobile"},
     )
-    type_resp = await authorized_client.post("/product/type", json={"name": "Phone", "parent_id": None})
 
     cat_id = cat_resp.json()["data"]["id"]
-    type_id = type_resp.json()["data"]["id"]
 
     # Создаём товары
-    await authorized_client.post("/product", data={"name": "iPhone 15", "price": "999.00", "category_id": str(cat_id), "product_type_id": str(type_id)})
-    await authorized_client.post("/product", data={"name": "iPhone 14", "price": "899.00", "category_id": str(cat_id), "product_type_id": str(type_id)})
-    await authorized_client.post("/product", data={"name": "Samsung Galaxy", "price": "799.00", "category_id": str(cat_id), "product_type_id": str(type_id)})
+    await authorized_client.post("/product", data={"name": "iPhone 15", "price": "999.00", "category_id": str(cat_id)})
+    await authorized_client.post("/product", data={"name": "iPhone 14", "price": "899.00", "category_id": str(cat_id)})
+    await authorized_client.post("/product", data={"name": "Samsung Galaxy", "price": "799.00", "category_id": str(cat_id)})
     await authorized_client.post("/product", data={"name": "MacBook", "price": "1999.00"})
 
     # Ищем iPhone в категории Mobile
@@ -410,17 +377,13 @@ async def test_product_search_cyrillic_case_insensitive(authorized_client, clien
 
 @pytest.mark.asyncio
 async def test_product_search_returns_related_data(authorized_client, client):
-    """Поиск должен возвращать связанные данные (category, supplier, product_type, images, attributes)"""
+    """Поиск должен возвращать связанные данные (category, supplier, images, attributes)"""
     # Создаём категорию
     cat_resp = await authorized_client.post(
         "/category",
         json={"name": "Test Category"},
     )
     cat_id = cat_resp.json()["data"]["id"]
-
-    # Создаём тип продукта
-    type_resp = await authorized_client.post("/product/type", json={"name": "Test Type", "parent_id": None})
-    type_id = type_resp.json()["data"]["id"]
 
     # Создаём товар
     await authorized_client.post(
@@ -429,7 +392,6 @@ async def test_product_search_returns_related_data(authorized_client, client):
             "name": "Test Product Search",
             "price": "100.00",
             "category_id": str(cat_id),
-            "product_type_id": str(type_id),
         },
     )
 
@@ -445,7 +407,5 @@ async def test_product_search_returns_related_data(authorized_client, client):
     # Проверяем наличие связанных данных
     assert product["category"] is not None
     assert product["category"]["name"] == "Test Category"
-    assert product["product_type"] is not None
-    assert product["product_type"]["name"] == "Test Type"
     assert "images" in product
     assert "attributes" in product

@@ -95,7 +95,6 @@ async def test_related_products_by_id(authorized_client, client):
         # Проверяем наличие связанных данных
         assert "category" in item
         assert "supplier" in item
-        assert "product_type" in item
         # Категория должна быть заполнена
         assert item["category"] is not None
         assert item["category"]["id"] == category_id
