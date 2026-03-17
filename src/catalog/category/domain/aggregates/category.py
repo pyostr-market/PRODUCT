@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from src.catalog.manufacturer.domain.aggregates.manufacturer import (
         ManufacturerAggregate,
     )
+    from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 
 
 @dataclass
@@ -40,10 +41,12 @@ class CategoryAggregate:
         description: Optional[str] = None,
         parent_id: Optional[int] = None,
         manufacturer_id: Optional[int] = None,
+        device_type_id: Optional[int] = None,
         image: Optional[CategoryImageAggregate] = None,
         category_id: Optional[int] = None,
         parent: Optional['CategoryAggregate'] = None,
         manufacturer: Optional['ManufacturerAggregate'] = None,
+        device_type: Optional['ProductTypeAggregate'] = None,
     ):
         if not name or len(name.strip()) < 2:
             raise CategoryNameTooShort()
@@ -53,9 +56,11 @@ class CategoryAggregate:
         self._description = description
         self._parent_id = parent_id
         self._manufacturer_id = manufacturer_id
+        self._device_type_id = device_type_id
         self._image = image
         self._parent = parent
         self._manufacturer = manufacturer
+        self._device_type = device_type
         self._events: list[DomainEvent] = []
 
     @property
@@ -79,6 +84,10 @@ class CategoryAggregate:
         return self._manufacturer_id
 
     @property
+    def device_type_id(self) -> Optional[int]:
+        return self._device_type_id
+
+    @property
     def image(self) -> Optional[CategoryImageAggregate]:
         return self._image
 
@@ -89,6 +98,10 @@ class CategoryAggregate:
     @property
     def manufacturer(self) -> Optional['ManufacturerAggregate']:
         return self._manufacturer
+
+    @property
+    def device_type(self) -> Optional['ProductTypeAggregate']:
+        return self._device_type
 
     def get_events(self) -> list[DomainEvent]:
         """Вернуть все накопленные события и очистить очередь."""
@@ -143,6 +156,10 @@ class CategoryAggregate:
             new_manufacturer_id=manufacturer_id,
         ))
 
+    def change_device_type(self, device_type_id: Optional[int]):
+        old_device_type_id = self._device_type_id
+        self._device_type_id = device_type_id
+
     def set_image(self, image: CategoryImageAggregate):
         """Установить изображение категории."""
         self._image = image
@@ -167,6 +184,7 @@ class CategoryAggregate:
         description: Optional[str],
         parent_id: Optional[int],
         manufacturer_id: Optional[int],
+        device_type_id: Optional[int],
     ):
         if name is not None:
             self.rename(name)
@@ -180,3 +198,6 @@ class CategoryAggregate:
 
         if manufacturer_id is not None:
             self.change_manufacturer(manufacturer_id)
+
+        if device_type_id is not None:
+            self.change_device_type(device_type_id)

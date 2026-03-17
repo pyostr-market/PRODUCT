@@ -18,7 +18,6 @@ class Product(TimestampMixin, Base):
     __table_args__ = (
         Index("ix_products_category_id", "category_id"),
         Index("ix_products_supplier_id", "supplier_id"),
-        Index("ix_products_product_type_id", "product_type_id"),
     )
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
@@ -47,18 +46,6 @@ class Product(TimestampMixin, Base):
 
     supplier = relationship(
         "Supplier",
-        back_populates="products",
-    )
-
-    # 🏷 Тип продукта
-    product_type_id = Column(
-        BigInteger,
-        ForeignKey("product_types.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-
-    product_type = relationship(
-        "ProductType",
         back_populates="products",
     )
 

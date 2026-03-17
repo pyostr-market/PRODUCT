@@ -17,12 +17,6 @@ class ProductType(TimestampMixin, Base):
         nullable=True,
     )
 
-    products = relationship(
-        "Product",
-        back_populates="product_type",
-        cascade="all, delete",
-    )
-
     parent = relationship(
         "ProductType",
         remote_side=[id],
@@ -32,4 +26,9 @@ class ProductType(TimestampMixin, Base):
         "ProductType",
         back_populates="parent",
         cascade="all, delete",
+    )
+
+    categories = relationship(
+        "Category",
+        back_populates="device_type",
     )

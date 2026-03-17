@@ -104,17 +104,15 @@ class UpdateProductCommand:
                 )
 
             # Загружаем связанные данные через сервис
-            category_dto, supplier_dto, product_type_dto = await self.entity_loader.load_all(
+            category_dto, supplier_dto = await self.entity_loader.load_category_and_supplier(
                 aggregate.category_id,
                 aggregate.supplier_id,
-                aggregate.product_type_id,
             )
 
             result = self._to_read_dto(
                 aggregate,
                 category_dto,
                 supplier_dto,
-                product_type_dto,
             )
 
         # Публикуем события на основе доменных событий
@@ -136,7 +134,6 @@ class UpdateProductCommand:
             price=dto.price,
             category_id=dto.category_id,
             supplier_id=dto.supplier_id,
-            product_type_id=dto.product_type_id,
         )
 
     async def _apply_image_operations(
@@ -179,7 +176,6 @@ class UpdateProductCommand:
             "price": str(aggregate.price),
             "category_id": aggregate.category_id,
             "supplier_id": aggregate.supplier_id,
-            "product_type_id": aggregate.product_type_id,
             "images": [
                 {"upload_id": image.upload_id, "is_main": image.is_main}
                 for image in aggregate.images
@@ -265,25 +261,6 @@ class UpdateProductCommand:
                     )
                 )
 
-            # Событие для product_type
-            if "product_type_id" in changed_fields:
-                events.append(
-                    build_event(
-                        event_type="field_update",
-                        method="update",
-                        app="device_types",
-                        entity="product_type",
-                        entity_id=aggregate.id,
-                        data={
-                            "product_id": aggregate.id,
-                            "product_type_id": {
-                                "old": old_data.get("product_type_id"),
-                                "new": changed_fields["product_type_id"],
-                            },
-                        },
-                    )
-                )
-
         return events
 
     def _to_read_dto(
@@ -291,7 +268,6 @@ class UpdateProductCommand:
         aggregate: ProductAggregate,
         category_dto,
         supplier_dto,
-        product_type_dto,
     ) -> ProductReadDTO:
         """Преобразовать агрегат в DTO для чтения."""
         return ProductReadDTO(
@@ -319,5 +295,4 @@ class UpdateProductCommand:
             ],
             category=category_dto,
             supplier=supplier_dto,
-            product_type=product_type_dto,
         )

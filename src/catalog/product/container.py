@@ -254,7 +254,6 @@ container.register(
     lambda scope, db: RelatedEntityLoader(
         category_repository=scope.resolve(CategoryRepository, db=db),
         supplier_repository=scope.resolve(SupplierRepository, db=db),
-        product_type_repository=scope.resolve(ProductTypeRepository, db=db),
     ),
 )
 

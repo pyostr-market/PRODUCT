@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from src.catalog.manufacturer.domain.aggregates.manufacturer import (
         ManufacturerAggregate,
     )
+    from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 
 
 @dataclass
@@ -37,6 +38,7 @@ class CategoryReadDTO:
     parent_id: Optional[int] = None
     parent: Optional['CategoryAggregate'] = None
     manufacturer: Optional['ManufacturerAggregate'] = None
+    device_type: Optional['ProductTypeAggregate'] = None
     children: list['CategoryReadDTO'] = None
 
     def __post_init__(self):
@@ -50,6 +52,7 @@ class CategoryCreateDTO:
     description: Optional[str]
     parent_id: Optional[int]
     manufacturer_id: Optional[int]
+    device_type_id: Optional[int] = None
     image: Optional[CategoryImageInputDTO] = None
 
 
@@ -59,4 +62,5 @@ class CategoryUpdateDTO:
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
+    device_type_id: Optional[int] = None
     image: Optional[CategoryImageOperationDTO] = None

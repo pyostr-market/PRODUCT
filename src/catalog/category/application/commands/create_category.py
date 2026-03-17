@@ -64,6 +64,7 @@ class CreateCategoryCommand:
                     description=dto.description,
                     parent_id=dto.parent_id,
                     manufacturer_id=dto.manufacturer_id,
+                    device_type_id=dto.device_type_id,
                     image=uploaded_image,
                 )
 
@@ -83,6 +84,7 @@ class CreateCategoryCommand:
                             "description": aggregate.description,
                             "parent_id": aggregate.parent_id,
                             "manufacturer_id": aggregate.manufacturer_id,
+                            "device_type_id": aggregate.device_type_id,
                             "image": image_data,
                         },
                         user_id=user.id,
@@ -99,6 +101,10 @@ class CreateCategoryCommand:
                 if aggregate.manufacturer_id:
                     manufacturer_dto = await self.data_loader.get_manufacturer(aggregate.manufacturer_id)
 
+                device_type_dto = None
+                if aggregate.device_type_id:
+                    device_type_dto = await self.data_loader.get_device_type(aggregate.device_type_id)
+
                 result_image = None
                 if aggregate.image:
                     result_image = CategoryImageReadDTO(
@@ -114,6 +120,7 @@ class CreateCategoryCommand:
                     image=result_image,
                     parent=parent_dto,
                     manufacturer=manufacturer_dto,
+                    device_type=device_type_dto,
                 )
 
                 # Получаем доменные события из агрегата
@@ -161,6 +168,7 @@ class CreateCategoryCommand:
                         "description": aggregate.description,
                         "parent_id": aggregate.parent_id,
                         "manufacturer_id": aggregate.manufacturer_id,
+                        "device_type_id": aggregate.device_type_id,
                     },
                 },
             ),

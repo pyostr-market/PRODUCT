@@ -219,9 +219,6 @@ async def _build_image_operations_dto(
                             "name": "Смартфон X",
                             "description": "Флагманская модель",
                             "price": "59990.00",
-                            "category_id": 101,
-                            "supplier_id": 210,
-                            "product_type_id": 5,
                             "images": [
                                 {
                                     "upload_id": 1,
@@ -243,11 +240,6 @@ async def _build_image_operations_dto(
                                 "name": "ООО Поставка Плюс",
                                 "contact_email": "sales@supply-plus.example",
                                 "phone": "+7-999-123-45-67"
-                            },
-                            "product_type": {
-                                "id": 5,
-                                "name": "Смартфоны",
-                                "parent_id": None
                             }
                         },
                     }
@@ -279,7 +271,6 @@ async def create(
     description: Annotated[str | None, Form()] = None,
     category_id: Annotated[int | None, Form()] = None,
     supplier_id: Annotated[int | None, Form()] = None,
-    product_type_id: Annotated[int | None, Form()] = None,
     attributes_json: Annotated[str | None, Form()] = None,
     images_json: Annotated[str | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
@@ -297,7 +288,6 @@ async def create(
             price=price,
             category_id=normalize_optional_fk(category_id),
             supplier_id=normalize_optional_fk(supplier_id),
-            product_type_id=normalize_optional_fk(product_type_id),
             images=images_dto,
             attributes=attributes_dto,
         ),
@@ -352,9 +342,6 @@ async def create(
                             "name": "Смартфон X Pro",
                             "description": "Обновлённая модель",
                             "price": "64990.00",
-                            "category_id": 101,
-                            "supplier_id": 210,
-                            "product_type_id": 5,
                             "images": [
                                 {
                                     "upload_id": 1,
@@ -400,7 +387,6 @@ async def update(
     description: Annotated[str | None, Form()] = None,
     category_id: Annotated[int | None, Form()] = None,
     supplier_id: Annotated[int | None, Form()] = None,
-    product_type_id: Annotated[int | None, Form()] = None,
     attributes_json: Annotated[str | None, Form()] = None,
     images_json: Annotated[str | None, Form()] = None,
     db: AsyncSession = Depends(get_db),
@@ -421,7 +407,6 @@ async def update(
             price=price,
             category_id=normalize_optional_fk(category_id),
             supplier_id=normalize_optional_fk(supplier_id),
-            product_type_id=normalize_optional_fk(product_type_id),
             images=images_dto,
             attributes=attributes_dto,
         ),

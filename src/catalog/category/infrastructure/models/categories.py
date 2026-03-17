@@ -24,6 +24,12 @@ class Category(TimestampMixin, Base):
         nullable=True,
     )
 
+    device_type_id = Column(
+        BigInteger,
+        ForeignKey("product_types.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     parent = relationship(
         "Category",
         remote_side=[id],
@@ -39,6 +45,11 @@ class Category(TimestampMixin, Base):
 
     manufacturer = relationship(
         "Manufacturer",
+        back_populates="categories",
+    )
+
+    device_type = relationship(
+        "ProductType",
         back_populates="categories",
     )
 

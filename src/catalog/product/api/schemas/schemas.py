@@ -20,13 +20,6 @@ class SupplierNestedSchema(BaseModel):
     phone: Optional[str] = None
 
 
-class ProductTypeNestedSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    name: str
-    parent: Optional["ProductTypeNestedSchema"] = None
-
-
 class ProductImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -94,7 +87,7 @@ class ProductCreateSchema(BaseModel):
     price: Decimal
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
-    product_type_id: Optional[int] = None
+    images: Optional[List[ProductImageReferenceSchema]] = None
     attributes: List[ProductAttributeSchema] = Field(default_factory=list)
 
 
@@ -104,7 +97,6 @@ class ProductUpdateSchema(BaseModel):
     price: Optional[Decimal] = None
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
-    product_type_id: Optional[int] = None
     images: Optional[List[ProductImageActionSchema]] = None
     attributes: Optional[List[ProductAttributeSchema]] = None
 
@@ -120,7 +112,6 @@ class ProductReadSchema(BaseModel):
     attributes: List[ProductAttributeReadSchema]
     category: Optional[CategoryNestedSchema] = None
     supplier: Optional[SupplierNestedSchema] = None
-    product_type: Optional[ProductTypeNestedSchema] = None
 
 
 class ProductListResponse(BaseModel):

@@ -62,6 +62,7 @@ class UpdateCategoryCommand:
                     "description": aggregate.description,
                     "parent_id": aggregate.parent_id,
                     "manufacturer_id": aggregate.manufacturer_id,
+                    "device_type_id": aggregate.device_type_id,
                     "image": {"upload_id": aggregate.image.upload_id} if aggregate.image else None,
                 }
 
@@ -70,6 +71,7 @@ class UpdateCategoryCommand:
                     dto.description,
                     dto.parent_id,
                     dto.manufacturer_id,
+                    dto.device_type_id,
                 )
 
                 if dto.image is not None:
@@ -109,6 +111,7 @@ class UpdateCategoryCommand:
                     "description": aggregate.description,
                     "parent_id": aggregate.parent_id,
                     "manufacturer_id": aggregate.manufacturer_id,
+                    "device_type_id": aggregate.device_type_id,
                     "image": new_image_data,
                 }
 
@@ -133,6 +136,10 @@ class UpdateCategoryCommand:
                 if aggregate.manufacturer_id:
                     manufacturer_dto = await self.data_loader.get_manufacturer(aggregate.manufacturer_id)
 
+                device_type_dto = None
+                if aggregate.device_type_id:
+                    device_type_dto = await self.data_loader.get_device_type(aggregate.device_type_id)
+
                 result_image = None
                 if aggregate.image:
                     result_image = CategoryImageReadDTO(
@@ -148,6 +155,7 @@ class UpdateCategoryCommand:
                     image=result_image,
                     parent=parent_dto,
                     manufacturer=manufacturer_dto,
+                    device_type=device_type_dto,
                 )
         except Exception:
             raise

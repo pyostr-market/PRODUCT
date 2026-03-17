@@ -10,7 +10,6 @@ from src.catalog.product.application.dto.product import (
     ProductImageReadDTO,
     ProductReadDTO,
 )
-from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
 )
@@ -20,7 +19,6 @@ from src.catalog.product.infrastructure.models.product_attribute_value import (
     ProductAttributeValue,
 )
 from src.catalog.product.infrastructure.models.product_image import ProductImage
-from src.catalog.product.infrastructure.models.product_type import ProductType
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 from src.core.services.images.storage import S3ImageStorageService
 
@@ -40,6 +38,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 description=model.category.description,
                 parent_id=model.category.parent_id,
                 manufacturer_id=model.category.manufacturer_id,
+                device_type_id=model.category.device_type_id,
             )
 
         supplier_dto = None
@@ -49,22 +48,6 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 name=model.supplier.name,
                 contact_email=model.supplier.contact_email,
                 phone=model.supplier.phone,
-            )
-
-        product_type_dto = None
-        if model.product_type:
-            parent_dto = None
-            if model.product_type.parent:
-                parent_dto = ProductTypeAggregate(
-                    product_type_id=model.product_type.parent.id,
-                    name=model.product_type.parent.name,
-                    parent_id=model.product_type.parent.parent_id,
-                )
-            product_type_dto = ProductTypeAggregate(
-                name=model.product_type.name,
-                parent_id=model.product_type.parent_id,
-                product_type_id=model.product_type.id,
-                parent=parent_dto,
             )
 
         return ProductReadDTO(
@@ -93,7 +76,6 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             ],
             category=category_dto,
             supplier=supplier_dto,
-            product_type=product_type_dto,
         )
 
     async def get_by_id(self, product_id: int) -> Optional[ProductReadDTO]:
@@ -104,7 +86,6 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type).selectinload(ProductType.parent),
             )
             .where(Product.id == product_id)
         )
@@ -124,7 +105,6 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type).selectinload(ProductType.parent),
             )
             .where(Product.name == name)
         )
@@ -153,7 +133,6 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type).selectinload(ProductType.parent),
             )
         )
         count_stmt = select(func.count()).select_from(Product)
@@ -166,9 +145,8 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             stmt = stmt.where(Product.category_id == category_id)
             count_stmt = count_stmt.where(Product.category_id == category_id)
 
-        if product_type_id is not None:
-            stmt = stmt.where(Product.product_type_id == product_type_id)
-            count_stmt = count_stmt.where(Product.product_type_id == product_type_id)
+        # product_type_id больше не используется (перенесён в категории)
+        # Если передан, игнорируем или можно фильтровать через category.device_type_id
 
         # Фильтрация по атрибутам
         if attributes:
@@ -209,8 +187,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 p.price,
                 p.category_id,
                 c.name as category_name,
-                p.product_type_id,
-                pt.name as product_type_name,
+                c.device_type_id as category_device_type_id,
                 p.supplier_id,
                 s.name as supplier_name,
                 COALESCE(
@@ -226,14 +203,13 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 ) as attributes
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
-            LEFT JOIN product_types pt ON pt.id = p.product_type_id
             LEFT JOIN suppliers s ON s.id = p.supplier_id
             LEFT JOIN product_attribute_values pav ON pav.product_id = p.id
             LEFT JOIN product_attributes pa ON pa.id = pav.attribute_id
             GROUP BY
                 p.id,
                 c.name,
-                pt.name,
+                c.device_type_id,
                 s.name
             ORDER BY p.id
         """)

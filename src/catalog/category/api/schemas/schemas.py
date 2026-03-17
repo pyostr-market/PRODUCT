@@ -12,6 +12,13 @@ class ManufacturerNestedSchema(BaseModel):
     description: Optional[str] = None
 
 
+class DeviceTypeNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    parent_id: Optional[int] = None
+
+
 class CategoryNestedSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -47,6 +54,7 @@ class CategoryCreateSchema(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
+    device_type_id: Optional[int] = None
     image: Optional[CategoryImageReferenceSchema] = None
 
     @field_validator("name")
@@ -68,6 +76,7 @@ class CategoryUpdateSchema(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[int] = None
     manufacturer_id: Optional[int] = None
+    device_type_id: Optional[int] = None
     image: Optional[CategoryImageActionSchema] = None
 
     @field_validator("name")
@@ -95,6 +104,7 @@ class CategoryReadSchema(BaseModel):
     image: Optional[CategoryImageReadSchema] = None
     parent: Optional[CategoryNestedSchema] = None
     manufacturer: Optional[ManufacturerNestedSchema] = None
+    device_type: Optional[DeviceTypeNestedSchema] = None
 
 
 class CategoryListResponse(BaseModel):
@@ -150,6 +160,7 @@ class CategoryTreeSchema(BaseModel):
     image: Optional[CategoryImageReadSchema] = None
     parent_id: Optional[int] = None
     manufacturer: Optional[ManufacturerNestedSchema] = None
+    device_type: Optional[DeviceTypeNestedSchema] = None
     children: List["CategoryTreeSchema"] = Field(default_factory=list)
 
 

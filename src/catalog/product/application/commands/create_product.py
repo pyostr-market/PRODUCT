@@ -88,7 +88,6 @@ class CreateProductCommand:
                 price=dto.price,
                 category_id=dto.category_id,
                 supplier_id=dto.supplier_id,
-                product_type_id=dto.product_type_id,
                 images=mapped_images,
                 attributes=mapped_attributes,
             )
@@ -112,17 +111,15 @@ class CreateProductCommand:
             )
 
             # Загружаем связанные данные через сервис
-            category_dto, supplier_dto, product_type_dto = await self.entity_loader.load_all(
+            category_dto, supplier_dto = await self.entity_loader.load_category_and_supplier(
                 aggregate.category_id,
                 aggregate.supplier_id,
-                aggregate.product_type_id,
             )
 
             result = self._to_read_dto(
                 aggregate,
                 category_dto,
                 supplier_dto,
-                product_type_dto,
             )
 
         # Публикуем события на основе доменных событий
@@ -140,7 +137,6 @@ class CreateProductCommand:
             "price": str(aggregate.price),
             "category_id": aggregate.category_id,
             "supplier_id": aggregate.supplier_id,
-            "product_type_id": aggregate.product_type_id,
             "images": [
                 {"upload_id": image.upload_id, "is_main": image.is_main}
                 for image in aggregate.images
@@ -190,7 +186,6 @@ class CreateProductCommand:
                         "price": str(aggregate.price),
                         "category_id": aggregate.category_id,
                         "supplier_id": aggregate.supplier_id,
-                        "product_type_id": aggregate.product_type_id,
                     },
                 },
             ),
@@ -234,7 +229,6 @@ class CreateProductCommand:
         aggregate: ProductAggregate,
         category_dto,
         supplier_dto,
-        product_type_dto,
     ) -> ProductReadDTO:
         """Преобразовать агрегат в DTO для чтения."""
         return ProductReadDTO(
@@ -262,5 +256,4 @@ class CreateProductCommand:
             ],
             category=category_dto,
             supplier=supplier_dto,
-            product_type=product_type_dto,
         )

@@ -19,6 +19,8 @@ from src.catalog.manufacturer.domain.aggregates.manufacturer import (
     ManufacturerAggregate,
 )
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
+from src.catalog.product.infrastructure.models.product_type import ProductType
 
 
 class SqlAlchemyCategoryRepository(CategoryRepository):
@@ -70,6 +72,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
                 selectinload(Category.images).selectinload(CategoryImage.upload),
                 selectinload(Category.parent),
                 selectinload(Category.manufacturer),
+                selectinload(Category.device_type),
             )
             .where(Category.id == category_id)
         )
@@ -87,6 +90,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
             description=aggregate.description,
             parent_id=aggregate.parent_id,
             manufacturer_id=aggregate.manufacturer_id,
+            device_type_id=aggregate.device_type_id,
         )
 
         self.db.add(model)
@@ -153,6 +157,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
         model.name = aggregate.name
         model.description = aggregate.description
         model.manufacturer_id = aggregate.manufacturer_id
+        model.device_type_id = aggregate.device_type_id
 
         # Обновляем изображение
         if aggregate.image:
@@ -182,6 +187,7 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
                 description=model.parent.description,
                 parent_id=model.parent.parent_id,
                 manufacturer_id=model.parent.manufacturer_id,
+                device_type_id=model.parent.device_type_id,
             )
 
         manufacturer = None
@@ -190,6 +196,14 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
                 manufacturer_id=model.manufacturer.id,
                 name=model.manufacturer.name,
                 description=model.manufacturer.description,
+            )
+
+        device_type = None
+        if model.device_type:
+            device_type = ProductTypeAggregate(
+                product_type_id=model.device_type.id,
+                name=model.device_type.name,
+                parent_id=model.device_type.parent_id,
             )
 
         image = None
@@ -206,7 +220,9 @@ class SqlAlchemyCategoryRepository(CategoryRepository):
             description=model.description,
             parent_id=model.parent_id,
             manufacturer_id=model.manufacturer_id,
+            device_type_id=model.device_type_id,
             image=image,
             parent=parent,
             manufacturer=manufacturer,
+            device_type=device_type,
         )

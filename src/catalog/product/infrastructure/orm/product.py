@@ -14,7 +14,6 @@ from src.catalog.product.domain.aggregates.product import (
     ProductAttributeAggregate,
     ProductImageAggregate,
 )
-from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
 from src.catalog.product.domain.exceptions import ProductNotFound
 from src.catalog.product.domain.repository.product import ProductRepository
 from src.catalog.product.infrastructure.models.product import Product
@@ -23,7 +22,6 @@ from src.catalog.product.infrastructure.models.product_attribute_value import (
     ProductAttributeValue,
 )
 from src.catalog.product.infrastructure.models.product_image import ProductImage
-from src.catalog.product.infrastructure.models.product_type import ProductType
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 from src.catalog.suppliers.infrastructure.models.supplier import Supplier
 
@@ -41,7 +39,6 @@ class SqlAlchemyProductRepository(ProductRepository):
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type),
             )
             .where(Product.id == product_id)
         )
@@ -61,7 +58,6 @@ class SqlAlchemyProductRepository(ProductRepository):
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type),
             )
             .where(Product.name == name)
         )
@@ -80,7 +76,6 @@ class SqlAlchemyProductRepository(ProductRepository):
             price=aggregate.price,
             category_id=aggregate.category_id,
             supplier_id=aggregate.supplier_id,
-            product_type_id=aggregate.product_type_id,
         )
         self.db.add(model)
         await self.db.flush()
@@ -112,7 +107,6 @@ class SqlAlchemyProductRepository(ProductRepository):
         model.price = aggregate.price
         model.category_id = aggregate.category_id
         model.supplier_id = aggregate.supplier_id
-        model.product_type_id = aggregate.product_type_id
 
         if aggregate.images is not None:
             await self._update_images(model.id, aggregate.images)
@@ -228,7 +222,6 @@ class SqlAlchemyProductRepository(ProductRepository):
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
-                selectinload(Product.product_type),
             )
             .where(Product.category_id == category_id)
             .order_by(Product.id)
@@ -302,14 +295,6 @@ class SqlAlchemyProductRepository(ProductRepository):
                 phone=model.supplier.phone,
             )
 
-        product_type = None
-        if model.product_type:
-            product_type = ProductTypeAggregate(
-                name=model.product_type.name,
-                parent_id=model.product_type.parent_id,
-                product_type_id=model.product_type.id,
-            )
-
         return ProductAggregate(
             product_id=model.id,
             name=model.name,
@@ -317,7 +302,6 @@ class SqlAlchemyProductRepository(ProductRepository):
             price=model.price,
             category_id=model.category_id,
             supplier_id=model.supplier_id,
-            product_type_id=model.product_type_id,
             images=[
                 ProductImageAggregate(
                     upload_id=image.upload_id,
@@ -337,5 +321,4 @@ class SqlAlchemyProductRepository(ProductRepository):
             ],
             category=category,
             supplier=supplier,
-            product_type=product_type,
         )

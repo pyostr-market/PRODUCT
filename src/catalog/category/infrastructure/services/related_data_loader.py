@@ -9,6 +9,8 @@ from src.catalog.manufacturer.domain.aggregates.manufacturer import (
     ManufacturerAggregate,
 )
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
+from src.catalog.product.infrastructure.models.product_type import ProductType
 from src.uploads.domain.repository.upload_history import UploadHistoryRepository
 
 
@@ -67,14 +69,30 @@ class CategoryRelatedDataLoader:
     async def get_parent_category(self, parent_id: int) -> Optional[CategoryAggregate]:
         """Получить родительскую CategoryAggregate по ID."""
         parent_agg = await self.category_repository.get(parent_id)
-        
+
         if not parent_agg:
             return None
-        
+
         return CategoryAggregate(
             category_id=parent_agg.id,
             name=parent_agg.name,
             description=parent_agg.description,
             parent_id=parent_agg.parent_id,
             manufacturer_id=parent_agg.manufacturer_id,
+            device_type_id=parent_agg.device_type_id,
+        )
+
+    async def get_device_type(self, device_type_id: int) -> Optional[ProductTypeAggregate]:
+        """Получить ProductTypeAggregate (device_type) по ID."""
+        stmt = select(ProductType).where(ProductType.id == device_type_id)
+        result = await self.db.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        if not model:
+            return None
+
+        return ProductTypeAggregate(
+            product_type_id=model.id,
+            name=model.name,
+            parent_id=model.parent_id,
         )
