@@ -15,6 +15,8 @@ from src.catalog.manufacturer.domain.aggregates.manufacturer import (
     ManufacturerAggregate,
 )
 from src.catalog.manufacturer.infrastructure.models.manufacturer import Manufacturer
+from src.catalog.product.domain.aggregates.product_type import ProductTypeAggregate
+from src.catalog.product.infrastructure.models.product_type import ProductType
 from src.core.services.images.storage import S3ImageStorageService
 
 
@@ -33,6 +35,7 @@ class CategoryReadRepository:
                 description=model.parent.description,
                 parent_id=model.parent.parent_id,
                 manufacturer_id=model.parent.manufacturer_id,
+                device_type_id=model.parent.device_type_id,
             )
 
         manufacturer_dto = None
@@ -41,6 +44,14 @@ class CategoryReadRepository:
                 manufacturer_id=model.manufacturer.id,
                 name=model.manufacturer.name,
                 description=model.manufacturer.description,
+            )
+
+        device_type_dto = None
+        if model.device_type:
+            device_type_dto = ProductTypeAggregate(
+                product_type_id=model.device_type.id,
+                name=model.device_type.name,
+                parent_id=model.device_type.parent_id,
             )
 
         image_dto = None
@@ -60,6 +71,7 @@ class CategoryReadRepository:
             parent_id=model.parent_id,
             parent=parent_dto,
             manufacturer=manufacturer_dto,
+            device_type=device_type_dto,
         )
 
     async def get_by_id(self, category_id: int) -> Optional[CategoryReadDTO]:
@@ -69,6 +81,7 @@ class CategoryReadRepository:
                 selectinload(Category.images).selectinload(CategoryImage.upload),
                 selectinload(Category.parent),
                 selectinload(Category.manufacturer),
+                selectinload(Category.device_type),
             )
             .where(Category.id == category_id)
         )
@@ -91,6 +104,7 @@ class CategoryReadRepository:
             selectinload(Category.images).selectinload(CategoryImage.upload),
             selectinload(Category.parent),
             selectinload(Category.manufacturer),
+            selectinload(Category.device_type),
         )
 
         count_stmt = select(func.count()).select_from(Category)
@@ -117,6 +131,7 @@ class CategoryReadRepository:
             selectinload(Category.images).selectinload(CategoryImage.upload),
             selectinload(Category.parent),
             selectinload(Category.manufacturer),
+            selectinload(Category.device_type),
             selectinload(Category.children),
         ).order_by(Category.id)
 
