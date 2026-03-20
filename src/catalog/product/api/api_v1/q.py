@@ -284,6 +284,7 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
 async def filter_products(
     name: str | None = Query(None),
     category_id: int | None = Query(None),
+    product_type_id: int | None = Query(None),
     attributes: str | None = Query(
         None,
         description="JSON-объект с атрибутами для фильтрации, например: {\"RAM\": [\"8 GB\", \"16 GB\"], \"Color\": [\"Black\"]}"
@@ -305,7 +306,7 @@ async def filter_products(
     items, total = await queries.filter(
         name=name,
         category_id=category_id,
-        product_type_id=None,  # product_type_id больше не используется
+        product_type_id=product_type_id,
         limit=limit,
         offset=offset,
         attributes=attributes_dict,

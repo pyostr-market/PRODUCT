@@ -148,8 +148,40 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             stmt = stmt.where(Product.category_id == category_id)
             count_stmt = count_stmt.where(Product.category_id == category_id)
 
-        # product_type_id больше не используется (перенесён в категории)
-        # Если передан, игнорируем или можно фильтровать через category.device_type_id
+        # product_type_id фильтрует товары через category.device_type_id
+        # (с учётом наследования от родительских категорий)
+        if product_type_id is not None:
+            # Используем CTE для получения всех категорий с нужным device_type_id
+            cte_stmt = text("""
+                WITH RECURSIVE category_chain AS (
+                    SELECT
+                        c.id
+                    FROM categories c
+                    WHERE c.device_type_id = :product_type_id
+
+                    UNION ALL
+
+                    SELECT
+                        c.id
+                    FROM categories c
+                    INNER JOIN category_chain cc ON c.parent_id = cc.id
+                    WHERE c.device_type_id IS NULL
+                )
+                SELECT id FROM category_chain
+            """)
+            result = await self.db.execute(cte_stmt, {"product_type_id": product_type_id})
+            category_ids = [row[0] for row in result.fetchall()]
+            
+            # Отладка
+            print(f"filter: product_type_id={product_type_id}, category_ids={category_ids}")
+            
+            if category_ids:
+                stmt = stmt.where(Product.category_id.in_(category_ids))
+                count_stmt = count_stmt.where(Product.category_id.in_(category_ids))
+            else:
+                # Если категорий не найдено, возвращаем пустой результат
+                stmt = stmt.where(Product.id == -1)
+                count_stmt = count_stmt.where(Product.id == -1)
 
         # Фильтрация по атрибутам
         if attributes:

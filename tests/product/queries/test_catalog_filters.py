@@ -11,6 +11,76 @@ import pytest
 
 
 @pytest.mark.asyncio
+async def test_filter_products_by_product_type_id(authorized_client, client):
+    """
+    Проверяет фильтрацию товаров по product_type_id.
+    
+    Сценарий:
+    1. Создаём 2 типа продукта: "Smartphones" и "Laptops"
+    2. Создаём 2 категории с разными device_type_id
+    3. Создаём товары в каждой категории
+    4. Запрашиваем товары с product_type_id=1
+    5. Проверяем, что total и items соответствуют только товарам первого типа
+    """
+    # Создаём типы продуктов
+    type1_resp = await authorized_client.post("/product/type", json={"name": "Smartphones"})
+    type1_id = type1_resp.json()["data"]["id"]
+    
+    type2_resp = await authorized_client.post("/product/type", json={"name": "Laptops"})
+    type2_id = type2_resp.json()["data"]["id"]
+    
+    # Создаём категории с разными device_type_id
+    cat1_resp = await authorized_client.post(
+        "/category",
+        json={"name": "Phones", "device_type_id": type1_id}
+    )
+    cat1_id = cat1_resp.json()["data"]["id"]
+    
+    cat2_resp = await authorized_client.post(
+        "/category",
+        json={"name": "Computers", "device_type_id": type2_id}
+    )
+    cat2_id = cat2_resp.json()["data"]["id"]
+    
+    # Создаём товары в категории 1 (Smartphones)
+    for i in range(3):
+        await authorized_client.post(
+            "/product",
+            data={
+                "name": f"Phone {i}",
+                "price": "500.00",
+                "category_id": str(cat1_id),
+            },
+        )
+    
+    # Создаём товары в категории 2 (Laptops)
+    for i in range(2):
+        await authorized_client.post(
+            "/product",
+            data={
+                "name": f"Laptop {i}",
+                "price": "1000.00",
+                "category_id": str(cat2_id),
+            },
+        )
+    
+    # Запрашиваем товары с product_type_id=type1_id (Smartphones)
+    response = await client.get(f"/product?product_type_id={type1_id}")
+    
+    assert response.status_code == 200
+    body = response.json()
+    data = body["data"]
+    
+    # Проверяем, что total = 3 (только Smartphones)
+    assert data["total"] == 3, f"Ожидалось 3 товара, но получено {data['total']}"
+    assert len(data["items"]) == 3
+    
+    # Проверяем, что все товары - это Phones
+    for item in data["items"]:
+        assert "Phone" in item["name"]
+
+
+@pytest.mark.asyncio
 async def test_catalog_filters_inherits_device_type_from_parent(authorized_client, client):
     """
     Проверяет наследование device_type_id от родительской категории.

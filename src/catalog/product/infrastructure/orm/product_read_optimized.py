@@ -125,9 +125,9 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             SELECT COUNT(*)
             FROM products p
             WHERE 1=1
-            """ + self._build_where_clause(name, category_id, attributes))
+            """ + self._build_where_clause(name, category_id, product_type_id, attributes))
 
-        count_params = self._build_params(name, category_id, attributes)
+        count_params = self._build_params(name, category_id, product_type_id, attributes)
         count_result = await self.db.execute(text(count_query), count_params)
         total = count_result.scalar() or 0
 
@@ -155,12 +155,12 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN suppliers s ON s.id = p.supplier_id
             WHERE 1=1
-            {self._build_where_clause(name, category_id, attributes)}
+            {self._build_where_clause(name, category_id, product_type_id, attributes)}
             ORDER BY p.id
             LIMIT :limit OFFSET :offset
         """)
 
-        params = self._build_params(name, category_id, attributes)
+        params = self._build_params(name, category_id, product_type_id, attributes)
         params["limit"] = limit
         params["offset"] = offset
 
@@ -183,6 +183,7 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
         self,
         name: Optional[str],
         category_id: Optional[int],
+        product_type_id: Optional[int],
         attributes: Optional[dict[str, list[str]]] = None,
     ) -> str:
         conditions = []
@@ -190,7 +191,27 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             conditions.append("AND p.name ILIKE :name")
         if category_id:
             conditions.append("AND p.category_id = :category_id")
-        
+
+        # product_type_id фильтрует через category.device_type_id (с наследованием)
+        if product_type_id is not None:
+            conditions.append("""
+                AND (
+                    EXISTS (
+                        WITH RECURSIVE category_chain AS (
+                            SELECT id, parent_id, device_type_id
+                            FROM categories
+                            WHERE id = p.category_id
+                            UNION ALL
+                            SELECT c.id, c.parent_id, c.device_type_id
+                            FROM categories c
+                            INNER JOIN category_chain cc ON c.id = cc.parent_id
+                            WHERE cc.device_type_id IS NULL
+                        )
+                        SELECT 1 FROM category_chain WHERE device_type_id = :product_type_id
+                    )
+                )
+            """)
+
         # Добавляем условия для атрибутов
         if attributes:
             for attr_name in attributes.keys():
@@ -201,13 +222,14 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 conditions.append(f"    AND pa.name = :attr_{attr_name}_name ")
                 conditions.append(f"    AND pav.value = ANY(:attr_{attr_name}_values)")
                 conditions.append(f")")
-        
+
         return " ".join(conditions)
 
     def _build_params(
         self,
         name: Optional[str],
         category_id: Optional[int],
+        product_type_id: Optional[int],
         attributes: Optional[dict[str, list[str]]] = None,
     ) -> dict[str, Any]:
         params = {}
@@ -215,7 +237,9 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             params["name"] = f"%{name}%"
         if category_id:
             params["category_id"] = category_id
-        
+        if product_type_id is not None:
+            params["product_type_id"] = product_type_id
+
         # Добавляем параметры для атрибутов
         if attributes:
             for attr_name, attr_values in attributes.items():
@@ -223,7 +247,7 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 safe_name = attr_name.replace(" ", "_").replace("-", "_")
                 params[f"attr_{safe_name}_name"] = attr_name
                 params[f"attr_{safe_name}_values"] = attr_values
-        
+
         return params
 
     async def _load_images(self, product_id: int) -> list[ProductImageReadDTO]:
