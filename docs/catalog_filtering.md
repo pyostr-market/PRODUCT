@@ -15,18 +15,30 @@
 **Описание:** Возвращает список всех доступных фильтров (атрибутов) и их значений для указанной категории или типа товара.
 
 **Логика работы:**
-1. Если указана `category_id`, система проверяет её `device_type_id`
-2. Если у категории нет `device_type_id`, смотрим на родительскую категорию (рекурсивно вверх по иерархии)
-3. Получаем все атрибуты с флагом `is_filterable=true` для этого типа товара
-4. Группируем уникальные значения атрибутов и возвращаем в ответе
+1. Если указан `product_type_id`, используется он напрямую (наивысший приоритет)
+2. Если указана `category_id`, система проверяет её `device_type_id`
+3. Если у категории нет `device_type_id`, смотрим на родительскую категорию (рекурсивно вверх по иерархии)
+4. Получаем все атрибуты с флагом `is_filterable=true` для этого типа товара
+5. Группируем уникальные значения атрибутов и возвращаем в ответе
+
+**Приоритет параметров:**
+1. `product_type_id` — наивысший приоритет (если указан, используется напрямую)
+2. `device_type_id` — используется, если `product_type_id` не указан
+3. `category_id` — используется, если ни один из параметров типа не указан
 
 **Параметры запроса:**
+- `product_type_id` (int, optional) - ID типа товара (наивысший приоритет)
 - `category_id` (int, optional) - ID категории для фильтрации
-- `device_type_id` (int, optional) - ID типа товара (если category_id не указан)
+- `device_type_id` (int, optional) - альтернативное имя для `product_type_id`
 
 **Пример запроса:**
 ```bash
 GET /product/catalog/filters?category_id=101
+```
+
+**Пример запроса с product_type_id:**
+```bash
+GET /product/catalog/filters?product_type_id=5
 ```
 
 **Пример ответа:**
@@ -286,7 +298,10 @@ class CatalogFiltersResponse(BaseModel):
 # 1. Получить все фильтры для категории
 curl "http://localhost:8001/product/catalog/filters?category_id=101"
 
-# 2. Получить фильтры для типа товара
+# 2. Получить фильтры для типа товара (через product_type_id)
+curl "http://localhost:8001/product/catalog/filters?product_type_id=5"
+
+# 2a. Получить фильтры для типа товара (через device_type_id)
 curl "http://localhost:8001/product/catalog/filters?device_type_id=5"
 
 # 3. Фильтрация товаров по одному атрибуту

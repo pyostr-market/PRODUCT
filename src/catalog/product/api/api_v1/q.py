@@ -326,21 +326,27 @@ async def filter_products(
     Возвращает список фильтров для каталога товаров.
     
     Логика работы:
-    1. Если указана category_id, проверяем её device_type_id
-    2. Если у категории нет device_type_id, смотрим на родительскую категорию (рекурсивно)
-    3. Получаем все filterable атрибуты для этого device_type
-    4. Группируем уникальные значения атрибутов и возвращаем в ответе
+    1. Если указан product_type_id, используется он напрямую
+    2. Если указана category_id, проверяем её device_type_id
+    3. Если у категории нет device_type_id, смотрим на родительскую категорию (рекурсивно)
+    4. Получаем все filterable атрибуты для этого device_type
+    5. Группируем уникальные значения атрибутов и возвращаем в ответе
+    
+    Приоритет параметров:
+    - product_type_id имеет наивысший приоритет (если указан, используется он)
+    - Если product_type_id не указан, используется category_id/device_type_id
     
     Права:
     - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
     
     Сценарии:
     - Построение фильтра в каталоге товаров
-    - Получение доступных значений атрибутов для выбранной категории
+    - Получение доступных значений атрибутов для выбранной категории или типа товара
     
     Поддерживается:
-    - фильтрация по category_id
-    - фильтрация по device_type_id (если category_id не указан)
+    - фильтрация по product_type_id (прямая фильтрация по типу товара)
+    - фильтрация по category_id (с автоматическим определением типа через иерархию)
+    - фильтрация по device_type_id (альтернативное имя для product_type_id)
     """,
     response_description="Список фильтров в стандартной обёртке API",
     responses={
@@ -379,16 +385,20 @@ async def filter_products(
     },
 )
 async def get_catalog_filters(
-    category_id: int | None = Query(None),
-    device_type_id: int | None = Query(None),
+    product_type_id: int | None = Query(None, description="ID типа товара (имеет наивысший приоритет)"),
+    category_id: int | None = Query(None, description="ID категории (автоматически определит тип товара через иерархию)"),
+    device_type_id: int | None = Query(None, description="Альтернативное имя для product_type_id (для обратной совместимости)"),
     db: AsyncSession = Depends(get_db),
 ):
+    # product_type_id имеет приоритет над device_type_id
+    target_type_id = product_type_id if product_type_id is not None else device_type_id
+    
     queries = ProductComposition.build_queries(db)
     dto = await queries.get_catalog_filters(
         category_id=category_id,
-        device_type_id=device_type_id,
+        device_type_id=target_type_id,
     )
-    
+
     # Конвертируем DTO в Schema
     filters = [
         FilterSchema(
@@ -401,7 +411,7 @@ async def get_catalog_filters(
         )
         for f in dto.filters
     ]
-    
+
     return api_response(
         CatalogFiltersResponse(filters=filters)
     )
