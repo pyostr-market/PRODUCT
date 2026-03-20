@@ -335,7 +335,7 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
         """
         # Определяем device_type_id для фильтрации
         target_device_type_id = device_type_id
-        
+
         if category_id is not None:
             # Запрос для получения device_type_id из категории (с учётом наследования)
             category_stmt = text("""
@@ -354,15 +354,36 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 WHERE device_type_id IS NOT NULL
                 LIMIT 1
             """)
-            
+
             result = await self.db.execute(category_stmt, {"category_id": category_id})
             row = result.fetchone()
-            
+
             if row and row.device_type_id:
                 target_device_type_id = row.device_type_id
         
-        # Формируем базовый запрос для получения атрибутов
+        # Формируем запрос для получения атрибутов
+        # Используем CTE для получения всех категорий с нужным effective device_type_id
         filter_stmt = text("""
+            WITH RECURSIVE category_chain AS (
+                -- Находим все категории, у которых effective device_type_id = target
+                SELECT 
+                    c.id,
+                    c.device_type_id,
+                    c.device_type_id as effective_device_type_id
+                FROM categories c
+                WHERE c.device_type_id = :target_device_type_id
+                
+                UNION ALL
+                
+                -- Добавляем дочерние категории, которые наследуют device_type_id
+                SELECT 
+                    c.id,
+                    c.device_type_id,
+                    cc.effective_device_type_id
+                FROM categories c
+                INNER JOIN category_chain cc ON c.parent_id = cc.id
+                WHERE c.device_type_id IS NULL
+            )
             SELECT
                 pa.name as attribute_name,
                 pa.is_filterable,
@@ -371,27 +392,13 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             FROM product_attribute_values pav
             JOIN product_attributes pa ON pa.id = pav.attribute_id
             JOIN products p ON p.id = pav.product_id
-            JOIN categories c ON c.id = p.category_id
+            JOIN category_chain cc ON cc.id = p.category_id
             WHERE pa.is_filterable = true
-        """)
-        
-        filter_params = {}
-        
-        if target_device_type_id is not None:
-            filter_stmt = text(filter_stmt.text + """
-                AND c.device_type_id = :device_type_id
-            """)
-            filter_params["device_type_id"] = target_device_type_id
-        elif category_id is not None:
-            filter_stmt = text(filter_stmt.text + """
-                AND p.category_id = :category_id
-            """)
-            filter_params["category_id"] = category_id
-        
-        filter_stmt = text(filter_stmt.text + """
             GROUP BY pa.name, pa.is_filterable, pav.value
             ORDER BY pa.name, pav.value
         """)
+
+        filter_params = {"target_device_type_id": target_device_type_id}
         
         result = await self.db.execute(filter_stmt, filter_params)
         rows = result.fetchall()
