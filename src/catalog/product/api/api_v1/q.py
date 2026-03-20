@@ -1,4 +1,5 @@
 from json import loads
+from typing import List
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -192,10 +193,15 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
     - фильтрации по имени (частичное совпадение)
     - фильтрации по category_id
     - фильтрации по product_type_id
+    - фильтрации по списку ID товаров (product_ids)
     - фильтрации по атрибутам (query параметр `attributes` в формате JSON, где значения - массивы)
     - пагинации (limit, offset)
-    
+
     Пример attributes: {"RAM": ["8 GB", "16 GB"], "Color": ["Black", "White"]}
+
+    Примечание:
+    - Если указаны product_ids, возвращаются только товары с указанными ID.
+    - Товары, которых не существует, не включаются в результат (без ошибок).
     """,
     response_description="Список товаров в стандартной обёртке API",
     responses={
@@ -286,6 +292,7 @@ async def filter_products(
     name: str | None = Query(None),
     category_id: int | None = Query(None),
     product_type_id: int | None = Query(None),
+    product_ids: List[int] | None = Query(None, description="Список ID товаров для фильтрации"),
     attributes: str | None = Query(
         None,
         description="JSON-объект с атрибутами для фильтрации, например: {\"RAM\": [\"8 GB\", \"16 GB\"], \"Color\": [\"Black\"]}"
@@ -312,6 +319,7 @@ async def filter_products(
         name=name,
         category_id=category_id,
         product_type_id=product_type_id,
+        product_ids=product_ids,
         limit=limit,
         offset=offset,
         attributes=attributes_dict,
@@ -464,15 +472,24 @@ product_type_q_router = APIRouter(
                                             "id": 6,
                                             "name": "Планшеты",
                                             "parent": None,
-                                            "children": []
+                                            "children": [],
+                                            "image": {
+                                                "upload_id": 1,
+                                                "image_url": "https://cdn.example.com/product-types/tablets.jpg"
+                                            }
                                         }
-                                    ]
+                                    ],
+                                    "image": {
+                                        "upload_id": 2,
+                                        "image_url": "https://cdn.example.com/product-types/smartphones.jpg"
+                                    }
                                 },
                                 {
                                     "id": 7,
                                     "name": "Наушники",
                                     "parent": None,
-                                    "children": []
+                                    "children": [],
+                                    "image": None
                                 },
                             ],
                         },
@@ -524,6 +541,10 @@ async def get_product_type_tree(
                             "id": 5,
                             "name": "Смартфоны",
                             "parent": None,
+                            "image": {
+                                "upload_id": 1,
+                                "image_url": "https://cdn.example.com/product-types/smartphones.jpg"
+                            },
                         },
                     }
                 }
@@ -576,6 +597,10 @@ async def get_product_type_by_id(
                                     "id": 5,
                                     "name": "Смартфоны",
                                     "parent": None,
+                                    "image": {
+                                        "upload_id": 1,
+                                        "image_url": "https://cdn.example.com/product-types/smartphones.jpg"
+                                    }
                                 },
                                 {
                                     "id": 6,
@@ -584,6 +609,7 @@ async def get_product_type_by_id(
                                         "id": 5,
                                         "name": "Смартфоны"
                                     },
+                                    "image": None
                                 },
                             ],
                         },

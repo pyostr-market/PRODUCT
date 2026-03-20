@@ -35,6 +35,14 @@ product_type_commands_router = APIRouter(
     Сценарии:
     - Добавление нового типа продукта в справочник.
     - Подготовка данных для привязки товаров к типу.
+
+    **Формат `image`** (объект с upload_id):
+    ```json
+    {"upload_id": 4275}
+    ```
+
+    Где:
+    - `upload_id`: ID предварительно загруженного изображения через UploadHistory
     """,
     response_description="Созданный тип продукта в стандартной обёртке API",
     responses={
@@ -48,6 +56,10 @@ product_type_commands_router = APIRouter(
                             "id": 5,
                             "name": "Смартфоны",
                             "parent_id": None,
+                            "image": {
+                                "upload_id": 1,
+                                "image_url": "https://cdn.example.com/product-types/smartphones.jpg"
+                            },
                         },
                     }
                 }
@@ -66,8 +78,17 @@ async def create_product_type(
 ):
     commands = ProductComposition.build_create_product_type_command(db)
 
+    image_dto = None
+    if payload.image:
+        from src.catalog.product.application.dto.product_type import ProductTypeImageInputDTO
+        image_dto = ProductTypeImageInputDTO(upload_id=payload.image.upload_id)
+
     dto = await commands.execute(
-        ProductTypeCreateDTO(**payload.model_dump()),
+        ProductTypeCreateDTO(
+            name=payload.name,
+            parent_id=payload.parent_id,
+            image=image_dto,
+        ),
         user=user,
     )
 
@@ -89,6 +110,19 @@ async def create_product_type(
     Сценарии:
     - Переименование типа продукта.
     - Изменение родительской категории типа.
+
+    Работа с изображением:
+    - Изображение передаётся через `image` (JSON-объект операции).
+    - Операция имеет поле `action`: `create`, `update`, `delete`, `pass`.
+    - `create` — добавить/заменить изображение (требуется `upload_id`).
+    - `update` — обновить изображение (требуется `upload_id`).
+    - `delete` — удалить изображение.
+    - `pass` — сохранить существующее изображение.
+
+    Пример `image`:
+    ```json
+    {"action": "create", "upload_id": 4275}
+    ```
     """,
     response_description="Обновлённый тип продукта в стандартной обёртке API",
     responses={
@@ -102,6 +136,10 @@ async def create_product_type(
                             "id": 5,
                             "name": "Смартфоны Pro",
                             "parent_id": None,
+                            "image": {
+                                "upload_id": 1,
+                                "image_url": "https://cdn.example.com/product-types/smartphones-pro.jpg"
+                            },
                         },
                     }
                 }
@@ -120,11 +158,24 @@ async def update_product_type(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    image_dto = None
+    if payload.image:
+        from src.catalog.product.application.dto.product_type import ProductTypeImageOperationDTO
+        image_dto = ProductTypeImageOperationDTO(
+            action=payload.image.action,
+            upload_id=payload.image.upload_id,
+            image_url=payload.image.image_url,
+        )
+
     commands = ProductComposition.build_update_product_type_command(db)
 
     dto = await commands.execute(
         product_type_id,
-        ProductTypeUpdateDTO(**payload.model_dump()),
+        ProductTypeUpdateDTO(
+            name=payload.name,
+            parent_id=payload.parent_id,
+            image=image_dto,
+        ),
         user=user,
     )
 

@@ -30,6 +30,7 @@ class ProductReadRepository:
         offset: int,
         attributes: Optional[dict[str, list[str]]] = None,
         sort_type: str = "default",
+        product_ids: Optional[List[int]] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
         return await self._repository.filter(
             name=name,
@@ -39,6 +40,7 @@ class ProductReadRepository:
             offset=offset,
             attributes=attributes,
             sort_type=sort_type,
+            product_ids=product_ids,
         )
 
     async def get_catalog_filters(

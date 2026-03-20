@@ -119,15 +119,16 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
         limit: int,
         offset: int,
         attributes: Optional[dict[str, list[str]]] = None,
+        product_ids: Optional[List[int]] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
         # Базовый запрос для подсчёта total
         count_query = text("""
             SELECT COUNT(*)
             FROM products p
             WHERE 1=1
-            """ + self._build_where_clause(name, category_id, product_type_id, attributes))
+            """ + self._build_where_clause(name, category_id, product_type_id, attributes, product_ids))
 
-        count_params = self._build_params(name, category_id, product_type_id, attributes)
+        count_params = self._build_params(name, category_id, product_type_id, attributes, product_ids)
         count_result = await self.db.execute(text(count_query), count_params)
         total = count_result.scalar() or 0
 
@@ -155,12 +156,12 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN suppliers s ON s.id = p.supplier_id
             WHERE 1=1
-            {self._build_where_clause(name, category_id, product_type_id, attributes)}
+            {self._build_where_clause(name, category_id, product_type_id, attributes, product_ids)}
             ORDER BY p.id
             LIMIT :limit OFFSET :offset
         """)
 
-        params = self._build_params(name, category_id, product_type_id, attributes)
+        params = self._build_params(name, category_id, product_type_id, attributes, product_ids)
         params["limit"] = limit
         params["offset"] = offset
 
@@ -185,6 +186,7 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
         category_id: Optional[int],
         product_type_id: Optional[int],
         attributes: Optional[dict[str, list[str]]] = None,
+        product_ids: Optional[List[int]] = None,
     ) -> str:
         conditions = []
         if name:
@@ -212,6 +214,10 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 )
             """)
 
+        # Фильтрация по списку ID товаров
+        if product_ids:
+            conditions.append("AND p.id = ANY(:product_ids)")
+
         # Добавляем условия для атрибутов
         if attributes:
             for attr_name in attributes.keys():
@@ -231,6 +237,7 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
         category_id: Optional[int],
         product_type_id: Optional[int],
         attributes: Optional[dict[str, list[str]]] = None,
+        product_ids: Optional[List[int]] = None,
     ) -> dict[str, Any]:
         params = {}
         if name:
@@ -239,6 +246,8 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             params["category_id"] = category_id
         if product_type_id is not None:
             params["product_type_id"] = product_type_id
+        if product_ids:
+            params["product_ids"] = product_ids
 
         # Добавляем параметры для атрибутов
         if attributes:

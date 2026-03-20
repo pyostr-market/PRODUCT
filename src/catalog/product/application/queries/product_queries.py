@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO
 from src.catalog.product.application.read_models.product_read_repository import (
@@ -44,6 +44,7 @@ class ProductQueries:
         offset: int,
         attributes: Optional[dict[str, list[str]]] = None,
         sort_type: str = "default",
+        product_ids: Optional[List[int]] = None,
     ):
         items, total = await self.read_repository.filter(
             name=name,
@@ -53,6 +54,7 @@ class ProductQueries:
             offset=offset,
             attributes=attributes,
             sort_type=sort_type,
+            product_ids=product_ids,
         )
         return [self._attach_image_url(item) for item in items], total
 

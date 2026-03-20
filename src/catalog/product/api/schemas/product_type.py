@@ -1,7 +1,30 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
+
+
+class ProductTypeImageReadSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    upload_id: int  # ID из UploadHistory
+    image_url: str  # Публичный URL
+
+
+class ProductTypeImageReferenceSchema(BaseModel):
+    """Ссылка на загруженное изображение для создания типа продукта."""
+    model_config = ConfigDict(from_attributes=True)
+
+    upload_id: int  # ID из UploadHistory
+
+
+class ProductTypeImageActionSchema(BaseModel):
+    """Операция с изображением при обновлении типа продукта."""
+    model_config = ConfigDict(from_attributes=True)
+
+    action: Literal["create", "update", "pass", "delete"]
+    upload_id: Optional[int] = None  # ID изображения из UploadHistory
+    image_url: Optional[str] = None  # URL изображения (альтернатива upload_id)
 
 
 class ProductTypeNestedSchema(BaseModel):
@@ -13,11 +36,13 @@ class ProductTypeNestedSchema(BaseModel):
 class ProductTypeCreateSchema(BaseModel):
     name: str
     parent_id: Optional[int] = None
+    image: Optional[ProductTypeImageReferenceSchema] = None
 
 
 class ProductTypeUpdateSchema(BaseModel):
     name: Optional[str] = None
     parent_id: Optional[int] = None
+    image: Optional[ProductTypeImageActionSchema] = None
 
 
 class ProductTypeReadSchema(BaseModel):
@@ -27,6 +52,7 @@ class ProductTypeReadSchema(BaseModel):
     parent_id: Optional[int] = None
     parent: Optional[ProductTypeNestedSchema] = None
     children: List["ProductTypeReadSchema"] = []
+    image: Optional[ProductTypeImageReadSchema] = None
 
 
 ProductTypeReadSchema.model_rebuild()

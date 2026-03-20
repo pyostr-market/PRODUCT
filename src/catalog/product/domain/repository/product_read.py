@@ -23,6 +23,7 @@ class ProductReadRepositoryInterface(ABC):
         offset: int,
         attributes: Optional[dict[str, list[str]]] = None,
         sort_type: str = "default",
+        product_ids: Optional[List[int]] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
         """Фильтрация товаров с пагинацией и сортировкой."""
         raise NotImplementedError

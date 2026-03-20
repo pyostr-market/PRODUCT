@@ -32,3 +32,11 @@ class ProductType(TimestampMixin, Base):
         "Category",
         back_populates="device_type",
     )
+
+    # 🖼 Изображение (одно)
+    image = relationship(
+        "ProductTypeImage",
+        back_populates="product_type",
+        cascade="all, delete-orphan",
+        uselist=False,  # Отношение один-к-одному
+    )

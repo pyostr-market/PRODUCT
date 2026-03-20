@@ -158,6 +158,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         offset: int,
         attributes: Optional[dict[str, str]] = None,
         sort_type: str = "default",
+        product_ids: Optional[List[int]] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
         stmt = (
             select(Product)
@@ -212,6 +213,11 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 # Если категорий не найдено, возвращаем пустой результат
                 stmt = stmt.where(Product.id == -1)
                 count_stmt = count_stmt.where(Product.id == -1)
+
+        # Фильтрация по списку ID товаров
+        if product_ids:
+            stmt = stmt.where(Product.id.in_(product_ids))
+            count_stmt = count_stmt.where(Product.id.in_(product_ids))
 
         # Фильтрация по атрибутам
         if attributes:
