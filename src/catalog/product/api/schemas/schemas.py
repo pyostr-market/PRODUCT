@@ -3,6 +3,14 @@ from typing import List, Literal, Optional
 
 from fastapi import UploadFile
 from pydantic import BaseModel, ConfigDict, Field
+from enum import Enum
+
+
+class SortTypeEnum(str, Enum):
+    """Типы сортировки для каталога товаров."""
+    DEFAULT = "default"  # По умолчанию (по ID)
+    PRICE_ASC = "price_asc"  # Цена ниже
+    PRICE_DESC = "price_desc"  # Цена выше
 
 
 class FilterOptionSchema(BaseModel):

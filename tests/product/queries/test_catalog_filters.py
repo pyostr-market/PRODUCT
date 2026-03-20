@@ -11,6 +11,127 @@ import pytest
 
 
 @pytest.mark.asyncio
+async def test_catalog_filters_sorting_with_custom_order(authorized_client, client, monkeypatch):
+    """
+    Проверяет сортировку фильтров с кастомным порядком.
+
+    Сценарий:
+    1. Создаём тип продукта "Smartphones"
+    2. Создаём категорию с device_type_id
+    3. Создаём товары с разными атрибутами (Color, RAM, Storage)
+    4. Задаём порядок сортировки: ["Storage", "RAM", "Color"]
+    5. Запрашиваем фильтры
+    6. Проверяем, что фильтры отсортированы в заданном порядке
+    """
+    from src.core.conf.settings import Settings
+    
+    # Создаём тип продукта
+    product_type_resp = await authorized_client.post("/product/type", json={"name": "Smartphones"})
+    assert product_type_resp.status_code == 200
+    product_type_id = product_type_resp.json()["data"]["id"]
+
+    # Создаём категорию с device_type_id
+    cat_resp = await authorized_client.post(
+        "/category",
+        json={"name": "Phones", "device_type_id": product_type_id},
+    )
+    assert cat_resp.status_code == 200
+    category_id = cat_resp.json()["data"]["id"]
+
+    # Создаём товары с разными атрибутами
+    attributes_list = [
+        {"name": "Color", "value": "Black", "is_filterable": True},
+        {"name": "RAM", "value": "8 GB", "is_filterable": True},
+        {"name": "Storage", "value": "128 GB", "is_filterable": True},
+    ]
+
+    for attrs in attributes_list:
+        await authorized_client.post(
+            "/product",
+            data={
+                "name": f"Phone {attrs['name']}",
+                "price": "500.00",
+                "category_id": str(category_id),
+                "attributes_json": json.dumps([attrs]),
+            },
+        )
+
+    # Задаём кастомный порядок сортировки через monkeypatch
+    original_settings = Settings()
+    monkeypatch.setattr(original_settings, 'FILTER_SORT_ORDER', ["Storage", "RAM", "Color"])
+    monkeypatch.setattr(Settings, 'filter_sort_order', property(lambda self: ["Storage", "RAM", "Color"]))
+
+    # Запрашиваем фильтры
+    response = await client.get(f"/product/catalog/filters?category_id={category_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    filters = body["data"]["filters"]
+
+    # Проверяем порядок фильтров
+    filter_names = [f["name"] for f in filters]
+    expected_order = ["Storage", "RAM", "Color"]
+    
+    assert filter_names == expected_order, f"Ожидался порядок {expected_order}, но получено: {filter_names}"
+
+
+@pytest.mark.asyncio
+async def test_catalog_filters_sorting_alphabetical_default(authorized_client, client):
+    """
+    Проверяет сортировку фильтров по алфавиту (по умолчанию).
+
+    Сценарий:
+    1. Создаём тип продукта и категорию
+    2. Создаём товары с атрибутами в случайном порядке (Weight, Color, Battery)
+    3. Запрашиваем фильтры без настройки FILTER_SORT_ORDER
+    4. Проверяем, что фильтры отсортированы по алфавиту
+    """
+    # Создаём тип продукта
+    product_type_resp = await authorized_client.post("/product/type", json={"name": "Tablets"})
+    assert product_type_resp.status_code == 200
+    product_type_id = product_type_resp.json()["data"]["id"]
+
+    # Создаём категорию с device_type_id
+    cat_resp = await authorized_client.post(
+        "/category",
+        json={"name": "Tablets Category", "device_type_id": product_type_id},
+    )
+    assert cat_resp.status_code == 200
+    category_id = cat_resp.json()["data"]["id"]
+
+    # Создаём товары с атрибутами в случайном порядке
+    attributes_list = [
+        {"name": "Weight", "value": "500g", "is_filterable": True},
+        {"name": "Color", "value": "Silver", "is_filterable": True},
+        {"name": "Battery", "value": "8000 mAh", "is_filterable": True},
+    ]
+
+    for attrs in attributes_list:
+        await authorized_client.post(
+            "/product",
+            data={
+                "name": f"Tablet {attrs['name']}",
+                "price": "400.00",
+                "category_id": str(category_id),
+                "attributes_json": json.dumps([attrs]),
+            },
+        )
+
+    # Запрашиваем фильтры
+    response = await client.get(f"/product/catalog/filters?category_id={category_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    filters = body["data"]["filters"]
+
+    # Проверяем сортировку по алфавиту
+    filter_names = [f["name"] for f in filters]
+    expected_alphabetical = sorted(filter_names, key=str.lower)
+    
+    assert filter_names == expected_alphabetical, f"Ожидалась алфавитная сортировка {expected_alphabetical}, но получено: {filter_names}"
+
+
+@pytest.mark.asyncio
 async def test_filter_products_by_product_type_id(authorized_client, client):
     """
     Проверяет фильтрацию товаров по product_type_id.

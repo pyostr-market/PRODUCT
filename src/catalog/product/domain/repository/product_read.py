@@ -22,8 +22,9 @@ class ProductReadRepositoryInterface(ABC):
         limit: int,
         offset: int,
         attributes: Optional[dict[str, list[str]]] = None,
+        sort_type: str = "default",
     ) -> Tuple[List[ProductReadDTO], int]:
-        """Фильтрация товаров с пагинацией."""
+        """Фильтрация товаров с пагинацией и сортировкой."""
         raise NotImplementedError
 
     async def get_catalog_filters(

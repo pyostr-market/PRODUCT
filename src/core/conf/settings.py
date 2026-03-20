@@ -66,6 +66,21 @@ class Settings(BaseSettings):
     S3_URL: str = 'https://s3.twcstorage.ru'
     S3_REGION: str = 'ru-1'
 
+    # ===============================
+    # CATALOG FILTERS SORTING
+    # ===============================
+
+    # Список порядка сортировки фильтров (атрибутов)
+    # Атрибуты из этого списка будут в начале в указанном порядке
+    FILTER_SORT_ORDER: Optional[list] = None  # Например: ["RAM", "Storage", "Color", "Screen Size"]
+
+    @property
+    def filter_sort_order(self) -> list:
+        """Получить порядок сортировки фильтров."""
+        if self.FILTER_SORT_ORDER is None:
+            return []
+        return self.FILTER_SORT_ORDER
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

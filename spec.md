@@ -78,6 +78,25 @@ http://<host>:<port>/product
    - Используется первый найденный `device_type_id`
 4. Если ничего не указано — фильтры возвращаются для всех товаров
 
+### Сортировка фильтров
+
+Фильтры сортируются следующим образом:
+
+1. **Приоритетные атрибуты** - если в настройках задан список `FILTER_SORT_ORDER`, атрибуты из этого списка идут в начале в указанном порядке
+2. **Остальные атрибуты** - сортируются по алфавиту (case-insensitive)
+
+**Пример настройки:**
+```env
+FILTER_SORT_ORDER=["RAM", "Storage", "Color", "Screen Size"]
+```
+
+При такой настройке фильтры будут возвращены в порядке:
+1. RAM
+2. Storage
+3. Color
+4. Screen Size
+5. Все остальные (по алфавиту)
+
 ### Коды состояния HTTP
 
 | Код | Описание |
@@ -154,6 +173,7 @@ http://<host>:<port>/product
 | `name` | `string` | Нет | `null` | Поиск по названию товара (частичное совпадение, регистронезависимый) | `iPhone` |
 | `category_id` | `integer` | Нет | `null` | ID категории для фильтрации | `101` |
 | `attributes` | `string` (JSON) | Нет | `null` | JSON-объект с атрибутами для фильтрации. **Значения передаются массивом** | `{"RAM":["8 GB","16 GB"]}` |
+| `sort_type` | `string` | Нет | `default` | Тип сортировки: `default` (по умолчанию), `price_asc` (цена ниже), `price_desc` (цена выше) | `price_desc` |
 | `limit` | `integer` | Нет | `10` | Количество записей для возврата (макс. 100) | `20` |
 | `offset` | `integer` | Нет | `0` | Смещение для пагинации | `0` |
 
@@ -481,6 +501,33 @@ const params = new URLSearchParams({
 fetch(`/product?${params.toString()}`)
   .then(res => res.json())
   .then(data => console.log(data));
+```
+
+---
+
+### Пример 8: Сортировка товаров по цене (возрастание)
+
+```bash
+curl -X GET "http://localhost:8001/product?category_id=101&sort_type=price_asc" \
+  -H "Accept: application/json"
+```
+
+---
+
+### Пример 9: Сортировка товаров по цене (убывание)
+
+```bash
+curl -X GET "http://localhost:8001/product?category_id=101&sort_type=price_desc" \
+  -H "Accept: application/json"
+```
+
+---
+
+### Пример 10: Фильтрация с сортировкой
+
+```bash
+curl -X GET "http://localhost:8001/product?category_id=101&attributes={\"RAM\":[\"8 GB\",\"16 GB\"]}&sort_type=price_desc&limit=20" \
+  -H "Accept: application/json"
 ```
 
 ---

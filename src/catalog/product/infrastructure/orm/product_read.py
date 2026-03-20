@@ -23,6 +23,7 @@ from src.catalog.product.infrastructure.models.product_attribute_value import (
 )
 from src.catalog.product.infrastructure.models.product_image import ProductImage
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+from src.core.conf.settings import get_settings
 from src.core.services.images.storage import S3ImageStorageService
 
 
@@ -31,6 +32,34 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
     def __init__(self, db: AsyncSession):
         self.db = db
         self.image_storage = S3ImageStorageService.from_settings()
+
+    def _sort_filters(self, filters: list[FilterDTO]) -> list[FilterDTO]:
+        """
+        Сортировка фильтров.
+        
+        Алгоритм:
+        1. Если имя атрибута есть в списке FILTER_SORT_ORDER - используем его позицию
+        2. Если не указан - сортируем по алфавиту (default)
+        
+        Returns:
+            Отсортированный список фильтров
+        """
+        settings = get_settings()
+        sort_order = settings.filter_sort_order
+        
+        # Создаем словарь для быстрого поиска позиции
+        order_map = {name: idx for idx, name in enumerate(sort_order)}
+        max_order = len(sort_order)
+        
+        def sort_key(filter_dto: FilterDTO) -> tuple:
+            # Если имя есть в списке порядка - возвращаем его позицию
+            # Если нет - возвращаем max_order + имя (для алфавитной сортировки)
+            if filter_dto.name in order_map:
+                return (order_map[filter_dto.name], "")
+            else:
+                return (max_order, filter_dto.name.lower())
+        
+        return sorted(filters, key=sort_key)
 
     def _to_read_dto(self, model: Product) -> ProductReadDTO:
         category_dto = None
@@ -128,6 +157,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         limit: int,
         offset: int,
         attributes: Optional[dict[str, str]] = None,
+        sort_type: str = "default",
     ) -> Tuple[List[ProductReadDTO], int]:
         stmt = (
             select(Product)
@@ -171,10 +201,10 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             """)
             result = await self.db.execute(cte_stmt, {"product_type_id": product_type_id})
             category_ids = [row[0] for row in result.fetchall()]
-            
+
             # Отладка
             print(f"filter: product_type_id={product_type_id}, category_ids={category_ids}")
-            
+
             if category_ids:
                 stmt = stmt.where(Product.category_id.in_(category_ids))
                 count_stmt = count_stmt.where(Product.category_id.in_(category_ids))
@@ -209,7 +239,15 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                     )
                 )
 
-        stmt = stmt.order_by(Product.id).limit(limit).offset(offset)
+        # Сортировка
+        if sort_type == "price_asc":
+            stmt = stmt.order_by(Product.price.asc(), Product.id)
+        elif sort_type == "price_desc":
+            stmt = stmt.order_by(Product.price.desc(), Product.id)
+        else:  # default
+            stmt = stmt.order_by(Product.id)
+
+        stmt = stmt.limit(limit).offset(offset)
 
         result = await self.db.execute(stmt)
         count_result = await self.db.execute(count_stmt)
@@ -323,9 +361,12 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                     count=row.product_count
                 )
             )
-        
+
+        # Сортируем фильтры
+        sorted_filters = self._sort_filters(list(filters_dict.values()))
+
         return CatalogFiltersDTO(
-            filters=list(filters_dict.values())
+            filters=sorted_filters
         )
 
     async def export_full_catalog(self):

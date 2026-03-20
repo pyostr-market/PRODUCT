@@ -1,4 +1,4 @@
-import json
+from json import loads
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,7 @@ from src.catalog.product.api.schemas.schemas import (
     CatalogFiltersRequestSchema,
     FilterSchema,
     FilterOptionSchema,
+    SortTypeEnum,
 )
 from src.catalog.product.composition import ProductComposition
 from src.core.api.responses import api_response
@@ -289,6 +290,10 @@ async def filter_products(
         None,
         description="JSON-объект с атрибутами для фильтрации, например: {\"RAM\": [\"8 GB\", \"16 GB\"], \"Color\": [\"Black\"]}"
     ),
+    sort_type: SortTypeEnum = Query(
+        SortTypeEnum.DEFAULT,
+        description="Тип сортировки: default (по умолчанию), price_asc (цена ниже), price_desc (цена выше)"
+    ),
     limit: int = Query(10),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db),
@@ -297,8 +302,8 @@ async def filter_products(
     attributes_dict = None
     if attributes:
         try:
-            attributes_dict = json.loads(attributes)
-        except json.JSONDecodeError:
+            attributes_dict = loads(attributes)
+        except Exception:
             from src.catalog.product.domain.exceptions import ProductInvalidPayload
             raise ProductInvalidPayload(details={"reason": "invalid_attributes_json"})
 
@@ -310,6 +315,7 @@ async def filter_products(
         limit=limit,
         offset=offset,
         attributes=attributes_dict,
+        sort_type=sort_type.value,
     )
 
     return api_response(
