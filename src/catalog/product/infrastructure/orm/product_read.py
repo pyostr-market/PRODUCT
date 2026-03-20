@@ -270,83 +270,120 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
     ) -> CatalogFiltersDTO:
         """
         Получить фильтры для каталога.
-        
+
         Логика:
-        1. Если указана category_id, проверяем её device_type_id
-        2. Если у категории нет device_type_id, смотрим на родительскую категорию
-        3. Получаем все filterable атрибуты для этого device_type
-        4. Группируем уникальные значения атрибутов и возвращаем в ответе
+        1. Если указан product_type_id (device_type_id), используем его напрямую
+        2. Если указана category_id:
+           - Если у категории есть дочерние категории — берем атрибуты всех дочерних категорий (рекурсивно)
+           - Если у категории нет дочерних категорий (конечная категория) — берем атрибуты только этой категории
+        3. Получаем все filterable атрибуты и группируем уникальные значения
         """
         # Определяем device_type_id для фильтрации
         target_device_type_id = device_type_id
-        
-        if category_id is not None:
-            # Получаем категорию и её device_type_id
-            from src.catalog.product.infrastructure.models.product import Product as ProductModel
-            from sqlalchemy import select
-            
-            # Запрос для получения device_type_id из категории (с учётом наследования)
-            category_stmt = text("""
-                WITH RECURSIVE category_chain AS (
-                    SELECT id, parent_id, device_type_id
-                    FROM categories
-                    WHERE id = :category_id
-                    UNION ALL
-                    SELECT c.id, c.parent_id, c.device_type_id
-                    FROM categories c
-                    INNER JOIN category_chain cc ON c.id = cc.parent_id
-                    WHERE cc.device_type_id IS NULL
-                )
-                SELECT device_type_id
-                FROM category_chain
-                WHERE device_type_id IS NOT NULL
-                LIMIT 1
-            """)
-            
-            result = await self.db.execute(category_stmt, {"category_id": category_id})
-            row = result.fetchone()
-            
-            if row and row.device_type_id:
-                target_device_type_id = row.device_type_id
-        
-        # Формируем запрос для получения атрибутов
-        # Используем CTE для получения всех категорий с нужным effective device_type_id
-        filter_stmt = text("""
-            WITH RECURSIVE category_chain AS (
-                -- Находим все категории, у которых effective device_type_id = target
-                SELECT 
-                    c.id,
-                    c.device_type_id,
-                    c.device_type_id as effective_device_type_id
-                FROM categories c
-                WHERE c.device_type_id = :target_device_type_id
-                
-                UNION ALL
-                
-                -- Добавляем дочерние категории, которые наследуют device_type_id
-                SELECT 
-                    c.id,
-                    c.device_type_id,
-                    cc.effective_device_type_id
-                FROM categories c
-                INNER JOIN category_chain cc ON c.parent_id = cc.id
-                WHERE c.device_type_id IS NULL
-            )
-            SELECT
-                pa.name as attribute_name,
-                pa.is_filterable,
-                pav.value as attribute_value,
-                COUNT(DISTINCT p.id) as product_count
-            FROM product_attribute_values pav
-            JOIN product_attributes pa ON pa.id = pav.attribute_id
-            JOIN products p ON p.id = pav.product_id
-            JOIN category_chain cc ON cc.id = p.category_id
-            WHERE pa.is_filterable = true
-            GROUP BY pa.name, pa.is_filterable, pav.value
-            ORDER BY pa.name, pav.value
-        """)
+        target_category_id = None
+        use_category_directly = False
 
-        filter_params = {"target_device_type_id": target_device_type_id}
+        if category_id is not None:
+            # Проверяем, есть ли у категории дочерние категории
+            has_children_stmt = text("""
+                SELECT EXISTS(
+                    SELECT 1 FROM categories WHERE parent_id = :category_id
+                ) as has_children
+            """)
+            result = await self.db.execute(has_children_stmt, {"category_id": category_id})
+            row = result.fetchone()
+
+            if row and not row.has_children:
+                # У категории нет дочерних — это конечная категория
+                # Используем только эту категорию напрямую
+                target_category_id = category_id
+                use_category_directly = True
+            else:
+                # У категории есть дочерние — это родительская категория
+                # Нужно найти device_type_id и взять все дочерние категории
+                category_stmt = text("""
+                    WITH RECURSIVE category_chain AS (
+                        SELECT id, parent_id, device_type_id
+                        FROM categories
+                        WHERE id = :category_id
+                        UNION ALL
+                        SELECT c.id, c.parent_id, c.device_type_id
+                        FROM categories c
+                        INNER JOIN category_chain cc ON c.id = cc.parent_id
+                        WHERE cc.device_type_id IS NULL
+                    )
+                    SELECT device_type_id
+                    FROM category_chain
+                    WHERE device_type_id IS NOT NULL
+                    LIMIT 1
+                """)
+
+                result = await self.db.execute(category_stmt, {"category_id": category_id})
+                row = result.fetchone()
+
+                if row and row.device_type_id:
+                    target_device_type_id = row.device_type_id
+
+        # Формируем запрос для получения атрибутов
+        if use_category_directly and target_category_id:
+            # Режим: выбрана конечная категория (нет дочерних)
+            # Берем атрибуты только товаров этой категории
+            filter_stmt = text("""
+                SELECT
+                    pa.name as attribute_name,
+                    pa.is_filterable,
+                    pav.value as attribute_value,
+                    COUNT(DISTINCT p.id) as product_count
+                FROM product_attribute_values pav
+                JOIN product_attributes pa ON pa.id = pav.attribute_id
+                JOIN products p ON p.id = pav.product_id
+                WHERE pa.is_filterable = true
+                  AND p.category_id = :target_category_id
+                GROUP BY pa.name, pa.is_filterable, pav.value
+                ORDER BY pa.name, pav.value
+            """)
+            filter_params = {"target_category_id": target_category_id}
+        elif target_device_type_id:
+            # Режим: выбрана родительская категория или product_type_id
+            # Используем CTE для получения всех категорий с нужным effective device_type_id
+            filter_stmt = text("""
+                WITH RECURSIVE category_chain AS (
+                    -- Находим все категории, у которых effective device_type_id = target
+                    SELECT
+                        c.id,
+                        c.device_type_id,
+                        c.device_type_id as effective_device_type_id
+                    FROM categories c
+                    WHERE c.device_type_id = :target_device_type_id
+
+                    UNION ALL
+
+                    -- Добавляем дочерние категории, которые наследуют device_type_id
+                    SELECT
+                        c.id,
+                        c.device_type_id,
+                        cc.effective_device_type_id
+                    FROM categories c
+                    INNER JOIN category_chain cc ON c.parent_id = cc.id
+                    WHERE c.device_type_id IS NULL
+                )
+                SELECT
+                    pa.name as attribute_name,
+                    pa.is_filterable,
+                    pav.value as attribute_value,
+                    COUNT(DISTINCT p.id) as product_count
+                FROM product_attribute_values pav
+                JOIN product_attributes pa ON pa.id = pav.attribute_id
+                JOIN products p ON p.id = pav.product_id
+                JOIN category_chain cc ON cc.id = p.category_id
+                WHERE pa.is_filterable = true
+                GROUP BY pa.name, pa.is_filterable, pav.value
+                ORDER BY pa.name, pav.value
+            """)
+            filter_params = {"target_device_type_id": target_device_type_id}
+        else:
+            # Нет ни category_id, ни device_type_id — возвращаем пустой результат
+            return CatalogFiltersDTO(filters=[])
         
         result = await self.db.execute(filter_stmt, filter_params)
         rows = result.fetchall()
