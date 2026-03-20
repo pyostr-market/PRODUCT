@@ -5,6 +5,30 @@ from fastapi import UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class FilterOptionSchema(BaseModel):
+    """Вариант значения для фильтра."""
+    value: str
+    count: int = 0  # Опционально: количество товаров с этим значением
+
+
+class FilterSchema(BaseModel):
+    """Отдельный фильтр (атрибут) с вариантами значений."""
+    name: str
+    is_filterable: bool = True
+    options: List[FilterOptionSchema] = Field(default_factory=list)
+
+
+class CatalogFiltersRequestSchema(BaseModel):
+    """Запрос для получения фильтров каталога."""
+    category_id: Optional[int] = None
+    device_type_id: Optional[int] = None
+
+
+class CatalogFiltersResponse(BaseModel):
+    """Ответ с фильтрами для каталога."""
+    filters: List[FilterSchema] = Field(default_factory=list)
+
+
 class CategoryNestedSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

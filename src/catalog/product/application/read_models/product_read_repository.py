@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from src.catalog.product.application.dto.product import ProductReadDTO
+from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
 )
@@ -28,7 +28,7 @@ class ProductReadRepository:
         product_type_id: Optional[int],
         limit: int,
         offset: int,
-        attributes: Optional[dict[str, str]] = None,
+        attributes: Optional[dict[str, list[str]]] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
         return await self._repository.filter(
             name=name,
@@ -37,6 +37,16 @@ class ProductReadRepository:
             limit=limit,
             offset=offset,
             attributes=attributes,
+        )
+
+    async def get_catalog_filters(
+        self,
+        category_id: Optional[int] = None,
+        device_type_id: Optional[int] = None,
+    ) -> CatalogFiltersDTO:
+        return await self._repository.get_catalog_filters(
+            category_id=category_id,
+            device_type_id=device_type_id,
         )
 
     async def export_full_catalog(self):

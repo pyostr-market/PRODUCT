@@ -11,6 +11,10 @@ from src.catalog.product.api.schemas.product_type import (
 from src.catalog.product.api.schemas.schemas import (
     ProductListResponse,
     ProductReadSchema,
+    CatalogFiltersResponse,
+    CatalogFiltersRequestSchema,
+    FilterSchema,
+    FilterOptionSchema,
 )
 from src.catalog.product.composition import ProductComposition
 from src.core.api.responses import api_response
@@ -181,14 +185,16 @@ async def get_by_id(product_id: int, db: AsyncSession = Depends(get_db)):
     Сценарии:
     - Каталог товаров на витрине.
     - Выборка товаров по категории или типу.
-    - Фильтрация по атрибутам (например, RAM=8GB, Color=Black).
+    - Фильтрация по атрибутам (например, RAM=8GB или RAM=8GB,16GB; Color=Black,White).
 
     Поддерживается:
     - фильтрации по имени (частичное совпадение)
     - фильтрации по category_id
     - фильтрации по product_type_id
-    - фильтрации по атрибутам (query параметр `attributes` в формате JSON)
+    - фильтрации по атрибутам (query параметр `attributes` в формате JSON, где значения - массивы)
     - пагинации (limit, offset)
+    
+    Пример attributes: {"RAM": ["8 GB", "16 GB"], "Color": ["Black", "White"]}
     """,
     response_description="Список товаров в стандартной обёртке API",
     responses={
@@ -280,7 +286,7 @@ async def filter_products(
     category_id: int | None = Query(None),
     attributes: str | None = Query(
         None,
-        description="JSON-объект с атрибутами для фильтрации, например: {\"RAM\": \"8 GB\", \"Color\": \"Black\"}"
+        description="JSON-объект с атрибутами для фильтрации, например: {\"RAM\": [\"8 GB\", \"16 GB\"], \"Color\": [\"Black\"]}"
     ),
     limit: int = Query(10),
     offset: int = Query(0),
@@ -310,6 +316,94 @@ async def filter_products(
             total=total,
             items=[ProductReadSchema.model_validate(item) for item in items],
         )
+    )
+
+
+@product_q_router.get(
+    "/catalog/filters",
+    summary="Получить фильтры для каталога",
+    description="""
+    Возвращает список фильтров для каталога товаров.
+    
+    Логика работы:
+    1. Если указана category_id, проверяем её device_type_id
+    2. Если у категории нет device_type_id, смотрим на родительскую категорию (рекурсивно)
+    3. Получаем все filterable атрибуты для этого device_type
+    4. Группируем уникальные значения атрибутов и возвращаем в ответе
+    
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+    
+    Сценарии:
+    - Построение фильтра в каталоге товаров
+    - Получение доступных значений атрибутов для выбранной категории
+    
+    Поддерживается:
+    - фильтрация по category_id
+    - фильтрация по device_type_id (если category_id не указан)
+    """,
+    response_description="Список фильтров в стандартной обёртке API",
+    responses={
+        200: {
+            "description": "Фильтры успешно получены",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "filters": [
+                                {
+                                    "name": "RAM",
+                                    "is_filterable": True,
+                                    "options": [
+                                        {"value": "4 GB", "count": 5},
+                                        {"value": "8 GB", "count": 10},
+                                        {"value": "16 GB", "count": 7}
+                                    ]
+                                },
+                                {
+                                    "name": "Color",
+                                    "is_filterable": True,
+                                    "options": [
+                                        {"value": "Black", "count": 12},
+                                        {"value": "White", "count": 8},
+                                        {"value": "Blue", "count": 6}
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_catalog_filters(
+    category_id: int | None = Query(None),
+    device_type_id: int | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = ProductComposition.build_queries(db)
+    dto = await queries.get_catalog_filters(
+        category_id=category_id,
+        device_type_id=device_type_id,
+    )
+    
+    # Конвертируем DTO в Schema
+    filters = [
+        FilterSchema(
+            name=f.name,
+            is_filterable=f.is_filterable,
+            options=[
+                FilterOptionSchema(value=opt.value, count=opt.count)
+                for opt in f.options
+            ]
+        )
+        for f in dto.filters
+    ]
+    
+    return api_response(
+        CatalogFiltersResponse(filters=filters)
     )
 
 

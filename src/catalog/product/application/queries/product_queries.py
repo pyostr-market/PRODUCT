@@ -1,6 +1,6 @@
 from typing import Optional
 
-from src.catalog.product.application.dto.product import ProductReadDTO
+from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO
 from src.catalog.product.application.read_models.product_read_repository import (
     ProductReadRepository,
 )
@@ -42,7 +42,7 @@ class ProductQueries:
         product_type_id: Optional[int],
         limit: int,
         offset: int,
-        attributes: Optional[dict[str, str]] = None,
+        attributes: Optional[dict[str, list[str]]] = None,
     ):
         items, total = await self.read_repository.filter(
             name=name,
@@ -53,6 +53,16 @@ class ProductQueries:
             attributes=attributes,
         )
         return [self._attach_image_url(item) for item in items], total
+
+    async def get_catalog_filters(
+        self,
+        category_id: Optional[int] = None,
+        device_type_id: Optional[int] = None,
+    ) -> CatalogFiltersDTO:
+        return await self.read_repository.get_catalog_filters(
+            category_id=category_id,
+            device_type_id=device_type_id,
+        )
 
     async def related(
         self,

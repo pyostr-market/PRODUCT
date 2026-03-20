@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING, Literal, Optional
 
@@ -62,6 +62,27 @@ class ProductAttributeUpdateDTO:
     name: Optional[str] = None
     value: Optional[str] = None
     is_filterable: Optional[bool] = None
+
+
+@dataclass
+class FilterOptionDTO:
+    """Вариант значения для фильтра."""
+    value: str
+    count: int = 0
+
+
+@dataclass
+class FilterDTO:
+    """Отдельный фильтр (атрибут) с вариантами значений."""
+    name: str
+    is_filterable: bool = True
+    options: list[FilterOptionDTO] = field(default_factory=list)
+
+
+@dataclass
+class CatalogFiltersDTO:
+    """DTO для фильтров каталога."""
+    filters: list[FilterDTO] = field(default_factory=list)
 
 
 @dataclass

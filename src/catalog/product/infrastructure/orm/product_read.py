@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy import func, select, text
+from sqlalchemy import and_, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -9,6 +9,9 @@ from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
     ProductReadDTO,
+    CatalogFiltersDTO,
+    FilterDTO,
+    FilterOptionDTO,
 )
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
@@ -150,21 +153,27 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
 
         # Фильтрация по атрибутам
         if attributes:
-            for attr_name, attr_value in attributes.items():
+            for attr_name, attr_values in attributes.items():
+                # Поддерживаем множественные значения для одного атрибута
+                # Товар должен соответствовать хотя бы одному значению из списка
                 stmt = stmt.where(
                     Product.attributes.any(
-                        ProductAttributeValue.attribute.has(
-                            ProductAttribute.name == attr_name
-                        ),
-                        ProductAttributeValue.value == attr_value,
+                        and_(
+                            ProductAttributeValue.attribute.has(
+                                ProductAttribute.name == attr_name
+                            ),
+                            ProductAttributeValue.value.in_(attr_values),
+                        )
                     )
                 )
                 count_stmt = count_stmt.where(
                     Product.attributes.any(
-                        ProductAttributeValue.attribute.has(
-                            ProductAttribute.name == attr_name
-                        ),
-                        ProductAttributeValue.value == attr_value,
+                        and_(
+                            ProductAttributeValue.attribute.has(
+                                ProductAttribute.name == attr_name
+                            ),
+                            ProductAttributeValue.value.in_(attr_values),
+                        )
                     )
                 )
 
@@ -178,6 +187,111 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
 
         return items, total
 
+    async def get_catalog_filters(
+        self,
+        category_id: Optional[int] = None,
+        device_type_id: Optional[int] = None,
+    ) -> CatalogFiltersDTO:
+        """
+        Получить фильтры для каталога.
+        
+        Логика:
+        1. Если указана category_id, проверяем её device_type_id
+        2. Если у категории нет device_type_id, смотрим на родительскую категорию
+        3. Получаем все filterable атрибуты для этого device_type
+        4. Группируем уникальные значения атрибутов и возвращаем в ответе
+        """
+        # Определяем device_type_id для фильтрации
+        target_device_type_id = device_type_id
+        
+        if category_id is not None:
+            # Получаем категорию и её device_type_id
+            from src.catalog.product.infrastructure.models.product import Product as ProductModel
+            from sqlalchemy import select
+            
+            # Запрос для получения device_type_id из категории (с учётом наследования)
+            category_stmt = text("""
+                WITH RECURSIVE category_chain AS (
+                    SELECT id, parent_id, device_type_id
+                    FROM categories
+                    WHERE id = :category_id
+                    UNION ALL
+                    SELECT c.id, c.parent_id, c.device_type_id
+                    FROM categories c
+                    INNER JOIN category_chain cc ON c.id = cc.parent_id
+                    WHERE cc.device_type_id IS NULL
+                )
+                SELECT device_type_id
+                FROM category_chain
+                WHERE device_type_id IS NOT NULL
+                LIMIT 1
+            """)
+            
+            result = await self.db.execute(category_stmt, {"category_id": category_id})
+            row = result.fetchone()
+            
+            if row and row.device_type_id:
+                target_device_type_id = row.device_type_id
+        
+        # Формируем базовый запрос для получения атрибутов
+        # Получаем только filterable атрибуты с их значениями
+        filter_stmt = text("""
+            SELECT
+                pa.name as attribute_name,
+                pa.is_filterable,
+                pav.value as attribute_value,
+                COUNT(DISTINCT p.id) as product_count
+            FROM product_attribute_values pav
+            JOIN product_attributes pa ON pa.id = pav.attribute_id
+            JOIN products p ON p.id = pav.product_id
+            JOIN categories c ON c.id = p.category_id
+            WHERE pa.is_filterable = true
+        """)
+        
+        filter_params = {}
+        
+        # Если указан device_type_id, фильтруем по товарам этой категории
+        if target_device_type_id is not None:
+            filter_stmt = text(filter_stmt.text + """
+                AND c.device_type_id = :device_type_id
+            """)
+            filter_params["device_type_id"] = target_device_type_id
+        elif category_id is not None:
+            # Если category_id указан, но device_type_id не найден,
+            # фильтруем по самой категории
+            filter_stmt = text(filter_stmt.text + """
+                AND p.category_id = :category_id
+            """)
+            filter_params["category_id"] = category_id
+        
+        filter_stmt = text(filter_stmt.text + """
+            GROUP BY pa.name, pa.is_filterable, pav.value
+            ORDER BY pa.name, pav.value
+        """)
+        
+        result = await self.db.execute(filter_stmt, filter_params)
+        rows = result.fetchall()
+        
+        # Группируем результаты по атрибутам
+        filters_dict = {}
+        for row in rows:
+            attr_name = row.attribute_name
+            if attr_name not in filters_dict:
+                filters_dict[attr_name] = FilterDTO(
+                    name=attr_name,
+                    is_filterable=row.is_filterable,
+                    options=[]
+                )
+            filters_dict[attr_name].options.append(
+                FilterOptionDTO(
+                    value=row.attribute_value,
+                    count=row.product_count
+                )
+            )
+        
+        return CatalogFiltersDTO(
+            filters=list(filters_dict.values())
+        )
 
     async def export_full_catalog(self):
         sql = text("""
