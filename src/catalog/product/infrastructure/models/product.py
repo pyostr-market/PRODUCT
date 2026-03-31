@@ -61,3 +61,11 @@ class Product(TimestampMixin, Base):
         back_populates="product",
         cascade="all, delete-orphan",
     )
+
+    # Связи с другими товарами
+    relations = relationship(
+        "ProductRelation",
+        foreign_keys="ProductRelation.product_id",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )

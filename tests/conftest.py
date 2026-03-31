@@ -222,6 +222,7 @@ async def cleanup_test_data(engine, image_storage_mock):
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policy_audit_logs CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_audit_logs CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policies CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_relations CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attribute_values CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attributes CASCADE"))
@@ -243,3 +244,87 @@ async def cleanup_test_data(engine, image_storage_mock):
     #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM manufacturers CASCADE"))
     #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM suppliers CASCADE"))
     #     await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_types CASCADE"))
+
+
+@pytest_asyncio.fixture
+async def test_products(authorized_client):
+    """Создаёт тестовые товары для тестов."""
+    products = []
+    
+    # Создаём 3 тестовых товара
+    for i in range(1, 4):
+        response = await authorized_client.post(
+            "/product",
+            data={
+                "name": f"Test Product {i}",
+                "description": f"Description for product {i}",
+                "price": f"{100 * i}.00",
+            },
+        )
+        assert response.status_code == 200
+        products.append(response.json()["data"])
+    
+    yield products
+
+
+@pytest_asyncio.fixture
+async def product_relation(authorized_client, test_products):
+    """Создаёт тестовую связь между товарами."""
+    response = await authorized_client.post(
+        "/product/product-relations",
+        json={
+            "product_id": test_products[0]["id"],
+            "related_product_id": test_products[1]["id"],
+            "relation_type": "accessory",
+            "sort_order": 1,
+        },
+    )
+    assert response.status_code == 200
+    yield response.json()["data"]
+
+
+@pytest_asyncio.fixture()
+async def authorized_client_no_perms(engine):
+    """Клиент с пользователем, у которого нет permissions."""
+    from src.core.auth.schemas.user import User, TokenSchema, UserPermissionSchema
+    from httpx import ASGITransport, AsyncClient
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    
+    from src.core.auth.dependencies import get_current_user
+    from src.core.db.database import get_db
+    from src.mount import app
+    
+    user = User(
+        id=2,
+        token_data=TokenSchema(
+            exp=9999999999,
+            iat=0,
+            type="access"
+        ),
+        permissions=[]
+    )
+    
+    async_session = async_sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+    )
+    
+    async def override_get_db():
+        async with async_session() as session:
+            yield session
+    
+    async def override_get_current_user():
+        return user
+    
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    
+    transport = ASGITransport(app=app)
+    
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+    ) as ac:
+        yield ac
+    
+    app.dependency_overrides.clear()

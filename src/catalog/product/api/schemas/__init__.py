@@ -17,6 +17,14 @@ from src.catalog.product.api.schemas.schemas import (
     FilterSchema,
     CatalogFiltersRequestSchema,
     CatalogFiltersResponse,
+    # ProductRelation
+    RelationTypeEnum,
+    ProductRelationCreateSchema,
+    ProductRelationUpdateSchema,
+    ProductRelationReadSchema,
+    ProductRecommendationItemSchema,
+    PaginationSchema,
+    ProductRelationListResponse,
 )
 
 __all__ = [
@@ -38,4 +46,12 @@ __all__ = [
     "FilterSchema",
     "CatalogFiltersRequestSchema",
     "CatalogFiltersResponse",
+    # ProductRelation
+    "RelationTypeEnum",
+    "ProductRelationCreateSchema",
+    "ProductRelationUpdateSchema",
+    "ProductRelationReadSchema",
+    "ProductRecommendationItemSchema",
+    "PaginationSchema",
+    "ProductRelationListResponse",
 ]

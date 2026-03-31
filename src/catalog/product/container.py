@@ -8,6 +8,9 @@ from src.catalog.product.application.commands.create_product import CreateProduc
 from src.catalog.product.application.commands.create_product_attribute import (
     CreateProductAttributeCommand,
 )
+from src.catalog.product.application.commands.create_product_relation import (
+    CreateProductRelationCommand,
+)
 from src.catalog.product.application.commands.create_product_type import (
     CreateProductTypeCommand,
 )
@@ -15,12 +18,18 @@ from src.catalog.product.application.commands.delete_product import DeleteProduc
 from src.catalog.product.application.commands.delete_product_attribute import (
     DeleteProductAttributeCommand,
 )
+from src.catalog.product.application.commands.delete_product_relation import (
+    DeleteProductRelationCommand,
+)
 from src.catalog.product.application.commands.delete_product_type import (
     DeleteProductTypeCommand,
 )
 from src.catalog.product.application.commands.update_product import UpdateProductCommand
 from src.catalog.product.application.commands.update_product_attribute import (
     UpdateProductAttributeCommand,
+)
+from src.catalog.product.application.commands.update_product_relation import (
+    UpdateProductRelationCommand,
 )
 from src.catalog.product.application.commands.update_product_type import (
     UpdateProductTypeCommand,
@@ -32,6 +41,9 @@ from src.catalog.product.application.queries.product_attribute_queries import (
     ProductAttributeQueries,
 )
 from src.catalog.product.application.queries.product_queries import ProductQueries
+from src.catalog.product.application.queries.product_relation_queries import (
+    ProductRelationQueries,
+)
 from src.catalog.product.application.queries.product_type_admin_queries import (
     ProductTypeAdminQueries,
 )
@@ -64,6 +76,7 @@ from src.catalog.product.domain.repository.product_audit_query import (
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
 )
+from src.catalog.product.domain.repository.product_relation import ProductRelationRepository
 from src.catalog.product.domain.repository.product_type import ProductTypeRepository
 from src.catalog.product.domain.repository.product_type_audit_query import (
     ProductTypeAuditQueryRepository,
@@ -89,6 +102,9 @@ from src.catalog.product.infrastructure.orm.product_audit_query import (
 )
 from src.catalog.product.infrastructure.orm.product_read import (
     SqlAlchemyProductReadRepository,
+)
+from src.catalog.product.infrastructure.orm.product_relation import (
+    SqlAlchemyProductRelationRepository,
 )
 from src.catalog.product.infrastructure.orm.product_type import (
     SqlAlchemyProductTypeRepository,
@@ -155,6 +171,11 @@ container.register(
 container.register(
     ProductAttributeRepository,
     lambda scope, db: SqlAlchemyProductAttributeRepository(db),
+)
+
+container.register(
+    ProductRelationRepository,
+    lambda scope, db: SqlAlchemyProductRelationRepository(db),
 )
 
 container.register(
@@ -250,6 +271,14 @@ container.register(
 )
 
 container.register(
+    ProductRelationQueries,
+    lambda scope, db: ProductRelationQueries(
+        repository=scope.resolve(ProductRelationRepository, db=db),
+        db=db,
+    ),
+)
+
+container.register(
     RelatedEntityLoader,
     lambda scope, db: RelatedEntityLoader(
         category_repository=scope.resolve(CategoryRepository, db=db),
@@ -326,6 +355,16 @@ container.register(
 )
 
 container.register(
+    UpdateProductRelationCommand,
+    lambda scope, db: UpdateProductRelationCommand(
+        repository=scope.resolve(ProductRelationRepository, db=db),
+        audit_repository=scope.resolve(ProductAuditRepository, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
+)
+
+container.register(
     DeleteProductCommand,
     lambda scope, db: DeleteProductCommand(
         repository=scope.resolve(ProductRepository, db=db),
@@ -350,6 +389,27 @@ container.register(
     DeleteProductAttributeCommand,
     lambda scope, db: DeleteProductAttributeCommand(
         repository=scope.resolve(ProductAttributeRepository, db=db),
+        audit_repository=scope.resolve(ProductAuditRepository, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
+)
+
+container.register(
+    CreateProductRelationCommand,
+    lambda scope, db: CreateProductRelationCommand(
+        repository=scope.resolve(ProductRelationRepository, db=db),
+        product_repository=scope.resolve(ProductRepository, db=db),
+        audit_repository=scope.resolve(ProductAuditRepository, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
+)
+
+container.register(
+    DeleteProductRelationCommand,
+    lambda scope, db: DeleteProductRelationCommand(
+        repository=scope.resolve(ProductRelationRepository, db=db),
         audit_repository=scope.resolve(ProductAuditRepository, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
         event_bus=scope.resolve(AsyncEventBus, db=db),

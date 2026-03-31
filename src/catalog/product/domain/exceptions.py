@@ -102,3 +102,43 @@ class ProductAttributeInvalidName(BaseServiceError):
         status_code: int = 400,
     ):
         super().__init__(message=msg, code=code, status_code=status_code)
+
+
+class ProductRelationNotFound(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Связь товара не найдена",
+        code: str = "product_relation_not_found",
+        status_code: int = 404,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code)
+
+
+class ProductRelationAlreadyExists(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Связь уже существует",
+        code: str = "product_relation_already_exists",
+        status_code: int = 409,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code)
+
+
+class ProductRelationSelfReference(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Связь товара с самим собой не допускается",
+        code: str = "product_relation_self_reference",
+        status_code: int = 400,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code)
+
+
+class ProductRelationInvalidProduct(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Один из товаров не существует",
+        code: str = "product_relation_invalid_product",
+        status_code: int = 400,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code)

@@ -2,6 +2,9 @@ from src.catalog.product.application.commands.create_product import CreateProduc
 from src.catalog.product.application.commands.create_product_attribute import (
     CreateProductAttributeCommand,
 )
+from src.catalog.product.application.commands.create_product_relation import (
+    CreateProductRelationCommand,
+)
 from src.catalog.product.application.commands.create_product_type import (
     CreateProductTypeCommand,
 )
@@ -9,12 +12,18 @@ from src.catalog.product.application.commands.delete_product import DeleteProduc
 from src.catalog.product.application.commands.delete_product_attribute import (
     DeleteProductAttributeCommand,
 )
+from src.catalog.product.application.commands.delete_product_relation import (
+    DeleteProductRelationCommand,
+)
 from src.catalog.product.application.commands.delete_product_type import (
     DeleteProductTypeCommand,
 )
 from src.catalog.product.application.commands.update_product import UpdateProductCommand
 from src.catalog.product.application.commands.update_product_attribute import (
     UpdateProductAttributeCommand,
+)
+from src.catalog.product.application.commands.update_product_relation import (
+    UpdateProductRelationCommand,
 )
 from src.catalog.product.application.commands.update_product_type import (
     UpdateProductTypeCommand,
@@ -26,6 +35,9 @@ from src.catalog.product.application.queries.product_attribute_queries import (
     ProductAttributeQueries,
 )
 from src.catalog.product.application.queries.product_queries import ProductQueries
+from src.catalog.product.application.queries.product_relation_queries import (
+    ProductRelationQueries,
+)
 from src.catalog.product.application.queries.product_type_admin_queries import (
     ProductTypeAdminQueries,
 )
@@ -110,3 +122,25 @@ class ProductComposition:
     def build_product_attribute_queries(db):
         scope = container.create_scope()
         return scope.resolve(ProductAttributeQueries, db=db)
+
+    # ==================== ProductRelation ====================
+
+    @staticmethod
+    def build_create_product_relation_command(db):
+        scope = container.create_scope()
+        return scope.resolve(CreateProductRelationCommand, db=db)
+
+    @staticmethod
+    def build_update_product_relation_command(db):
+        scope = container.create_scope()
+        return scope.resolve(UpdateProductRelationCommand, db=db)
+
+    @staticmethod
+    def build_delete_product_relation_command(db):
+        scope = container.create_scope()
+        return scope.resolve(DeleteProductRelationCommand, db=db)
+
+    @staticmethod
+    def build_product_relation_queries(db):
+        scope = container.create_scope()
+        return scope.resolve(ProductRelationQueries, db=db)

@@ -149,3 +149,61 @@ class ProductReadSchema(BaseModel):
 class ProductListResponse(BaseModel):
     total: int
     items: List[ProductReadSchema]
+
+
+# ==================== ProductRelation ====================
+
+class RelationTypeEnum(str, Enum):
+    """Типы связей между товарами."""
+    ACCESSORY = "accessory"  # Аксессуары
+    SIMILAR = "similar"  # Похожие товары
+    BUNDLE = "bundle"  # Комплект
+    UPSELL = "upsell"  # Более дорогая альтернатива
+
+
+class ProductRelationCreateSchema(BaseModel):
+    """Схема для создания связи товара."""
+    product_id: int
+    related_product_id: int
+    relation_type: RelationTypeEnum
+    sort_order: int = 0
+
+
+class ProductRelationUpdateSchema(BaseModel):
+    """Схема для обновления связи товара."""
+    relation_type: Optional[RelationTypeEnum] = None
+    sort_order: Optional[int] = None
+
+
+class ProductRelationReadSchema(BaseModel):
+    """Схема для чтения связи товара."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int
+    related_product_id: int
+    relation_type: str
+    sort_order: int
+
+
+class ProductRecommendationItemSchema(BaseModel):
+    """Схема элемента рекомендации."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    price: float
+    description: Optional[str] = None
+
+
+class PaginationSchema(BaseModel):
+    """Схема пагинации."""
+    page: int
+    limit: int
+    total: int
+
+
+class ProductRelationListResponse(BaseModel):
+    """Ответ со списком связей/рекомендаций."""
+    items: List[ProductRecommendationItemSchema]
+    pagination: PaginationSchema
