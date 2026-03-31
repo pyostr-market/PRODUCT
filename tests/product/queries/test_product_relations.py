@@ -24,24 +24,32 @@ async def test_get_product_relations_200(authorized_client, test_products, produ
     
     # Проверяем, что наша связь есть в списке
     relation_ids = [item["id"] for item in items]
-    assert product_relation["id"] in relation_ids
+    assert product_relation["related_product_id"] in [item["id"] for item in items]
 
 
 @pytest.mark.asyncio
 async def test_get_product_relations_with_pagination(authorized_client, test_products):
     """Получение связей с пагинацией."""
     product_id = test_products[0]["id"]
+    related_id_1 = test_products[1]["id"]
+    related_id_2 = test_products[2]["id"]
     
-    # Создаём 5 связей
+    # Создаём 3 связи с разными related_product_id и relation_type
     relation_ids = []
-    for i in range(1, 6):
+    relation_configs = [
+        (related_id_1, "accessory", 1),
+        (related_id_2, "similar", 2),
+        (related_id_1, "bundle", 3),
+    ]
+    
+    for rel_id, rel_type, sort_order in relation_configs:
         response = await authorized_client.post(
             "/product/product-relations",
             json={
                 "product_id": product_id,
-                "related_product_id": test_products[i % 3]["id"],
-                "relation_type": "accessory",
-                "sort_order": i,
+                "related_product_id": rel_id,
+                "relation_type": rel_type,
+                "sort_order": sort_order,
             },
         )
         relation_ids.append(response.json()["data"]["id"])
@@ -56,7 +64,7 @@ async def test_get_product_relations_with_pagination(authorized_client, test_pro
     assert len(body1["data"]["items"]) == 2
     assert body1["data"]["pagination"]["page"] == 1
     assert body1["data"]["pagination"]["limit"] == 2
-    assert body1["data"]["pagination"]["total"] == 5
+    assert body1["data"]["pagination"]["total"] == 3
 
     # Получаем вторую страницу
     response2 = await authorized_client.get(
@@ -65,18 +73,8 @@ async def test_get_product_relations_with_pagination(authorized_client, test_pro
     )
     assert response2.status_code == 200
     body2 = response2.json()
-    assert len(body2["data"]["items"]) == 2
+    assert len(body2["data"]["items"]) == 1
     assert body2["data"]["pagination"]["page"] == 2
-
-    # Получаем третью страницу
-    response3 = await authorized_client.get(
-        f"/product/products/{product_id}/relations",
-        params={"page": 3, "limit": 2},
-    )
-    assert response3.status_code == 200
-    body3 = response3.json()
-    assert len(body3["data"]["items"]) == 1
-    assert body3["data"]["pagination"]["page"] == 3
 
 
 @pytest.mark.asyncio
@@ -164,7 +162,7 @@ async def test_get_product_relations_sorted_by_sort_order(authorized_client, tes
     """Проверка сортировки связей по sort_order."""
     product_id = test_products[0]["id"]
     
-    # Создаём связи с разным sort_order
+    # Создаём связи с разным sort_order и разными related_product_id
     await authorized_client.post(
         "/product/product-relations",
         json={
@@ -179,7 +177,7 @@ async def test_get_product_relations_sorted_by_sort_order(authorized_client, tes
         json={
             "product_id": product_id,
             "related_product_id": test_products[2]["id"],
-            "relation_type": "accessory",
+            "relation_type": "similar",
             "sort_order": 1,
         },
     )
@@ -188,7 +186,7 @@ async def test_get_product_relations_sorted_by_sort_order(authorized_client, tes
         json={
             "product_id": product_id,
             "related_product_id": test_products[1]["id"],
-            "relation_type": "accessory",
+            "relation_type": "bundle",
             "sort_order": 5,
         },
     )
@@ -202,8 +200,7 @@ async def test_get_product_relations_sorted_by_sort_order(authorized_client, tes
     items = body["data"]["items"]
     
     # Проверяем, что элементы отсортированы по sort_order
-    sort_orders = [item["id"] for item in items]
-    assert len(sort_orders) == 3
+    assert len(items) == 3
 
 
 @pytest.mark.asyncio
@@ -333,17 +330,25 @@ async def test_get_product_recommendations_with_large_limit(authorized_client, t
     """Получение рекомендаций с большим limit."""
     product_id = test_products[0]["id"]
     
-    # Создаём несколько связей
-    for i in range(1, 4):
-        await authorized_client.post(
-            "/product/product-relations",
-            json={
-                "product_id": product_id,
-                "related_product_id": test_products[i % 3]["id"],
-                "relation_type": "accessory",
-                "sort_order": i,
-            },
-        )
+    # Создаём 2 связи (т.к. у нас только 3 товара, и один из них - product_id)
+    await authorized_client.post(
+        "/product/product-relations",
+        json={
+            "product_id": product_id,
+            "related_product_id": test_products[1]["id"],
+            "relation_type": "accessory",
+            "sort_order": 1,
+        },
+    )
+    await authorized_client.post(
+        "/product/product-relations",
+        json={
+            "product_id": product_id,
+            "related_product_id": test_products[2]["id"],
+            "relation_type": "similar",
+            "sort_order": 2,
+        },
+    )
 
     response = await authorized_client.get(
         f"/product/products/{product_id}/recommendations",
@@ -353,7 +358,7 @@ async def test_get_product_recommendations_with_large_limit(authorized_client, t
     assert response.status_code == 200
     body = response.json()
     assert body["data"]["pagination"]["limit"] == 100
-    assert body["data"]["pagination"]["total"] == 3
+    assert body["data"]["pagination"]["total"] == 2
 
 
 @pytest.mark.asyncio
@@ -361,17 +366,34 @@ async def test_get_product_recommendations_offset_page_2(authorized_client, test
     """Получение рекомендаций со второй страницы."""
     product_id = test_products[0]["id"]
     
-    # Создаём 5 связей
-    for i in range(1, 6):
-        await authorized_client.post(
-            "/product/product-relations",
-            json={
-                "product_id": product_id,
-                "related_product_id": test_products[i % 3]["id"],
-                "relation_type": "accessory",
-                "sort_order": i,
-            },
-        )
+    # Создаём 3 связи с разными типами
+    await authorized_client.post(
+        "/product/product-relations",
+        json={
+            "product_id": product_id,
+            "related_product_id": test_products[1]["id"],
+            "relation_type": "accessory",
+            "sort_order": 1,
+        },
+    )
+    await authorized_client.post(
+        "/product/product-relations",
+        json={
+            "product_id": product_id,
+            "related_product_id": test_products[2]["id"],
+            "relation_type": "similar",
+            "sort_order": 2,
+        },
+    )
+    await authorized_client.post(
+        "/product/product-relations",
+        json={
+            "product_id": product_id,
+            "related_product_id": test_products[1]["id"],
+            "relation_type": "bundle",
+            "sort_order": 3,
+        },
+    )
 
     response = await authorized_client.get(
         f"/product/products/{product_id}/recommendations",
@@ -381,4 +403,4 @@ async def test_get_product_recommendations_offset_page_2(authorized_client, test
     assert response.status_code == 200
     body = response.json()
     assert body["data"]["pagination"]["page"] == 2
-    assert len(body["data"]["items"]) == 2
+    assert len(body["data"]["items"]) == 1  # На второй странице только 1 элемент

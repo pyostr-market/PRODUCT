@@ -65,7 +65,7 @@ class UpdateProductRelationCommand:
 
             # Логируем аудит только если данные изменились
             if old_data != new_data:
-                await self.audit_repository.log(
+                await self.audit_repository.log_product_relation(
                     self._create_audit_dto(aggregate, old_data, new_data, user),
                 )
 
@@ -95,16 +95,7 @@ class UpdateProductRelationCommand:
         user: User,
     ) -> Any:
         """Создать DTO для audit лога."""
-        from dataclasses import dataclass
-
-        @dataclass
-        class ProductRelationAuditDTO:
-            relation_id: int
-            action: str
-            old_data: dict
-            new_data: dict
-            user_id: int
-            fio: str
+        from src.catalog.product.domain.repository.audit import ProductRelationAuditDTO
 
         return ProductRelationAuditDTO(
             relation_id=aggregate.id,

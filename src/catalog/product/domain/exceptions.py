@@ -140,5 +140,6 @@ class ProductRelationInvalidProduct(BaseServiceError):
         msg: str = "Один из товаров не существует",
         code: str = "product_relation_invalid_product",
         status_code: int = 400,
+        details: dict | None = None,
     ):
-        super().__init__(message=msg, code=code, status_code=status_code)
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)

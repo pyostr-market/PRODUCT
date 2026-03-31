@@ -80,7 +80,7 @@ class CreateProductRelationCommand:
             domain_events = aggregate.get_events()
 
             # Логируем в audit
-            await self.audit_repository.log(
+            await self.audit_repository.log_product_relation(
                 self._create_audit_dto(aggregate, user),
             )
 
@@ -99,16 +99,7 @@ class CreateProductRelationCommand:
         user: User,
     ) -> Any:
         """Создать DTO для audit лога."""
-        from dataclasses import dataclass
-
-        @dataclass
-        class ProductRelationAuditDTO:
-            relation_id: int
-            action: str
-            old_data: None
-            new_data: dict
-            user_id: int
-            fio: str
+        from src.catalog.product.domain.repository.audit import ProductRelationAuditDTO
 
         return ProductRelationAuditDTO(
             relation_id=aggregate.id,

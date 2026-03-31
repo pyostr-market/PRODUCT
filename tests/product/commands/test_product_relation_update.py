@@ -174,12 +174,10 @@ async def test_update_product_relation_sort_order_negative(authorized_client, te
 
 
 @pytest.mark.asyncio
-async def test_update_product_relation_unauthorized(client, product_relation):
+async def test_update_product_relation_unauthorized(client):
     """Ошибка при обновлении без авторизации."""
-    relation_id = product_relation["id"]
-
     response = await client.put(
-        f"/product/product-relations/{relation_id}",
+        "/product/product-relations/1",
         json={
             "relation_type": "similar",
         },
@@ -189,12 +187,10 @@ async def test_update_product_relation_unauthorized(client, product_relation):
 
 
 @pytest.mark.asyncio
-async def test_update_product_relation_no_permission(authorized_client_no_perms, product_relation):
+async def test_update_product_relation_no_permission(authorized_client_no_perms):
     """Ошибка при обновлении без нужного permission."""
-    relation_id = product_relation["id"]
-
     response = await authorized_client_no_perms.put(
-        f"/product/product-relations/{relation_id}",
+        "/product/product-relations/1",
         json={
             "relation_type": "similar",
         },

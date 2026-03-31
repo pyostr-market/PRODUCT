@@ -286,7 +286,7 @@ async def product_relation(authorized_client, test_products):
 @pytest_asyncio.fixture()
 async def authorized_client_no_perms(engine):
     """Клиент с пользователем, у которого нет permissions."""
-    from src.core.auth.schemas.user import User, TokenSchema, UserPermissionSchema
+    from src.core.auth.schemas.user import User, TokenSchema
     from httpx import ASGITransport, AsyncClient
     from sqlalchemy.ext.asyncio import async_sessionmaker
     

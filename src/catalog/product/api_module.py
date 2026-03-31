@@ -32,8 +32,9 @@ class ProductApiModule:
         app.include_router(product_type_commands_router, prefix="/product")
         app.include_router(product_attribute_q_router, prefix="/product")
         app.include_router(product_attribute_commands_router, prefix="/product")
+        # Product relations — отдельные пути для команд и query
+        app.include_router(product_relation_commands_router, prefix="/product/product-relations")
         app.include_router(product_relation_q_router, prefix="/product")
-        app.include_router(product_relation_commands_router, prefix="/product")
         app.include_router(product_q_router, prefix="/product")
         app.include_router(product_commands_router, prefix="/product")
         app.include_router(admin_product_router, prefix="/product/admin")

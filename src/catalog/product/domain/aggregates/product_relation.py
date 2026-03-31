@@ -7,7 +7,7 @@ from src.catalog.product.domain.events.base import DomainEvent
 @dataclass
 class ProductRelationCreatedEvent(DomainEvent):
     """Событие: связь товара создана."""
-    relation_id: int = field(default=0, init=False)
+    relation_id: int
     product_id: int
     related_product_id: int
     relation_type: str
