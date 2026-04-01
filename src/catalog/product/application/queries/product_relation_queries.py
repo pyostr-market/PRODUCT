@@ -95,10 +95,13 @@ class ProductRelationQueries:
             product = products_map.get(relation.related_product_id)
             if product:
                 items.append(ProductRelationListItemDTO(
+                    relation_id=relation.id,  # ID связи для удаления
                     id=product.id,
                     name=product.name,
                     price=float(product.price),
                     description=product.description,
+                    relation_type=relation.relation_type,
+                    sort_order=relation.sort_order,
                 ))
 
         return ProductRelationsResult(

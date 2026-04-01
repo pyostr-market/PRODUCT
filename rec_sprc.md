@@ -211,16 +211,22 @@
   "data": {
     "items": [
       {
+        "relation_id": 1,
         "id": 79,
         "name": "Silicone Case",
         "price": 29.99,
-        "description": "Защитный чехол"
+        "description": "Защитный чехол",
+        "relation_type": "accessory",
+        "sort_order": 1
       },
       {
+        "relation_id": 2,
         "id": 80,
         "name": "Screen Protector",
         "price": 9.99,
-        "description": "Защитное стекло"
+        "description": "Защитное стекло",
+        "relation_type": "accessory",
+        "sort_order": 2
       }
     ],
     "pagination": {
@@ -236,10 +242,13 @@
 
 | Поле | Тип | Описание |
 |------|-----|----------|
+| `relation_id` | integer | **ID связи** (используется для удаления) |
 | `id` | integer | ID рекомендованного товара |
 | `name` | string | Название товара |
 | `price` | float | Цена товара |
 | `description` | string | Описание товара (может быть null) |
+| `relation_type` | string | Тип связи |
+| `sort_order` | integer | Порядок сортировки |
 
 **Коды ошибок:**
 
@@ -281,16 +290,22 @@
   "data": {
     "items": [
       {
+        "relation_id": 1,
         "id": 79,
         "name": "Silicone Case",
         "price": 29.99,
-        "description": "Защитный чехол"
+        "description": "Защитный чехол",
+        "relation_type": "accessory",
+        "sort_order": 1
       },
       {
+        "relation_id": 2,
         "id": 80,
         "name": "Screen Protector",
         "price": 9.99,
-        "description": "Защитное стекло"
+        "description": "Защитное стекло",
+        "relation_type": "similar",
+        "sort_order": 2
       }
     ],
     "pagination": {
@@ -333,13 +348,41 @@ curl -X POST http://api.example.com/product/product-relations \
 curl -X GET "http://api.example.com/product/products/5/relations?relation_type=accessory"
 ```
 
-### 3.3 Получение похожих товаров
+**Ответ:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "relation_id": 1,
+        "id": 79,
+        "name": "Silicone Case",
+        "price": 29.99,
+        "relation_type": "accessory",
+        "sort_order": 1
+      }
+    ],
+    "pagination": { ... }
+  }
+}
+```
+
+### 3.3 Удаление связи
+
+```bash
+# Используем relation_id из ответа GET /relations
+curl -X DELETE http://api.example.com/product/product-relations/1 \
+  -H "Authorization: Bearer <token>"
+```
+
+### 3.4 Получение похожих товаров
 
 ```bash
 curl -X GET "http://api.example.com/product/products/5/recommendations?relation_type=similar&limit=10"
 ```
 
-### 3.4 Обновление порядка отображения
+### 3.5 Обновление порядка отображения
 
 ```bash
 curl -X PUT http://api.example.com/product/product-relations/1 \
@@ -348,13 +391,6 @@ curl -X PUT http://api.example.com/product/product-relations/1 \
   -d '{
     "sort_order": 10
   }'
-```
-
-### 3.5 Удаление связи
-
-```bash
-curl -X DELETE http://api.example.com/product/product-relations/1 \
-  -H "Authorization: Bearer <token>"
 ```
 
 ---

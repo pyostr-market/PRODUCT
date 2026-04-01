@@ -31,7 +31,10 @@ class ProductRelationReadDTO:
 @dataclass
 class ProductRelationListItemDTO:
     """DTO для элемента списка рекомендаций."""
-    id: int
+    relation_id: int  # ID связи (для удаления)
+    id: int  # ID товара
     name: str
     price: float
+    relation_type: str  # Тип связи
+    sort_order: int  # Порядок сортировки
     description: Optional[str] = None

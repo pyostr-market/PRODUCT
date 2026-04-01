@@ -190,9 +190,12 @@ class ProductRecommendationItemSchema(BaseModel):
     """Схема элемента рекомендации."""
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    relation_id: int  # ID связи (для удаления)
+    id: int  # ID товара
     name: str
     price: float
+    relation_type: str  # Тип связи
+    sort_order: int  # Порядок сортировки
     description: Optional[str] = None
 
 

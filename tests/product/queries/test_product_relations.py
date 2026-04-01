@@ -22,9 +22,14 @@ async def test_get_product_relations_200(authorized_client, test_products, produ
     items = body["data"]["items"]
     assert len(items) >= 1
     
+    # Проверяем, что в ответе есть relation_id для удаления
+    assert "relation_id" in items[0]
+    assert "relation_type" in items[0]
+    assert "sort_order" in items[0]
+    
     # Проверяем, что наша связь есть в списке
-    relation_ids = [item["id"] for item in items]
-    assert product_relation["related_product_id"] in [item["id"] for item in items]
+    relation_ids = [item["relation_id"] for item in items]
+    assert product_relation["id"] in relation_ids
 
 
 @pytest.mark.asyncio
