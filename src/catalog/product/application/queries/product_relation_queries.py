@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,9 @@ from sqlalchemy.orm import selectinload
 from src.catalog.product.application.dto.product_relation import ProductRelationListItemDTO
 from src.catalog.product.domain.repository.product_relation import ProductRelationRepository
 from src.catalog.product.infrastructure.models.product import Product
+from src.catalog.product.infrastructure.models.product_image import ProductImage
 from src.catalog.product.infrastructure.models.product_relation import ProductRelation
+from src.core.services.images import ImageStorageService
 
 
 @dataclass
@@ -27,9 +29,11 @@ class ProductRelationQueries:
         self,
         repository: ProductRelationRepository,
         db: AsyncSession,
+        image_storage: ImageStorageService,
     ):
         self.repository = repository
         self.db = db
+        self.image_storage = image_storage
 
     async def get_relations(
         self,
@@ -78,13 +82,13 @@ class ProductRelationQueries:
         result = await self.db.execute(stmt)
         relations = result.scalars().all()
 
-        # Получаем связанные товары
+        # Получаем связанные товары с изображениями
         related_product_ids = [r.related_product_id for r in relations]
-        
+
         products_stmt = (
             select(Product)
             .where(Product.id.in_(related_product_ids))
-            .options(selectinload(Product.images))
+            .options(selectinload(Product.images).selectinload(ProductImage.upload))
         )
         products_result = await self.db.execute(products_stmt)
         products_map = {p.id: p for p in products_result.scalars().all()}
@@ -94,6 +98,16 @@ class ProductRelationQueries:
         for relation in relations:
             product = products_map.get(relation.related_product_id)
             if product:
+                # Формируем список изображений с URL
+                images_data = []
+                for img in sorted(product.images, key=lambda x: x.ordering):
+                    images_data.append({
+                        "upload_id": img.upload_id,
+                        "image_url": self.image_storage.build_public_url(img.upload.file_path) if img.upload else "",
+                        "is_main": img.is_main,
+                        "ordering": img.ordering,
+                    })
+
                 items.append(ProductRelationListItemDTO(
                     relation_id=relation.id,  # ID связи для удаления
                     id=product.id,
@@ -102,6 +116,7 @@ class ProductRelationQueries:
                     description=product.description,
                     relation_type=relation.relation_type,
                     sort_order=relation.sort_order,
+                    images=images_data if images_data else [],
                 ))
 
         return ProductRelationsResult(

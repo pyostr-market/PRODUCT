@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -38,3 +38,4 @@ class ProductRelationListItemDTO:
     relation_type: str  # Тип связи
     sort_order: int  # Порядок сортировки
     description: Optional[str] = None
+    images: List[dict] = None  # Список изображений товара

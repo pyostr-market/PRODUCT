@@ -275,6 +275,7 @@ container.register(
     lambda scope, db: ProductRelationQueries(
         repository=scope.resolve(ProductRelationRepository, db=db),
         db=db,
+        image_storage=scope.resolve(ImageStorageService, db=db),
     ),
 )
 

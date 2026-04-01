@@ -197,6 +197,7 @@ class ProductRecommendationItemSchema(BaseModel):
     relation_type: str  # Тип связи
     sort_order: int  # Порядок сортировки
     description: Optional[str] = None
+    images: List[ProductImageReadSchema] = []  # Список изображений товара
 
 
 class PaginationSchema(BaseModel):

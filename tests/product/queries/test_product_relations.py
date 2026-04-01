@@ -27,6 +27,10 @@ async def test_get_product_relations_200(authorized_client, test_products, produ
     assert "relation_type" in items[0]
     assert "sort_order" in items[0]
     
+    # Проверяем, что в ответе есть изображения
+    assert "images" in items[0]
+    assert isinstance(items[0]["images"], list)
+    
     # Проверяем, что наша связь есть в списке
     relation_ids = [item["relation_id"] for item in items]
     assert product_relation["id"] in relation_ids
@@ -235,9 +239,13 @@ async def test_get_product_relations_response_structure(authorized_client, test_
     # Проверяем структуру элемента
     if body["data"]["items"]:
         item = body["data"]["items"][0]
+        assert "relation_id" in item
         assert "id" in item
         assert "name" in item
         assert "price" in item
+        assert "images" in item
+        assert "relation_type" in item
+        assert "sort_order" in item
 
 
 @pytest.mark.asyncio
