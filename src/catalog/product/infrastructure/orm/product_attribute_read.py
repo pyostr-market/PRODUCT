@@ -22,6 +22,7 @@ class SqlAlchemyProductAttributeReadRepository(ProductAttributeReadRepositoryInt
             ProductAttribute.id,
             ProductAttribute.name,
             ProductAttribute.is_filterable,
+            ProductAttribute.is_groupable,
         ).where(ProductAttribute.id == attribute_id)
 
         result = await self.db.execute(stmt)
@@ -35,6 +36,7 @@ class SqlAlchemyProductAttributeReadRepository(ProductAttributeReadRepositoryInt
             name=row.name,
             value="",
             is_filterable=row.is_filterable,
+            is_groupable=row.is_groupable,
         )
 
     async def filter(
@@ -48,6 +50,7 @@ class SqlAlchemyProductAttributeReadRepository(ProductAttributeReadRepositoryInt
             ProductAttribute.id,
             ProductAttribute.name,
             ProductAttribute.is_filterable,
+            ProductAttribute.is_groupable,
         )
 
         count_stmt = select(func.count()).select_from(ProductAttribute)
@@ -69,6 +72,7 @@ class SqlAlchemyProductAttributeReadRepository(ProductAttributeReadRepositoryInt
                 name=row.name,
                 value="",
                 is_filterable=row.is_filterable,
+                is_groupable=row.is_groupable,
             )
             for row in result.all()
         ]

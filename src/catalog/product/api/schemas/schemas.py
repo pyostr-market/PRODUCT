@@ -85,6 +85,7 @@ class ProductAttributeSchema(BaseModel):
     name: str
     value: str
     is_filterable: bool = False
+    is_groupable: bool = False
 
 
 class ProductAttributeReadSchema(BaseModel):
@@ -94,18 +95,21 @@ class ProductAttributeReadSchema(BaseModel):
     name: str
     value: Optional[str] = ""
     is_filterable: bool
+    is_groupable: bool = False
 
 
 class ProductAttributeCreateSchema(BaseModel):
     name: str
     value: str
     is_filterable: bool = False
+    is_groupable: bool = False
 
 
 class ProductAttributeUpdateSchema(BaseModel):
     name: Optional[str] = None
     value: Optional[str] = None
     is_filterable: Optional[bool] = None
+    is_groupable: Optional[bool] = None
 
 
 class ProductAttributeListResponse(BaseModel):

@@ -34,6 +34,7 @@ class SqlAlchemyProductAttributeRepository(ProductAttributeRepository):
         model = ProductAttribute(
             name=aggregate.name,
             is_filterable=aggregate.is_filterable,
+            is_groupable=aggregate.is_groupable,
         )
         self.db.add(model)
         await self.db.flush()
@@ -46,6 +47,7 @@ class SqlAlchemyProductAttributeRepository(ProductAttributeRepository):
             raise ProductAttributeNotFound()
         model.name = aggregate.name
         model.is_filterable = aggregate.is_filterable
+        model.is_groupable = aggregate.is_groupable
         await self.db.flush()
         return aggregate
 
@@ -63,4 +65,5 @@ class SqlAlchemyProductAttributeRepository(ProductAttributeRepository):
             name=model.name,
             value="",
             is_filterable=model.is_filterable,
+            is_groupable=model.is_groupable,
         )

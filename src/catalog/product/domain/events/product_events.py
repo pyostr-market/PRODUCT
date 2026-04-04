@@ -74,11 +74,12 @@ class ProductImageRemovedEvent(DomainEvent):
 @dataclass
 class ProductAttributeAddedEvent(DomainEvent):
     """Событие: атрибут добавлен к продукту."""
-    
+
     product_id: int
     attribute_name: str
     attribute_value: str
     is_filterable: bool
+    is_groupable: bool = False
 
 
 @dataclass

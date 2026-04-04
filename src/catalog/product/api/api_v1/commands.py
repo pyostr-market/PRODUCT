@@ -56,6 +56,7 @@ def _parse_attributes(attributes_json: str | None) -> list[ProductAttributeInput
                 name=str(item.get("name", "")).strip(),
                 value=str(item.get("value", "")).strip(),
                 is_filterable=bool(item.get("is_filterable", False)),
+                is_groupable=bool(item.get("is_groupable", False)),
             )
         )
 

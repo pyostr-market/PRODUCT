@@ -217,7 +217,15 @@ qwen --resume 6af05156-6ec9-4a8d-869c-6ce8981139af
         "price": 29.99,
         "description": "Защитный чехол",
         "relation_type": "accessory",
-        "sort_order": 1
+        "sort_order": 1,
+        "images": [
+          {
+            "upload_id": 1,
+            "image_url": "https://cdn.example.com/products/silicone-case.jpg",
+            "is_main": true,
+            "ordering": 0
+          }
+        ]
       },
       {
         "relation_id": 2,
@@ -226,7 +234,15 @@ qwen --resume 6af05156-6ec9-4a8d-869c-6ce8981139af
         "price": 9.99,
         "description": "Защитное стекло",
         "relation_type": "accessory",
-        "sort_order": 2
+        "sort_order": 2,
+        "images": [
+          {
+            "upload_id": 2,
+            "image_url": "https://cdn.example.com/products/screen-protector.jpg",
+            "is_main": true,
+            "ordering": 0
+          }
+        ]
       }
     ],
     "pagination": {
@@ -249,6 +265,16 @@ qwen --resume 6af05156-6ec9-4a8d-869c-6ce8981139af
 | `description` | string | Описание товара (может быть null) |
 | `relation_type` | string | Тип связи |
 | `sort_order` | integer | Порядок сортировки |
+| `images` | array | Список изображений товара |
+
+**Структура изображения:**
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `upload_id` | integer | ID загруженного изображения |
+| `image_url` | string | Публичный URL изображения |
+| `is_main` | boolean | Флаг главного изображения |
+| `ordering` | integer | Порядок сортировки изображений |
 
 **Коды ошибок:**
 
@@ -296,7 +322,15 @@ qwen --resume 6af05156-6ec9-4a8d-869c-6ce8981139af
         "price": 29.99,
         "description": "Защитный чехол",
         "relation_type": "accessory",
-        "sort_order": 1
+        "sort_order": 1,
+        "images": [
+          {
+            "upload_id": 1,
+            "image_url": "https://cdn.example.com/products/silicone-case.jpg",
+            "is_main": true,
+            "ordering": 0
+          }
+        ]
       },
       {
         "relation_id": 2,
@@ -305,7 +339,8 @@ qwen --resume 6af05156-6ec9-4a8d-869c-6ce8981139af
         "price": 9.99,
         "description": "Защитное стекло",
         "relation_type": "similar",
-        "sort_order": 2
+        "sort_order": 2,
+        "images": []
       }
     ],
     "pagination": {

@@ -69,6 +69,7 @@ async def create_product_attribute(
             name=payload.name,
             value=payload.value,
             is_filterable=payload.is_filterable,
+            is_groupable=payload.is_groupable,
         ),
         user=user,
     )
@@ -131,6 +132,7 @@ async def update_product_attribute(
             name=payload.name,
             value=payload.value,
             is_filterable=payload.is_filterable,
+            is_groupable=payload.is_groupable,
         ),
         user=user,
     )

@@ -51,12 +51,14 @@ class ProductAttributeAggregate:
         name: str,
         value: str = "",
         is_filterable: bool = False,
+        is_groupable: bool = False,
         attribute_id: Optional[int] = None,
     ):
         self._id = attribute_id
         self._name = name
         self._value = value
         self._is_filterable = is_filterable
+        self._is_groupable = is_groupable
 
     @property
     def id(self) -> Optional[int]:
@@ -74,16 +76,22 @@ class ProductAttributeAggregate:
     def is_filterable(self) -> bool:
         return self._is_filterable
 
+    @property
+    def is_groupable(self) -> bool:
+        return self._is_groupable
+
     def _set_id(self, attribute_id: int):
         self._id = attribute_id
 
-    def update(self, name: Optional[str], value: Optional[str], is_filterable: Optional[bool]):
+    def update(self, name: Optional[str], value: Optional[str], is_filterable: Optional[bool], is_groupable: Optional[bool] = None):
         if name is not None:
             self._name = name
         if value is not None:
             self._value = value
         if is_filterable is not None:
             self._is_filterable = is_filterable
+        if is_groupable is not None:
+            self._is_groupable = is_groupable
 
 
 class ProductAggregate:
@@ -327,6 +335,7 @@ class ProductAggregate:
             attribute_name=attribute.name,
             attribute_value=attribute.value,
             is_filterable=attribute.is_filterable,
+            is_groupable=attribute.is_groupable,
         ))
 
     def remove_attribute_by_name(self, name: str):

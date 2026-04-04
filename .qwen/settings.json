@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(then *)",
+      "Bash(fi)",
+      "Bash(which *)",
+      "Bash(ruff *)",
+      "Bash(poetry *)"
     ]
   },
   "$version": 3

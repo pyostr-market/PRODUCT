@@ -8,3 +8,4 @@ class ProductAttributeReadDTO:
     name: str
     value: str = ""
     is_filterable: bool = False
+    is_groupable: bool = False

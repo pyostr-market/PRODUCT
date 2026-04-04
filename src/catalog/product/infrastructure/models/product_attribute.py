@@ -11,6 +11,7 @@ class ProductAttribute(TimestampMixin, Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True)
     is_filterable = Column(Boolean, nullable=False, default=False)
+    is_groupable = Column(Boolean, nullable=False, default=True)
 
     values = relationship(
         "ProductAttributeValue",

@@ -9,6 +9,7 @@ class ExportAttributeSchema(BaseModel):
     name: str
     value: str
     is_filterable: bool
+    is_groupable: bool = False
 
 
 class ExportCategorySchema(BaseModel):

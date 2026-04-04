@@ -28,6 +28,7 @@ class DeleteProductAttributeCommand:
                 "name": aggregate.name,
                 "value": aggregate.value,
                 "is_filterable": aggregate.is_filterable,
+                "is_groupable": aggregate.is_groupable,
             }
 
             await self.repository.delete(attribute_id)

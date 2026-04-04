@@ -204,16 +204,16 @@ class SqlAlchemyProductRepository(ProductRepository):
             base = await self.get(product_id)
             return [base] if base else []
 
-        filterable_names_stmt = (
+        groupable_names_stmt = (
             select(ProductAttribute.name)
             .join(ProductAttributeValue, ProductAttribute.id == ProductAttributeValue.attribute_id)
             .where(
                 ProductAttributeValue.product_id == product_id,
-                ProductAttribute.is_filterable.is_(True),
+                ProductAttribute.is_groupable.is_(True),
             )
         )
-        filterable_names_result = await self.db.execute(filterable_names_stmt)
-        filterable_names = [row[0] for row in filterable_names_result.all()]
+        groupable_names_result = await self.db.execute(groupable_names_stmt)
+        groupable_names = [row[0] for row in groupable_names_result.all()]
 
         stmt = (
             select(Product)
@@ -227,11 +227,11 @@ class SqlAlchemyProductRepository(ProductRepository):
             .order_by(Product.id)
         )
 
-        if filterable_names:
+        if groupable_names:
             stmt = stmt.where(
                 Product.attributes.any(
                     ProductAttributeValue.attribute.has(
-                        ProductAttribute.name.in_(filterable_names),
+                        ProductAttribute.name.in_(groupable_names),
                     )
                 )
             )
@@ -260,11 +260,13 @@ class SqlAlchemyProductRepository(ProductRepository):
                 attr_model = ProductAttribute(
                     name=attribute_name,
                     is_filterable=attribute.is_filterable,
+                    is_groupable=attribute.is_groupable,
                 )
                 self.db.add(attr_model)
                 await self.db.flush()
             else:
                 attr_model.is_filterable = attribute.is_filterable
+                attr_model.is_groupable = attribute.is_groupable
 
             self.db.add(
                 ProductAttributeValue(
@@ -316,6 +318,7 @@ class SqlAlchemyProductRepository(ProductRepository):
                     name=attribute_value.attribute.name,
                     value=attribute_value.value,
                     is_filterable=attribute_value.attribute.is_filterable,
+                    is_groupable=attribute_value.attribute.is_groupable,
                 )
                 for attribute_value in model.attributes
             ],

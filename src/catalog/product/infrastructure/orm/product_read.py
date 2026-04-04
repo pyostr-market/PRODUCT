@@ -103,6 +103,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                     name=attribute_value.attribute.name,
                     value=attribute_value.value,
                     is_filterable=attribute_value.attribute.is_filterable,
+                    is_groupable=attribute_value.attribute.is_groupable,
                 )
                 for attribute_value in model.attributes
             ],

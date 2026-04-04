@@ -24,6 +24,7 @@ class CreateProductAttributeCommand:
                 name=dto.name,
                 value=dto.value,
                 is_filterable=dto.is_filterable,
+                is_groupable=dto.is_groupable,
             )
 
             await self.repository.create(aggregate)
@@ -37,6 +38,7 @@ class CreateProductAttributeCommand:
                         "name": aggregate.name,
                         "value": aggregate.value,
                         "is_filterable": aggregate.is_filterable,
+                        "is_groupable": aggregate.is_groupable,
                     },
                     user_id=user.id,
                     fio=user.fio,
@@ -48,6 +50,7 @@ class CreateProductAttributeCommand:
                 name=aggregate.name,
                 value=aggregate.value,
                 is_filterable=aggregate.is_filterable,
+                is_groupable=aggregate.is_groupable,
             )
 
         self.event_bus.publish_nowait(
@@ -63,6 +66,7 @@ class CreateProductAttributeCommand:
                         "name": result.name,
                         "value": result.value,
                         "is_filterable": result.is_filterable,
+                        "is_groupable": result.is_groupable,
                     },
                 },
             )

@@ -31,12 +31,14 @@ class UpdateProductAttributeCommand:
                 "name": aggregate.name,
                 "value": aggregate.value,
                 "is_filterable": aggregate.is_filterable,
+                "is_groupable": aggregate.is_groupable,
             }
 
             aggregate.update(
                 name=dto.name,
                 value=dto.value,
                 is_filterable=dto.is_filterable,
+                is_groupable=dto.is_groupable,
             )
 
             await self.repository.update(aggregate)
@@ -45,6 +47,7 @@ class UpdateProductAttributeCommand:
                 "name": aggregate.name,
                 "value": aggregate.value,
                 "is_filterable": aggregate.is_filterable,
+                "is_groupable": aggregate.is_groupable,
             }
 
             if old_data != new_data:
@@ -64,6 +67,7 @@ class UpdateProductAttributeCommand:
                 name=aggregate.name,
                 value=aggregate.value,
                 is_filterable=aggregate.is_filterable,
+                is_groupable=aggregate.is_groupable,
             )
 
         changed_fields = {

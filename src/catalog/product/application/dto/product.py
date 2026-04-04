@@ -40,6 +40,7 @@ class ProductAttributeInputDTO:
     name: str
     value: str
     is_filterable: bool = False
+    is_groupable: bool = False
 
 
 @dataclass
@@ -47,6 +48,7 @@ class ProductAttributeReadDTO:
     name: str
     value: str
     is_filterable: bool
+    is_groupable: bool = False
     id: Optional[int] = None
 
 
@@ -55,6 +57,7 @@ class ProductAttributeCreateDTO:
     name: str
     value: str
     is_filterable: bool = False
+    is_groupable: bool = False
 
 
 @dataclass
@@ -62,6 +65,7 @@ class ProductAttributeUpdateDTO:
     name: Optional[str] = None
     value: Optional[str] = None
     is_filterable: Optional[bool] = None
+    is_groupable: Optional[bool] = None
 
 
 @dataclass

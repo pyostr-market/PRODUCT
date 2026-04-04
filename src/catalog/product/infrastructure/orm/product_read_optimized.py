@@ -292,7 +292,8 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 pa.id,
                 pa.name,
                 pav.value,
-                pa.is_filterable
+                pa.is_filterable,
+                pa.is_groupable
             FROM product_attribute_values pav
             JOIN product_attributes pa ON pa.id = pav.attribute_id
             WHERE pav.product_id = :product_id
@@ -308,6 +309,7 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 name=row.name,
                 value=row.value,
                 is_filterable=row.is_filterable,
+                is_groupable=row.is_groupable,
             )
             for row in rows
         ]

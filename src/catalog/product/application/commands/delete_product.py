@@ -53,6 +53,7 @@ class DeleteProductCommand:
                         "name": attribute.name,
                         "value": attribute.value,
                         "is_filterable": attribute.is_filterable,
+                        "is_groupable": attribute.is_groupable,
                     }
                     for attribute in aggregate.attributes
                 ],
