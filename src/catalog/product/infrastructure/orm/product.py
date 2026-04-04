@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -204,16 +204,67 @@ class SqlAlchemyProductRepository(ProductRepository):
             base = await self.get(product_id)
             return [base] if base else []
 
-        groupable_names_stmt = (
-            select(ProductAttribute.name)
+        # Получаем groupable-атрибуты исходного товара (имя + значение)
+        groupable_attrs_stmt = (
+            select(ProductAttribute.name, ProductAttributeValue.value)
             .join(ProductAttributeValue, ProductAttribute.id == ProductAttributeValue.attribute_id)
             .where(
                 ProductAttributeValue.product_id == product_id,
                 ProductAttribute.is_groupable.is_(True),
             )
         )
-        groupable_names_result = await self.db.execute(groupable_names_stmt)
-        groupable_names = [row[0] for row in groupable_names_result.all()]
+        groupable_attrs_result = await self.db.execute(groupable_attrs_stmt)
+        groupable_attrs = list(groupable_attrs_result.all())
+
+        if not groupable_attrs:
+            # Если нет groupable-атрибутов, возвращаем все товары категории
+            stmt = (
+                select(Product)
+                .options(
+                    selectinload(Product.images).selectinload(ProductImage.upload),
+                    selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                    selectinload(Product.category),
+                    selectinload(Product.supplier),
+                )
+                .where(Product.category_id == category_id)
+                .order_by(Product.id)
+            )
+            result = await self.db.execute(stmt)
+            return [self._to_aggregate(model) for model in result.scalars().all()]
+
+        # Находим товары, у которых ВСЕ groupable-атрибуты исходного товара
+        # совпадают по имени И значению, и при этом у связанного товара
+        # эти атрибуты тоже имеют is_groupable = true
+        #
+        # Стратегия: считаем количество (имя, значение) пар, которые совпали.
+        # Товар подходит, если количество совпадений == количеству groupable-атрибутов.
+
+        # Создаём условия для каждого атрибута — каждое условие проверяет
+        # конкретную пару (имя, значение)
+        match_conditions = [
+            (ProductAttribute.name == attr.name) & (ProductAttributeValue.value == attr.value)
+            for attr in groupable_attrs
+        ]
+
+        # Суммируем совпадения через case — SQLAlchemy 2.x синтаксис
+        # Каждая строка product_attribute_values может дать 0..N совпадений
+        # (по одному за каждое условие, которое выполняется для этой строки)
+        # Но одна строка может совпасть только с одним условием (т.к. name unique)
+        # Поэтому мы считаем строки, для которых хотя бы одно условие совпало
+        combined_condition = match_conditions[0]
+        for cond in match_conditions[1:]:
+            combined_condition = combined_condition | cond
+
+        subquery = (
+            select(ProductAttributeValue.product_id)
+            .join(ProductAttribute, ProductAttribute.id == ProductAttributeValue.attribute_id)
+            .where(
+                ProductAttribute.is_groupable.is_(True),
+                combined_condition,
+            )
+            .group_by(ProductAttributeValue.product_id)
+            .having(func.count() == len(groupable_attrs))
+        )
 
         stmt = (
             select(Product)
@@ -223,18 +274,12 @@ class SqlAlchemyProductRepository(ProductRepository):
                 selectinload(Product.category),
                 selectinload(Product.supplier),
             )
-            .where(Product.category_id == category_id)
+            .where(
+                Product.category_id == category_id,
+                Product.id.in_(subquery),
+            )
             .order_by(Product.id)
         )
-
-        if groupable_names:
-            stmt = stmt.where(
-                Product.attributes.any(
-                    ProductAttributeValue.attribute.has(
-                        ProductAttribute.name.in_(groupable_names),
-                    )
-                )
-            )
 
         result = await self.db.execute(stmt)
         return [self._to_aggregate(model) for model in result.scalars().all()]
