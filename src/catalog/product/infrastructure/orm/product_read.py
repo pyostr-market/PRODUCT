@@ -179,8 +179,52 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             count_stmt = count_stmt.where(Product.name.ilike(f"%{name}%"))
 
         if category_id is not None:
-            stmt = stmt.where(Product.category_id == category_id)
-            count_stmt = count_stmt.where(Product.category_id == category_id)
+            # Сначала считаем количество товаров в указанной категории
+            count_in_category_stmt = select(func.count()).select_from(Product).where(Product.category_id == category_id)
+            count_result = await self.db.execute(count_in_category_stmt)
+            count_in_category = count_result.scalar() or 0
+
+            if count_in_category > 0:
+                # Товары есть в указанной категории — ищем только в ней
+                stmt = stmt.where(Product.category_id == category_id)
+                count_stmt = count_stmt.where(Product.category_id == category_id)
+            else:
+                # Товаров нет — ищем родительскую категорию и все её дочерние
+                # Сначала найдём parent_id указанной категории
+                parent_query = text("""
+                    SELECT parent_id FROM categories WHERE id = :category_id
+                """)
+                parent_result = await self.db.execute(parent_query, {"category_id": category_id})
+                parent_row = parent_result.fetchone()
+
+                if parent_row and parent_row[0]:
+                    parent_id = parent_row[0]
+                    # Получаем все дочерние категории родителя (siblings + сама категория)
+                    cte_stmt = text("""
+                        WITH RECURSIVE category_tree AS (
+                            SELECT id
+                            FROM categories
+                            WHERE id = :parent_id
+                            UNION ALL
+                            SELECT c.id
+                            FROM categories c
+                            INNER JOIN category_tree ct ON c.parent_id = ct.id
+                        )
+                        SELECT id FROM category_tree
+                    """)
+                    result = await self.db.execute(cte_stmt, {"parent_id": parent_id})
+                    category_ids = [row[0] for row in result.fetchall()]
+
+                    if category_ids:
+                        stmt = stmt.where(Product.category_id.in_(category_ids))
+                        count_stmt = count_stmt.where(Product.category_id.in_(category_ids))
+                    else:
+                        stmt = stmt.where(Product.id == -1)
+                        count_stmt = count_stmt.where(Product.id == -1)
+                else:
+                    # Нет родительской категории — возвращаем только товары из указанной категории (их нет)
+                    stmt = stmt.where(Product.category_id == category_id)
+                    count_stmt = count_stmt.where(Product.category_id == category_id)
 
         # product_type_id фильтрует товары через category.device_type_id
         # (с учётом наследования от родительских категорий)

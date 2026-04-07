@@ -121,14 +121,39 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
         attributes: Optional[dict[str, list[str]]] = None,
         product_ids: Optional[List[int]] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
+        # Если передан category_id, проверяем, есть ли товары в этой категории
+        effective_category_id = category_id
+        if category_id is not None:
+            count_query = text("""
+                SELECT COUNT(*)
+                FROM products p
+                WHERE p.category_id = :category_id
+            """)
+            count_result = await self.db.execute(count_query, {"category_id": category_id})
+            count_in_category = count_result.scalar() or 0
+
+            if count_in_category == 0:
+                # Товаров нет — ищем родительскую категорию и все её дочерние
+                parent_query = text("""
+                    SELECT parent_id FROM categories WHERE id = :category_id
+                """)
+                parent_result = await self.db.execute(parent_query, {"category_id": category_id})
+                parent_row = parent_result.fetchone()
+
+                if parent_row and parent_row[0]:
+                    # Используем parent_id как effective_category_id
+                    # Ниже _build_where_clause развернёт это в CTE
+                    effective_category_id = parent_row[0]
+                # Если parent_id нет, оставляем original category_id (вернёт пустой результат)
+
         # Базовый запрос для подсчёта total
         count_query = text("""
             SELECT COUNT(*)
             FROM products p
             WHERE 1=1
-            """ + self._build_where_clause(name, category_id, product_type_id, attributes, product_ids))
+            """ + self._build_where_clause(name, effective_category_id, product_type_id, attributes, product_ids, is_fallback=(category_id is not None and effective_category_id != category_id)))
 
-        count_params = self._build_params(name, category_id, product_type_id, attributes, product_ids)
+        count_params = self._build_params(name, effective_category_id, product_type_id, attributes, product_ids)
         count_result = await self.db.execute(text(count_query), count_params)
         total = count_result.scalar() or 0
 
@@ -156,12 +181,12 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN suppliers s ON s.id = p.supplier_id
             WHERE 1=1
-            {self._build_where_clause(name, category_id, product_type_id, attributes, product_ids)}
+            {self._build_where_clause(name, effective_category_id, product_type_id, attributes, product_ids, is_fallback=(category_id is not None and effective_category_id != category_id))}
             ORDER BY p.id
             LIMIT :limit OFFSET :offset
         """)
 
-        params = self._build_params(name, category_id, product_type_id, attributes, product_ids)
+        params = self._build_params(name, effective_category_id, product_type_id, attributes, product_ids)
         params["limit"] = limit
         params["offset"] = offset
 
@@ -187,12 +212,33 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
         product_type_id: Optional[int],
         attributes: Optional[dict[str, list[str]]] = None,
         product_ids: Optional[List[int]] = None,
+        is_fallback: bool = False,
     ) -> str:
         conditions = []
         if name:
             conditions.append("AND p.name ILIKE :name")
         if category_id:
-            conditions.append("AND p.category_id = :category_id")
+            if is_fallback:
+                # При fallback ищем во всех дочерних категориях родителя
+                conditions.append("""
+                    AND (
+                        p.category_id IN (
+                            WITH RECURSIVE category_tree AS (
+                                SELECT id
+                                FROM categories
+                                WHERE id = :category_id
+                                UNION ALL
+                                SELECT c.id
+                                FROM categories c
+                                INNER JOIN category_tree ct ON c.parent_id = ct.id
+                            )
+                            SELECT id FROM category_tree
+                        )
+                    )
+                """)
+            else:
+                # Обычный случай — ищем только в указанной категории
+                conditions.append("AND p.category_id = :category_id")
 
         # product_type_id фильтрует через category.device_type_id (с наследованием)
         if product_type_id is not None:

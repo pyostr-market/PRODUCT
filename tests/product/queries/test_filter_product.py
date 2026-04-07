@@ -289,3 +289,139 @@ async def test_filter_product_with_images_and_ordering(authorized_client, client
     assert images_sorted[0]["ordering"] == 0
     assert images_sorted[1]["ordering"] == 1
     assert images_sorted[0]["is_main"] is True
+
+
+@pytest.mark.asyncio
+async def test_filter_product_by_category_fallback_to_parent(authorized_client, client):
+    """
+    Проверяет fallback на родительскую категорию, если в дочерней нет товаров.
+
+    Сценарий:
+    1. Создаём родительскую категорию (iPhone) с товарами
+    2. Создаём подкатегорию (iPhone 15 Pro Max) БЕЗ товаров
+    3. Запрашиваем товары по ID подкатегории
+    4. Проверяем, что получаем товары из родительской категории и всех её дочерних
+    """
+    # Создаём родительскую категорию
+    parent_cat_resp = await authorized_client.post("/category", json={"name": "iPhone"})
+    assert parent_cat_resp.status_code == 200
+    parent_category_id = parent_cat_resp.json()["data"]["id"]
+
+    # Создаём подкатегорию (без товаров)
+    child_cat_resp = await authorized_client.post(
+        "/category",
+        json={"name": "iPhone 15 Pro Max", "parent_id": parent_category_id},
+    )
+    assert child_cat_resp.status_code == 200
+    child_category_id = child_cat_resp.json()["data"]["id"]
+
+    # Создаём товар в родительской категории
+    product_parent_resp = await authorized_client.post(
+        "/product",
+        data={"name": "iPhone 15", "price": "999.00", "category_id": str(parent_category_id)},
+    )
+    assert product_parent_resp.status_code == 200
+
+    # Создаём вторую дочернюю категорию с товаром
+    child_cat2_resp = await authorized_client.post(
+        "/category",
+        json={"name": "iPhone 15 Pro", "parent_id": parent_category_id},
+    )
+    assert child_cat2_resp.status_code == 200
+    child_category2_id = child_cat2_resp.json()["data"]["id"]
+
+    product_child_resp = await authorized_client.post(
+        "/product",
+        data={"name": "iPhone 15 Pro", "price": "1099.00", "category_id": str(child_category2_id)},
+    )
+    assert product_child_resp.status_code == 200
+
+    # Запрашиваем товары по ID дочерней категории (где нет товаров)
+    response = await client.get(f"/product?category_id={child_category_id}&limit=10")
+
+    assert response.status_code == 200
+    body = response.json()
+    data = body["data"]
+
+    # Должны получить товары из родительской категории и всех её дочерних (fallback)
+    assert data["total"] == 2
+    names = [item["name"] for item in data["items"]]
+    assert "iPhone 15" in names
+    assert "iPhone 15 Pro" in names
+
+
+@pytest.mark.asyncio
+async def test_filter_product_by_category_no_fallback_when_products_exist(authorized_client, client):
+    """
+    Проверяет, что если в категории есть товары, fallback не происходит.
+
+    Сценарий:
+    1. Создаём родительскую категорию с товарами
+    2. Создаём дочернюю категорию с товарами
+    3. Запрашиваем товары по ID дочерней категории
+    4. Проверяем, что получаем только товары из дочерней категории (без fallback)
+    """
+    # Создаём родительскую категорию
+    parent_cat_resp = await authorized_client.post("/category", json={"name": "Electronics"})
+    assert parent_cat_resp.status_code == 200
+    parent_category_id = parent_cat_resp.json()["data"]["id"]
+
+    # Создаём товар в родительской категории
+    product_parent_resp = await authorized_client.post(
+        "/product",
+        data={"name": "TV Set", "price": "1500.00", "category_id": str(parent_category_id)},
+    )
+    assert product_parent_resp.status_code == 200
+
+    # Создаём дочернюю категорию
+    child_cat_resp = await authorized_client.post(
+        "/category",
+        json={"name": "Smartphones", "parent_id": parent_category_id},
+    )
+    assert child_cat_resp.status_code == 200
+    child_category_id = child_cat_resp.json()["data"]["id"]
+
+    # Создаём товар в дочерней категории
+    product_child_resp = await authorized_client.post(
+        "/product",
+        data={"name": "Smartphone X", "price": "699.00", "category_id": str(child_category_id)},
+    )
+    assert product_child_resp.status_code == 200
+
+    # Запрашиваем товары по ID дочерней категории (где есть товары)
+    response = await client.get(f"/product?category_id={child_category_id}&limit=10")
+
+    assert response.status_code == 200
+    body = response.json()
+    data = body["data"]
+
+    # Должны получить только товар из дочерней категории (без fallback)
+    assert data["total"] == 1
+    assert data["items"][0]["name"] == "Smartphone X"
+
+
+@pytest.mark.asyncio
+async def test_filter_product_by_category_no_fallback_when_no_parent(authorized_client, client):
+    """
+    Проверяет, что если у категории нет родителя и нет товаров, возвращаем пустой результат.
+
+    Сценарий:
+    1. Создаём категорию без родителя и без товаров
+    2. Запрашиваем товары по ID этой категории
+    3. Проверяем, что получаем пустой результат
+    """
+    # Создаём категорию без родителя
+    cat_resp = await authorized_client.post("/category", json={"name": "Empty Category"})
+    assert cat_resp.status_code == 200
+    category_id = cat_resp.json()["data"]["id"]
+
+    # Запрашиваем товары
+    response = await client.get(f"/product?category_id={category_id}&limit=10")
+
+    assert response.status_code == 200
+    body = response.json()
+    data = body["data"]
+
+    # Должны получить пустой результат
+    assert data["total"] == 0
+    assert len(data["items"]) == 0
