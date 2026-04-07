@@ -5,5 +5,7 @@ from .product_audit_logs import ProductAuditLog
 from .product_image import ProductImage
 from .product_relation import ProductRelation
 from .product_relation_audit_logs import ProductRelationAuditLog
+from .product_tag import ProductTag
 from .product_type import ProductType
 from .product_type_image import ProductTypeImage
+from .tag import Tag

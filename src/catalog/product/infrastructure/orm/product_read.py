@@ -14,6 +14,7 @@ from src.catalog.product.application.dto.product import (
     FilterOptionDTO,
     ProductSearchDTO,
     SearchSuggestionDTO,
+    TagReadDTO,
 )
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
@@ -24,6 +25,7 @@ from src.catalog.product.infrastructure.models.product_attribute_value import (
     ProductAttributeValue,
 )
 from src.catalog.product.infrastructure.models.product_image import ProductImage
+from src.catalog.product.infrastructure.models.product_tag import ProductTag
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 from src.core.conf.settings import get_settings
 from src.core.services.images.storage import S3ImageStorageService
@@ -109,6 +111,14 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 )
                 for attribute_value in model.attributes
             ],
+            tags=[
+                TagReadDTO(
+                    tag_id=product_tag.tag.id,
+                    name=product_tag.tag.name,
+                    description=product_tag.tag.description,
+                )
+                for product_tag in model.product_tags
+            ],
             category=category_dto,
             supplier=supplier_dto,
         )
@@ -119,6 +129,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             .options(
                 selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
             )
@@ -138,6 +149,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             .options(
                 selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
             )
@@ -168,6 +180,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             .options(
                 selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
             )
@@ -480,12 +493,24 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                         )
                     ) FILTER (WHERE pa.id IS NOT NULL),
                     '[]'
-                ) as attributes
+                ) as attributes,
+                COALESCE(
+                    jsonb_agg(
+                        jsonb_build_object(
+                            'tag_id', t.id,
+                            'name', t.name,
+                            'description', t.description
+                        )
+                    ) FILTER (WHERE t.id IS NOT NULL),
+                    '[]'
+                ) as tags
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN suppliers s ON s.id = p.supplier_id
             LEFT JOIN product_attribute_values pav ON pav.product_id = p.id
             LEFT JOIN product_attributes pa ON pa.id = pav.attribute_id
+            LEFT JOIN product_tags pt ON pt.product_id = p.id
+            LEFT JOIN tags t ON t.id = pt.tag_id
             GROUP BY
                 p.id,
                 c.name,
@@ -538,6 +563,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             .options(
                 selectinload(Product.images).selectinload(ProductImage.upload),
                 selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
             )

@@ -69,3 +69,10 @@ class Product(TimestampMixin, Base):
         back_populates="product",
         cascade="all, delete-orphan",
     )
+
+    # Теги товаров
+    product_tags = relationship(
+        "ProductTag",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )

@@ -50,6 +50,12 @@ from src.catalog.product.application.queries.product_type_admin_queries import (
 from src.catalog.product.application.queries.product_type_queries import (
     ProductTypeQueries,
 )
+from src.catalog.product.application.queries.tag_queries import TagQueries
+from src.catalog.product.application.commands.create_tag import CreateTagCommand
+from src.catalog.product.application.commands.update_tag import UpdateTagCommand
+from src.catalog.product.application.commands.delete_tag import DeleteTagCommand
+from src.catalog.product.domain.repository.tag import TagRepositoryInterface
+from src.catalog.product.infrastructure.orm.tag import SqlAlchemyTagRepository
 from src.catalog.product.application.read_models.product_attribute_read_repository import (
     ProductAttributeReadRepository,
 )
@@ -443,5 +449,41 @@ container.register(
     ProductTypeAdminQueries,
     lambda scope, db: ProductTypeAdminQueries(
         repository=scope.resolve(ProductTypeAuditQueryRepository, db=db),
+    ),
+)
+
+# ==================== Tags ====================
+
+container.register(
+    TagRepositoryInterface,
+    lambda scope, db: SqlAlchemyTagRepository(db),
+)
+
+container.register(
+    TagQueries,
+    lambda scope, db: TagQueries(db=db),
+)
+
+container.register(
+    CreateTagCommand,
+    lambda scope, db: CreateTagCommand(
+        tag_repository=scope.resolve(TagRepositoryInterface, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+    ),
+)
+
+container.register(
+    UpdateTagCommand,
+    lambda scope, db: UpdateTagCommand(
+        tag_repository=scope.resolve(TagRepositoryInterface, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+    ),
+)
+
+container.register(
+    DeleteTagCommand,
+    lambda scope, db: DeleteTagCommand(
+        tag_repository=scope.resolve(TagRepositoryInterface, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
     ),
 )

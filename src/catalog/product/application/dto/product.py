@@ -8,6 +8,28 @@ if TYPE_CHECKING:
 
 
 @dataclass
+class TagReadDTO:
+    """DTO для чтения тега."""
+    tag_id: int
+    name: str
+    description: Optional[str] = None
+
+
+@dataclass
+class TagCreateDTO:
+    """DTO для создания тега."""
+    name: str
+    description: Optional[str] = None
+
+
+@dataclass
+class TagUpdateDTO:
+    """DTO для обновления тега."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+@dataclass
 class ProductImageReadDTO:
     upload_id: int
     image_key: str
@@ -97,6 +119,7 @@ class ProductReadDTO:
     price: Decimal
     images: list[ProductImageReadDTO]
     attributes: list[ProductAttributeReadDTO]
+    tags: list[TagReadDTO] = field(default_factory=list)
     category: Optional['CategoryAggregate'] = None
     supplier: Optional['SupplierAggregate'] = None
 

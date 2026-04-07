@@ -28,6 +28,9 @@ from src.catalog.product.application.commands.update_product_relation import (
 from src.catalog.product.application.commands.update_product_type import (
     UpdateProductTypeCommand,
 )
+from src.catalog.product.application.commands.create_tag import CreateTagCommand
+from src.catalog.product.application.commands.update_tag import UpdateTagCommand
+from src.catalog.product.application.commands.delete_tag import DeleteTagCommand
 from src.catalog.product.application.queries.product_admin_queries import (
     ProductAdminQueries,
 )
@@ -144,3 +147,20 @@ class ProductComposition:
     def build_product_relation_queries(db):
         scope = container.create_scope()
         return scope.resolve(ProductRelationQueries, db=db)
+
+    # ==================== Tags ====================
+
+    @staticmethod
+    def build_create_tag_command(db):
+        scope = container.create_scope()
+        return scope.resolve(CreateTagCommand, db=db)
+
+    @staticmethod
+    def build_update_tag_command(db):
+        scope = container.create_scope()
+        return scope.resolve(UpdateTagCommand, db=db)
+
+    @staticmethod
+    def build_delete_tag_command(db):
+        scope = container.create_scope()
+        return scope.resolve(DeleteTagCommand, db=db)
