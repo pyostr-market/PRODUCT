@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import List, Optional, Tuple
 
-from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO
+from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO, ProductSearchDTO
 
 
 class ProductReadRepositoryInterface(ABC):
@@ -38,4 +38,23 @@ class ProductReadRepositoryInterface(ABC):
 
     async def export_full_catalog(self):
         """Полная выгрузка каталога."""
+        raise NotImplementedError
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> ProductSearchDTO:
+        """
+        Полнотекстовый поиск товаров с подсказками следующих слов.
+        
+        Args:
+            query: Поисковый запрос
+            limit: Количество товаров в ответе (по умолчанию 10)
+            offset: Смещение для пагинации
+            
+        Returns:
+            ProductSearchDTO с товарами и подсказками
+        """
         raise NotImplementedError

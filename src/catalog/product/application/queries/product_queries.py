@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO
+from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO, ProductSearchDTO
 from src.catalog.product.application.read_models.product_read_repository import (
     ProductReadRepository,
 )
@@ -99,3 +99,20 @@ class ProductQueries:
                 items.append(self._attach_image_url(dto))
 
         return items
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> ProductSearchDTO:
+        result = await self.read_repository.search(
+            query=query,
+            limit=limit,
+            offset=offset,
+        )
+        
+        # Прикрепляем URL изображений
+        result.items = [self._attach_image_url(item) for item in result.items]
+        
+        return result

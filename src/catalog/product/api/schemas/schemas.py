@@ -215,3 +215,20 @@ class ProductRelationListResponse(BaseModel):
     """Ответ со списком связей/рекомендаций."""
     items: List[ProductRecommendationItemSchema]
     pagination: PaginationSchema
+
+
+# ==================== Search ====================
+
+class SearchSuggestionSchema(BaseModel):
+    """Подсказка следующего слова для поиска."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    word: str
+    count: int
+
+
+class ProductSearchResponse(BaseModel):
+    """Ответ с результатами поиска товаров."""
+    total: int
+    items: List[ProductReadSchema]
+    suggestions: List[SearchSuggestionSchema]

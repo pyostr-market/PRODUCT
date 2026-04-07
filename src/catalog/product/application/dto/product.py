@@ -121,3 +121,18 @@ class ProductUpdateDTO:
     supplier_id: Optional[int] = None
     images: Optional[list[ProductImageOperationDTO]] = None
     attributes: Optional[list[ProductAttributeInputDTO]] = None
+
+
+@dataclass
+class SearchSuggestionDTO:
+    """DTO для подсказок следующих слов при поиске."""
+    word: str
+    count: int
+
+
+@dataclass
+class ProductSearchDTO:
+    """DTO для результатов поиска товаров."""
+    items: list[ProductReadDTO]
+    total: int
+    suggestions: list[SearchSuggestionDTO]

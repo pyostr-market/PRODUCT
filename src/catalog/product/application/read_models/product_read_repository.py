@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO
+from src.catalog.product.application.dto.product import ProductReadDTO, CatalogFiltersDTO, ProductSearchDTO
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
 )
@@ -55,3 +55,15 @@ class ProductReadRepository:
 
     async def export_full_catalog(self):
         return await self._repository.export_full_catalog()
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> ProductSearchDTO:
+        return await self._repository.search(
+            query=query,
+            limit=limit,
+            offset=offset,
+        )

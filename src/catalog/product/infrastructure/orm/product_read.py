@@ -12,6 +12,8 @@ from src.catalog.product.application.dto.product import (
     CatalogFiltersDTO,
     FilterDTO,
     FilterOptionDTO,
+    ProductSearchDTO,
+    SearchSuggestionDTO,
 )
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
@@ -452,3 +454,140 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         rows = result.mappings().all()
 
         return rows
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> ProductSearchDTO:
+        """
+        Полнотекстовый поиск товаров с подсказками следующих слов.
+        
+        Логика:
+        1. Ищем товары по названию и атрибутам (ILIKE по частичному совпадению)
+        2. Извлекаем следующиеие слова из названий найденных товаров
+        3. Возвращаем товары + топ-5 подсказок
+        """
+        # Нормализуем поисковый запрос
+        search_term = query.strip()
+        if not search_term:
+            return ProductSearchDTO(items=[], total=0, suggestions=[])
+
+        # Запрос для поиска товаров
+        stmt = (
+            select(Product)
+            .options(
+                selectinload(Product.images).selectinload(ProductImage.upload),
+                selectinload(Product.attributes).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+            )
+            .where(
+                # Поиск по названию товара
+                Product.name.ilike(f"%{search_term}%")
+                # Или поиск по атрибутам
+                | Product.attributes.any(
+                    ProductAttributeValue.value.ilike(f"%{search_term}%")
+                )
+            )
+        )
+
+        # Запрос для подсчета общего количества
+        count_stmt = (
+            select(func.count(Product.id))
+            .where(
+                Product.name.ilike(f"%{search_term}%")
+                | Product.attributes.any(
+                    ProductAttributeValue.value.ilike(f"%{search_term}%")
+                )
+            )
+        )
+
+        # Добавляем пагинацию
+        stmt = stmt.order_by(Product.id).limit(limit).offset(offset)
+
+        # Выполняем запросы
+        result = await self.db.execute(stmt)
+        count_result = await self.db.execute(count_stmt)
+
+        products = result.scalars().all()
+        total = count_result.scalar() or 0
+
+        # Конвертируем в DTO
+        items = [self._to_read_dto(product) for product in products]
+
+        # Извлекаем следующиеие слова из названий товаров
+        suggestions = self._extract_next_word_suggestions(products, search_term)
+
+        return ProductSearchDTO(
+            items=items,
+            total=total,
+            suggestions=suggestions,
+        )
+
+    def _extract_next_word_suggestions(
+        self,
+        products: list[Product],
+        search_term: str,
+    ) -> list[SearchSuggestionDTO]:
+        """
+        Извлекает следующиеие слова после введенного пользователем слова.
+        
+        Например, если пользователь ввел "iPhone", и есть товары:
+        - "iPhone 15 Pro"
+        - "iPhone 15"
+        - "iPhone 16"
+        - "iPhone Red"
+        - "iPhone 17 Pro Max"
+        
+        Вернет: ["15", "16", "Red", "17", "Pro"]
+        """
+        import re
+        from collections import Counter
+
+        search_lower = search_term.lower()
+        word_counter = Counter()
+
+        for product in products:
+            # Разбиваем название на слова
+            name = product.name
+            # Ищем поисковый запрос в названии (без учета регистра)
+            match = re.search(re.escape(search_lower), name.lower())
+            
+            if match:
+                # Получаем часть после поискового запроса
+                after_search = name[match.end():].strip()
+                
+                # Берем первое слово после поискового запроса
+                next_word_match = re.match(r'^(\S+)', after_search)
+                if next_word_match:
+                    next_word = next_word_match.group(1)
+                    word_counter[next_word] += 1
+
+        # Также ищем в атрибутах товаров
+        # Собираем все атрибуты найденных товаров
+        attribute_words = Counter()
+        for product in products:
+            for attr_value in product.attributes:
+                value = attr_value.value
+                # Ищем поисковый запрос в атрибуте
+                match = re.search(re.escape(search_lower), value.lower())
+                
+                if match:
+                    after_search = value[match.end():].strip()
+                    next_word_match = re.match(r'^(\S+)', after_search)
+                    if next_word_match:
+                        next_word = next_word_match.group(1)
+                        attribute_words[next_word] += 1
+
+        # Объединяем счетчики, отдавая приоритет словам из названий
+        for word, count in attribute_words.items():
+            if word not in word_counter:
+                word_counter[word] = count
+
+        # Возвращаем топ-5 слов
+        return [
+            SearchSuggestionDTO(word=word, count=count)
+            for word, count in word_counter.most_common(5)
+        ]

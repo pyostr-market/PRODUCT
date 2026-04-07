@@ -17,6 +17,8 @@ from src.catalog.product.api.schemas.schemas import (
     FilterSchema,
     FilterOptionSchema,
     SortTypeEnum,
+    ProductSearchResponse,
+    SearchSuggestionSchema,
 )
 from src.catalog.product.composition import ProductComposition
 from src.core.api.responses import api_response
@@ -104,6 +106,111 @@ async def related_products(
         ProductListResponse(
             total=len(items),
             items=[ProductReadSchema.model_validate(item) for item in items],
+        )
+    )
+
+
+@product_q_router.get(
+    "/search",
+    summary="Поиск товаров",
+    description="""
+    Полнотекстовый поиск товаров по названию и атрибутам.
+    
+    Возвращает:
+    - Список найденных товаров (с пагинацией limit/offset, по умолчанию 10)
+    - Подсказки следующихих слов (топ-5) для автодополнения поиска
+    
+    Пример:
+    - Ввели "iPhone" → вернулись первые 10 товаров + подсказки: "15", "16", "17", "Red", "Pro"
+    
+    Права:
+    - Не требуются (доступно авторизованным и публичным клиентам по политике окружения).
+    
+    Сценарии:
+    - Поиск товаров на витрине
+    - Автодополнение в строке поиска
+    """,
+    response_description="Результаты поиска с подсказками",
+    responses={
+        200: {
+            "description": "Поиск выполнен успешно",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "data": {
+                            "total": 150,
+                            "items": [
+                                {
+                                    "id": 3001,
+                                    "name": "iPhone 15 Pro",
+                                    "description": "Флагманский смартфон Apple",
+                                    "price": "99990.00",
+                                    "images": [
+                                        {
+                                            "upload_id": 1,
+                                            "image_url": "https://cdn.example.com/product/iphone-15-pro.jpg",
+                                            "is_main": True,
+                                            "ordering": 0
+                                        }
+                                    ],
+                                    "attributes": [
+                                        {"id": 10, "name": "RAM", "value": "8 GB", "is_filterable": True},
+                                        {"id": 11, "name": "Color", "value": "Red", "is_filterable": True}
+                                    ],
+                                    "category": {
+                                        "id": 101,
+                                        "name": "Смартфоны",
+                                        "description": "Мобильные устройства"
+                                    },
+                                    "supplier": {
+                                        "id": 210,
+                                        "name": "ООО Поставка Плюс",
+                                        "contact_email": "sales@supply-plus.example",
+                                        "phone": "+7-999-123-45-67"
+                                    },
+                                    "product_type": {
+                                        "id": 5,
+                                        "name": "Смартфоны",
+                                        "parent": None
+                                    }
+                                }
+                            ],
+                            "suggestions": [
+                                {"word": "15", "count": 50},
+                                {"word": "16", "count": 45},
+                                {"word": "Pro", "count": 30},
+                                {"word": "Red", "count": 20},
+                                {"word": "17", "count": 5}
+                            ]
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def search_products(
+    query: str = Query(..., min_length=1, description="Поисковый запрос"),
+    limit: int = Query(10, ge=1, le=100, description="Количество товаров (по умолчанию 10)"),
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    db: AsyncSession = Depends(get_db),
+):
+    queries = ProductComposition.build_queries(db)
+    result = await queries.search(
+        query=query,
+        limit=limit,
+        offset=offset,
+    )
+
+    return api_response(
+        ProductSearchResponse(
+            total=result.total,
+            items=[ProductReadSchema.model_validate(item) for item in result.items],
+            suggestions=[
+                SearchSuggestionSchema(word=s.word, count=s.count)
+                for s in result.suggestions
+            ],
         )
     )
 
