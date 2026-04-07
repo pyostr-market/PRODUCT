@@ -54,8 +54,16 @@ from src.catalog.product.application.queries.tag_queries import TagQueries
 from src.catalog.product.application.commands.create_tag import CreateTagCommand
 from src.catalog.product.application.commands.update_tag import UpdateTagCommand
 from src.catalog.product.application.commands.delete_tag import DeleteTagCommand
+from src.catalog.product.application.commands.product_tag_commands import (
+    AddProductTagCommand,
+    RemoveProductTagCommand,
+)
 from src.catalog.product.domain.repository.tag import TagRepositoryInterface
+from src.catalog.product.domain.repository.product_tag import ProductTagRepositoryInterface
+from src.catalog.product.domain.repository.product_tag_read import ProductTagReadRepositoryInterface
 from src.catalog.product.infrastructure.orm.tag import SqlAlchemyTagRepository
+from src.catalog.product.infrastructure.orm.product_tag import SqlAlchemyProductTagRepository
+from src.catalog.product.infrastructure.orm.product_tag_read import SqlAlchemyProductTagReadRepository
 from src.catalog.product.application.read_models.product_attribute_read_repository import (
     ProductAttributeReadRepository,
 )
@@ -460,30 +468,66 @@ container.register(
 )
 
 container.register(
+    ProductTagRepositoryInterface,
+    lambda scope, db: SqlAlchemyProductTagRepository(db),
+)
+
+container.register(
+    ProductTagReadRepositoryInterface,
+    lambda scope, db: SqlAlchemyProductTagReadRepository(db),
+)
+
+container.register(
     TagQueries,
-    lambda scope, db: TagQueries(db=db),
+    lambda scope, db: TagQueries(
+        tag_repository=scope.resolve(TagRepositoryInterface, db=db),
+        product_tag_read_repository=scope.resolve(ProductTagReadRepositoryInterface, db=db),
+    ),
 )
 
 container.register(
     CreateTagCommand,
     lambda scope, db: CreateTagCommand(
-        tag_repository=scope.resolve(TagRepositoryInterface, db=db),
+        repository=scope.resolve(TagRepositoryInterface, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 
 container.register(
     UpdateTagCommand,
     lambda scope, db: UpdateTagCommand(
-        tag_repository=scope.resolve(TagRepositoryInterface, db=db),
+        repository=scope.resolve(TagRepositoryInterface, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )
 
 container.register(
     DeleteTagCommand,
     lambda scope, db: DeleteTagCommand(
+        repository=scope.resolve(TagRepositoryInterface, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
+)
+
+container.register(
+    AddProductTagCommand,
+    lambda scope, db: AddProductTagCommand(
+        product_tag_repository=scope.resolve(ProductTagRepositoryInterface, db=db),
+        product_repository=scope.resolve(ProductRepository, db=db),
         tag_repository=scope.resolve(TagRepositoryInterface, db=db),
         uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
+    ),
+)
+
+container.register(
+    RemoveProductTagCommand,
+    lambda scope, db: RemoveProductTagCommand(
+        product_tag_repository=scope.resolve(ProductTagRepositoryInterface, db=db),
+        uow=scope.resolve(UnitOfWork, db=db),
+        event_bus=scope.resolve(AsyncEventBus, db=db),
     ),
 )

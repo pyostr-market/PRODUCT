@@ -143,3 +143,84 @@ class ProductRelationInvalidProduct(BaseServiceError):
         details: dict | None = None,
     ):
         super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+# ==================== Tag Exceptions ====================
+
+class TagNameTooShort(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Имя тега должно содержать минимум 2 символа",
+        code: str = "tag_name_too_short",
+        status_code: int = 400,
+        details: dict | None = None,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+class TagAlreadyExists(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Тег с таким именем уже существует",
+        code: str = "tag_already_exists",
+        status_code: int = 409,
+        details: dict | None = None,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+class TagInvalidName(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Некорректное имя тега",
+        code: str = "tag_invalid_name",
+        status_code: int = 400,
+        details: dict | None = None,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+class TagNotFound(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Тег не найден",
+        code: str = "tag_not_found",
+        status_code: int = 404,
+        details: dict | None = None,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+# ==================== Product Tag Exceptions ====================
+
+class ProductTagAlreadyExists(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Этот тег уже добавлен к товару",
+        code: str = "product_tag_already_exists",
+        status_code: int = 400,
+        details: dict | None = None,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+class ProductTagNotFound(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Связь товара с тегом не найдена",
+        code: str = "product_tag_not_found",
+        status_code: int = 404,
+        details: dict | None = None,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)
+
+
+class ProductTagInvalidProduct(BaseServiceError):
+    def __init__(
+        self,
+        msg: str = "Товар не найден",
+        code: str = "product_tag_invalid_product",
+        status_code: int = 404,
+        details: dict | None = None,
+    ):
+        super().__init__(message=msg, code=code, status_code=status_code, details=details)

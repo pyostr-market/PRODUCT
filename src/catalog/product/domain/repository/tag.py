@@ -8,12 +8,7 @@ class TagRepositoryInterface(ABC):
     """Интерфейс репозитория для работы с тегами."""
 
     @abstractmethod
-    async def create(self, tag: TagAggregate) -> TagAggregate:
-        """Создать новый тег."""
-        pass
-
-    @abstractmethod
-    async def get_by_id(self, tag_id: int) -> Optional[TagAggregate]:
+    async def get(self, tag_id: int) -> Optional[TagAggregate]:
         """Получить тег по ID."""
         pass
 
@@ -23,16 +18,26 @@ class TagRepositoryInterface(ABC):
         pass
 
     @abstractmethod
-    async def update(self, tag: TagAggregate) -> TagAggregate:
+    async def create(self, aggregate: TagAggregate) -> TagAggregate:
+        """Создать новый тег."""
+        pass
+
+    @abstractmethod
+    async def update(self, aggregate: TagAggregate) -> TagAggregate:
         """Обновить тег."""
         pass
 
     @abstractmethod
-    async def delete(self, tag_id: int) -> None:
+    async def delete(self, tag_id: int) -> bool:
         """Удалить тег."""
         pass
 
     @abstractmethod
     async def get_all(self, limit: int = 100, offset: int = 0) -> List[TagAggregate]:
         """Получить все теги с пагинацией."""
+        pass
+
+    @abstractmethod
+    async def count(self) -> int:
+        """Получить общее количество тегов."""
         pass

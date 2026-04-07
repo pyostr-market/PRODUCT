@@ -31,6 +31,11 @@ from src.catalog.product.application.commands.update_product_type import (
 from src.catalog.product.application.commands.create_tag import CreateTagCommand
 from src.catalog.product.application.commands.update_tag import UpdateTagCommand
 from src.catalog.product.application.commands.delete_tag import DeleteTagCommand
+from src.catalog.product.application.commands.product_tag_commands import (
+    AddProductTagCommand,
+    RemoveProductTagCommand,
+)
+from src.catalog.product.application.queries.tag_queries import TagQueries
 from src.catalog.product.application.queries.product_admin_queries import (
     ProductAdminQueries,
 )
@@ -164,3 +169,18 @@ class ProductComposition:
     def build_delete_tag_command(db):
         scope = container.create_scope()
         return scope.resolve(DeleteTagCommand, db=db)
+
+    @staticmethod
+    def build_tag_queries(db):
+        scope = container.create_scope()
+        return scope.resolve(TagQueries, db=db)
+
+    @staticmethod
+    def build_add_product_tag_command(db):
+        scope = container.create_scope()
+        return scope.resolve(AddProductTagCommand, db=db)
+
+    @staticmethod
+    def build_remove_product_tag_command(db):
+        scope = container.create_scope()
+        return scope.resolve(RemoveProductTagCommand, db=db)

@@ -16,6 +16,15 @@ class TagReadDTO:
 
 
 @dataclass
+class ProductTagReadDTO:
+    """DTO для чтения связи товара с тегом."""
+    id: int
+    product_id: int
+    tag_id: int
+    tag: TagReadDTO
+
+
+@dataclass
 class TagCreateDTO:
     """DTO для создания тега."""
     name: str

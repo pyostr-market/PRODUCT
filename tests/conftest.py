@@ -223,6 +223,8 @@ async def cleanup_test_data(engine, image_storage_mock):
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_audit_logs CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM category_pricing_policies CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_relations CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_tags CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM tags CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_images CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attribute_values CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_attributes CASCADE"))
@@ -281,6 +283,66 @@ async def product_relation(authorized_client, test_products):
     )
     assert response.status_code == 200
     yield response.json()["data"]
+
+
+@pytest_asyncio.fixture
+async def test_tags(authorized_client):
+    """Создаёт тестовые теги для тестов."""
+    tags = []
+
+    tag_data = [
+        {"name": "популярный", "description": "Популярные товары"},
+        {"name": "новинка", "description": "Новые поступления"},
+        {"name": "распродажа", "description": None},
+    ]
+
+    for tag in tag_data:
+        response = await authorized_client.post(
+            "/product/tags",
+            json=tag,
+        )
+        assert response.status_code == 200
+        tags.append(response.json()["data"])
+
+    yield tags
+
+
+@pytest_asyncio.fixture
+async def product_with_tags(authorized_client, image_storage_mock):
+    """Создаёт тестовый товар с привязанными тегами."""
+    # Создаём товар
+    product_resp = await authorized_client.post(
+        "/product",
+        data={
+            "name": "Товар с тегами",
+            "price": "1500.00",
+        },
+    )
+    assert product_resp.status_code == 200
+    product = product_resp.json()["data"]
+
+    # Создаём теги
+    tags = []
+    for name in ["популярный", "новинка"]:
+        tag_resp = await authorized_client.post(
+            "/product/tags",
+            json={"name": name, "description": f"Описание: {name}"},
+        )
+        assert tag_resp.status_code == 200
+        tags.append(tag_resp.json()["data"])
+
+    # Привязываем теги к товару
+    for tag in tags:
+        link_resp = await authorized_client.post(
+            "/product/tags/product-tags",
+            json={"product_id": product["id"], "tag_id": tag["tag_id"]},
+        )
+        assert link_resp.status_code == 200
+
+    yield {
+        "product": product,
+        "tags": tags,
+    }
 
 
 @pytest_asyncio.fixture()

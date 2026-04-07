@@ -137,6 +137,59 @@ class ProductUpdateSchema(BaseModel):
     attributes: Optional[List[ProductAttributeSchema]] = None
 
 
+# ==================== Product Tags (before ProductReadSchema) ====================
+
+class TagReadSchema(BaseModel):
+    """Схема для чтения тега."""
+    model_config = ConfigDict(from_attributes=True)
+
+    tag_id: int
+    name: str
+    description: Optional[str] = None
+
+
+class TagCreateSchema(BaseModel):
+    """Схема для создания тега."""
+    name: str = Field(..., max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+
+
+class TagUpdateSchema(BaseModel):
+    """Схема для обновления тега."""
+    name: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+
+
+class TagListResponse(BaseModel):
+    """Ответ со списком тегов."""
+    total: int
+    items: List[TagReadSchema]
+
+
+class ProductTagCreateSchema(BaseModel):
+    """Схема для добавления тега к товару."""
+    product_id: int
+    tag_id: int
+
+
+class ProductTagReadSchema(BaseModel):
+    """Схема для чтения связи товара с тегом."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int
+    tag_id: int
+    tag: TagReadSchema
+
+
+class ProductTagListResponse(BaseModel):
+    """Ответ со списком тегов товара."""
+    total: int
+    items: List[ProductTagReadSchema]
+
+
+# ==================== Product Read ====================
+
 class ProductReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -233,54 +286,3 @@ class ProductSearchResponse(BaseModel):
     total: int
     items: List[ProductReadSchema]
     suggestions: List[SearchSuggestionSchema]
-
-
-# ==================== Product Tags ====================
-
-class TagCreateSchema(BaseModel):
-    """Схема для создания тега."""
-    name: str = Field(..., max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-
-
-class TagUpdateSchema(BaseModel):
-    """Схема для обновления тега."""
-    name: Optional[str] = Field(None, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-
-
-class TagReadSchema(BaseModel):
-    """Схема для чтения тега."""
-    model_config = ConfigDict(from_attributes=True)
-
-    tag_id: int
-    name: str
-    description: Optional[str] = None
-
-
-class TagListResponse(BaseModel):
-    """Ответ со списком тегов."""
-    total: int
-    items: List[TagReadSchema]
-
-
-class ProductTagCreateSchema(BaseModel):
-    """Схема для добавления тега к товару."""
-    product_id: int
-    tag_id: int
-
-
-class ProductTagReadSchema(BaseModel):
-    """Схема для чтения связи товара с тегом."""
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    product_id: int
-    tag_id: int
-    tag: TagReadSchema
-
-
-class ProductTagListResponse(BaseModel):
-    """Ответ со списком тегов товара."""
-    total: int
-    items: List[ProductTagReadSchema]

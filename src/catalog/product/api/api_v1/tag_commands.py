@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,27 +14,27 @@ from src.catalog.product.api.schemas.schemas import (
     ProductTagReadSchema,
     ProductTagListResponse,
 )
-from src.catalog.product.application.commands.create_tag import CreateTagCommand
-from src.catalog.product.application.commands.update_tag import UpdateTagCommand
-from src.catalog.product.application.commands.delete_tag import DeleteTagCommand
-from src.catalog.product.application.commands.product_tag_commands import (
-    AddProductTagCommand,
-    RemoveProductTagCommand,
-)
 from src.catalog.product.application.dto.product import (
     TagCreateDTO,
     TagUpdateDTO,
 )
 from src.catalog.product.application.queries.tag_queries import TagQueries
+from src.catalog.product.composition import ProductComposition
 from src.catalog.product.infrastructure.models.product_tag import ProductTag
 from src.catalog.product.infrastructure.models.tag import Tag
 from src.core.api.responses import api_response
+from src.core.auth.dependencies import get_current_user
+from src.core.auth.schemas.user import User
 from src.core.db.database import get_db
 
 tag_router = APIRouter(
     prefix="/tags",
     tags=["Теги товаров"],
 )
+
+
+def _build_tag_queries(db: AsyncSession) -> TagQueries:
+    return ProductComposition.build_tag_queries(db)
 
 
 # ==================== Tag CRUD ====================
@@ -47,6 +48,7 @@ tag_router = APIRouter(
 async def create_tag(
     tag_data: TagCreateSchema,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Создать новый тег."""
     command = ProductComposition.build_create_tag_command(db)
@@ -54,7 +56,7 @@ async def create_tag(
         name=tag_data.name,
         description=tag_data.description,
     )
-    result = await command.execute(dto)
+    result = await command.execute(dto, user)
     return api_response(TagReadSchema.model_validate(result))
 
 
@@ -69,7 +71,7 @@ async def get_all_tags(
     db: AsyncSession = Depends(get_db),
 ):
     """Получить список всех тегов с пагинацией."""
-    queries = TagQueries(db=db)
+    queries = _build_tag_queries(db)
     tags, total = await queries.get_all_tags(limit=limit, offset=offset)
     return api_response(
         TagListResponse(
@@ -89,7 +91,7 @@ async def get_tag(
     db: AsyncSession = Depends(get_db),
 ):
     """Получить тег по ID."""
-    queries = TagQueries(db=db)
+    queries = _build_tag_queries(db)
     tag = await queries.get_tag_by_id(tag_id)
     if not tag:
         raise HTTPException(status_code=404, detail="Тег не найден")
@@ -105,6 +107,7 @@ async def update_tag(
     tag_id: int,
     tag_data: TagUpdateSchema,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Обновить существующий тег."""
     command = ProductComposition.build_update_tag_command(db)
@@ -112,7 +115,7 @@ async def update_tag(
         name=tag_data.name,
         description=tag_data.description,
     )
-    result = await command.execute(tag_id, dto)
+    result = await command.execute(tag_id, dto, user)
     return api_response(TagReadSchema.model_validate(result))
 
 
@@ -123,11 +126,12 @@ async def update_tag(
 async def delete_tag(
     tag_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Удалить тег."""
     command = ProductComposition.build_delete_tag_command(db)
-    await command.execute(tag_id)
-    return api_response(None, message="Тег удален")
+    await command.execute(tag_id, user)
+    return JSONResponse(status_code=200, content={"success": True, "message": "Тег удален"})
 
 
 # ==================== Product-Tag Relations ====================
@@ -137,43 +141,21 @@ async def delete_tag(
     "/product-tags",
     summary="Добавить тег к товару",
     response_model=ProductTagReadSchema,
+
 )
 async def add_product_tag(
     data: ProductTagCreateSchema,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Добавить тег к товару."""
-    command = AddProductTagCommand(db=db)
-    await command.execute(product_id=data.product_id, tag_id=data.tag_id)
-    await db.commit()
-
-    # Возвращаем созданную связь
-    stmt = (
-        select(ProductTag, Tag)
-        .join(Tag, Tag.id == ProductTag.tag_id)
-        .where(
-            ProductTag.product_id == data.product_id,
-            ProductTag.tag_id == data.tag_id,
-        )
+    command = ProductComposition.build_add_product_tag_command(db)
+    result = await command.execute(
+        product_id=data.product_id,
+        tag_id=data.tag_id,
+        user=user,
     )
-    result = await db.execute(stmt)
-    product_tag_row = result.first()
-    
-    if product_tag_row:
-        product_tag, tag = product_tag_row
-        return api_response(
-            ProductTagReadSchema(
-                id=product_tag.id,
-                product_id=product_tag.product_id,
-                tag_id=product_tag.tag_id,
-                tag=TagReadSchema(
-                    tag_id=tag.id,
-                    name=tag.name,
-                    description=tag.description,
-                ),
-            )
-        )
-    return api_response(None)
+    return api_response(ProductTagReadSchema.model_validate(result))
 
 
 @tag_router.delete(
@@ -184,12 +166,12 @@ async def remove_product_tag(
     product_id: int,
     tag_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Удалить тег у товара."""
-    command = RemoveProductTagCommand(db=db)
-    await command.execute(product_id=product_id, tag_id=tag_id)
-    await db.commit()
-    return api_response(None, message="Тег удален из товара")
+    command = ProductComposition.build_remove_product_tag_command(db)
+    await command.execute(product_id=product_id, tag_id=tag_id, user=user)
+    return JSONResponse(status_code=200, content={"success": True, "message": "Тег удален из товара"})
 
 
 @tag_router.get(
@@ -204,21 +186,9 @@ async def get_product_tags(
     db: AsyncSession = Depends(get_db),
 ):
     """Получить все теги товара."""
-    queries = TagQueries(db=db)
-    tags, total = await queries.get_product_tags(product_id=product_id, limit=limit, offset=offset)
-    
-    # Получаем详细信息 о тегах с информацией о связи
-    stmt = (
-        select(ProductTag, Tag)
-        .join(Tag, Tag.id == ProductTag.tag_id)
-        .where(ProductTag.product_id == product_id)
-        .order_by(ProductTag.id)
-        .offset(offset)
-        .limit(limit)
-    )
-    result = await db.execute(stmt)
-    product_tags = result.all()
-    
+    queries = _build_tag_queries(db)
+    product_tags, total = await queries.get_product_tags(product_id=product_id, limit=limit, offset=offset)
+
     return api_response(
         ProductTagListResponse(
             total=total,
@@ -228,12 +198,12 @@ async def get_product_tags(
                     product_id=pt.product_id,
                     tag_id=pt.tag_id,
                     tag=TagReadSchema(
-                        tag_id=tag.id,
-                        name=tag.name,
-                        description=tag.description,
+                        tag_id=pt.tag.tag_id,
+                        name=pt.tag.name,
+                        description=pt.tag.description,
                     ),
                 )
-                for pt, tag in product_tags
+                for pt in product_tags
             ],
         )
     )
