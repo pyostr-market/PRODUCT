@@ -20,6 +20,7 @@ class SqlAlchemyTagRepository(TagRepositoryInterface):
             _tag_id=model.id,
             _name=model.name,
             _description=model.description,
+            _color=model.color,
         )
 
     async def get(self, tag_id: int) -> Optional[TagAggregate]:
@@ -45,6 +46,7 @@ class SqlAlchemyTagRepository(TagRepositoryInterface):
         db_tag = Tag(
             name=aggregate.name,
             description=aggregate.description,
+            color=aggregate.color,
         )
         self.db.add(db_tag)
         await self.db.flush()
@@ -63,6 +65,7 @@ class SqlAlchemyTagRepository(TagRepositoryInterface):
 
         model.name = aggregate.name
         model.description = aggregate.description
+        model.color = aggregate.color
         await self.db.flush()
         await self.db.refresh(model)
         return self._to_aggregate(model)

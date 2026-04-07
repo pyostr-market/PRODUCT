@@ -51,6 +51,7 @@ class SqlAlchemyProductTagReadRepository(ProductTagReadRepositoryInterface):
                     tag_id=pt.tag.id,
                     name=pt.tag.name,
                     description=pt.tag.description,
+                    color=pt.tag.color,
                 ),
             )
             for pt in product_tags

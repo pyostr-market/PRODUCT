@@ -33,6 +33,7 @@ class CreateTagCommand:
             aggregate = TagAggregate(
                 _name=dto.name,
                 _description=dto.description,
+                _color=dto.color,
             )
 
             await self.repository.create(aggregate)
@@ -82,4 +83,5 @@ class CreateTagCommand:
             tag_id=aggregate.tag_id,
             name=aggregate.name,
             description=aggregate.description,
+            color=aggregate.color,
         )

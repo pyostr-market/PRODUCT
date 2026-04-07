@@ -146,18 +146,21 @@ class TagReadSchema(BaseModel):
     tag_id: int
     name: str
     description: Optional[str] = None
+    color: Optional[str] = None
 
 
 class TagCreateSchema(BaseModel):
     """Схема для создания тега."""
     name: str = Field(..., max_length=100)
     description: Optional[str] = Field(None, max_length=500)
+    color: Optional[str] = Field(None, max_length=7)
 
 
 class TagUpdateSchema(BaseModel):
     """Схема для обновления тега."""
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
+    color: Optional[str] = Field(None, max_length=7)
 
 
 class TagListResponse(BaseModel):

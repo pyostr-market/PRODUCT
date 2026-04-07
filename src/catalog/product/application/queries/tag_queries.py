@@ -25,6 +25,7 @@ class TagQueries:
             tag_id=tag.tag_id,
             name=tag.name,
             description=tag.description,
+            color=tag.color,
         )
 
     async def get_all_tags(
@@ -41,6 +42,7 @@ class TagQueries:
                 tag_id=tag.tag_id,
                 name=tag.name,
                 description=tag.description,
+                color=tag.color,
             )
             for tag in tags
         ], total

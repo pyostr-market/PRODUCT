@@ -13,6 +13,7 @@ class TagReadDTO:
     tag_id: int
     name: str
     description: Optional[str] = None
+    color: Optional[str] = None
 
 
 @dataclass
@@ -29,6 +30,7 @@ class TagCreateDTO:
     """DTO для создания тега."""
     name: str
     description: Optional[str] = None
+    color: Optional[str] = None
 
 
 @dataclass
@@ -36,6 +38,7 @@ class TagUpdateDTO:
     """DTO для обновления тега."""
     name: Optional[str] = None
     description: Optional[str] = None
+    color: Optional[str] = None
 
 
 @dataclass

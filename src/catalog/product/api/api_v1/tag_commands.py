@@ -50,6 +50,7 @@ async def create_tag(
     dto = TagCreateDTO(
         name=tag_data.name,
         description=tag_data.description,
+        color=tag_data.color,
     )
     result = await command.execute(dto, user)
     return api_response(TagReadSchema.model_validate(result))
@@ -76,6 +77,7 @@ async def update_tag(
     dto = TagUpdateDTO(
         name=tag_data.name,
         description=tag_data.description,
+        color=tag_data.color,
     )
     result = await command.execute(tag_id, dto, user)
     return api_response(TagReadSchema.model_validate(result))

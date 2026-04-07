@@ -91,4 +91,5 @@ class UpdateTagCommand:
             tag_id=aggregate.tag_id,
             name=aggregate.name,
             description=aggregate.description,
+            color=aggregate.color,
         )

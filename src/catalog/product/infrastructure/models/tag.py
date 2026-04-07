@@ -19,6 +19,7 @@ class Tag(TimestampMixin, Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True)
     description = Column(String(500), nullable=True)
+    color = Column(String(7), nullable=True)  # HEX цвет, например "#FF5722"
 
     # Связи
     products = relationship(

@@ -116,6 +116,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                     tag_id=product_tag.tag.id,
                     name=product_tag.tag.name,
                     description=product_tag.tag.description,
+                    color=product_tag.tag.color,
                 )
                 for product_tag in model.product_tags
             ],
@@ -499,7 +500,8 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                         jsonb_build_object(
                             'tag_id', t.id,
                             'name', t.name,
-                            'description', t.description
+                            'description', t.description,
+                            'color', t.color
                         )
                     ) FILTER (WHERE t.id IS NOT NULL),
                     '[]'

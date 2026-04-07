@@ -116,6 +116,7 @@ class AddProductTagCommand:
                 tag_id=tag.tag_id,
                 name=tag.name,
                 description=tag.description,
+                color=tag.color,
             ),
         )
 
