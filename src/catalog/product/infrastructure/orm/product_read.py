@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy import and_, func, select, text
+from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -463,18 +463,32 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
     ) -> ProductSearchDTO:
         """
         Полнотекстовый поиск товаров с подсказками следующих слов.
+
+        Логика поиска:
+        1. Разбиваем запрос на отдельные слова
+        2. Каждое слово ищем в названии ИЛИ в атрибутах (ILIKE)
+        3. Товар должен содержать ВСЕ слова из запроса (AND логика)
         
-        Логика:
-        1. Ищем товары по названию и атрибутам (ILIKE по частичному совпадению)
-        2. Извлекаем следующиеие слова из названий найденных товаров
-        3. Возвращаем товары + топ-5 подсказок
+        Пример: "iPhone 256" найдёт "iPhone 17 Pro Max 256GB"
         """
-        # Нормализуем поисковый запрос
-        search_term = query.strip()
-        if not search_term:
+        # Разбиваем запрос на слова
+        search_terms = [t.strip() for t in query.split() if t.strip()]
+        if not search_terms:
             return ProductSearchDTO(items=[], total=0, suggestions=[])
 
-        # Запрос для поиска товаров
+        # Строим условия для каждого слова: name ILIKE '%word%' OR any attribute ILIKE '%word%'
+        word_conditions = []
+        for term in search_terms:
+            word_conditions.append(
+                or_(
+                    Product.name.ilike(f"%{term}%"),
+                    Product.attributes.any(
+                        ProductAttributeValue.value.ilike(f"%{term}%")
+                    ),
+                )
+            )
+
+        # Запрос для поиска товаров (все слова должны совпасть — AND)
         stmt = (
             select(Product)
             .options(
@@ -483,25 +497,13 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.category),
                 selectinload(Product.supplier),
             )
-            .where(
-                # Поиск по названию товара
-                Product.name.ilike(f"%{search_term}%")
-                # Или поиск по атрибутам
-                | Product.attributes.any(
-                    ProductAttributeValue.value.ilike(f"%{search_term}%")
-                )
-            )
+            .where(and_(*word_conditions))
         )
 
         # Запрос для подсчета общего количества
         count_stmt = (
             select(func.count(Product.id))
-            .where(
-                Product.name.ilike(f"%{search_term}%")
-                | Product.attributes.any(
-                    ProductAttributeValue.value.ilike(f"%{search_term}%")
-                )
-            )
+            .where(and_(*word_conditions))
         )
 
         # Добавляем пагинацию
@@ -518,7 +520,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         items = [self._to_read_dto(product) for product in products]
 
         # Извлекаем следующиеие слова из названий товаров
-        suggestions = self._extract_next_word_suggestions(products, search_term)
+        suggestions = self._extract_next_word_suggestions(products, search_terms)
 
         return ProductSearchDTO(
             items=items,
@@ -529,62 +531,63 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
     def _extract_next_word_suggestions(
         self,
         products: list[Product],
-        search_term: str,
+        search_terms: list[str],
     ) -> list[SearchSuggestionDTO]:
         """
-        Извлекает следующиеие слова после введенного пользователем слова.
+        Извлекает следующиеие слова после введённых пользователем слов.
         
-        Например, если пользователь ввел "iPhone", и есть товары:
+        Например, если пользователь ввел "iPhone 15", и есть товары:
         - "iPhone 15 Pro"
-        - "iPhone 15"
-        - "iPhone 16"
-        - "iPhone Red"
-        - "iPhone 17 Pro Max"
+        - "iPhone 15 Max"
+        - "iPhone 15 Red Edition"
         
-        Вернет: ["15", "16", "Red", "17", "Pro"]
+        Вернет: ["Pro", "Max", "Red"]
         """
         import re
         from collections import Counter
 
-        search_lower = search_term.lower()
+        terms_lower = [t.lower() for t in search_terms]
         word_counter = Counter()
 
         for product in products:
-            # Разбиваем название на слова
             name = product.name
-            # Ищем поисковый запрос в названии (без учета регистра)
-            match = re.search(re.escape(search_lower), name.lower())
+            name_lower = name.lower()
             
-            if match:
-                # Получаем часть после поискового запроса
-                after_search = name[match.end():].strip()
-                
-                # Берем первое слово после поискового запроса
+            # Для каждого поискового термина ищем его в названии
+            # и берём слово после него
+            matched_positions = []  # (start, end) positions of matched terms
+            for term in terms_lower:
+                for match in re.finditer(re.escape(term), name_lower):
+                    matched_positions.append((match.start(), match.end()))
+            
+            # Сортируем позиции и берём самую последнюю
+            if matched_positions:
+                matched_positions.sort(key=lambda x: x[1], reverse=True)
+                last_end = matched_positions[0][1]
+                after_search = name[last_end:].strip()
                 next_word_match = re.match(r'^(\S+)', after_search)
                 if next_word_match:
                     next_word = next_word_match.group(1)
                     word_counter[next_word] += 1
 
-        # Также ищем в атрибутах товаров
-        # Собираем все атрибуты найденных товаров
-        attribute_words = Counter()
-        for product in products:
+            # Также ищем в атрибутах товаров
             for attr_value in product.attributes:
                 value = attr_value.value
-                # Ищем поисковый запрос в атрибуте
-                match = re.search(re.escape(search_lower), value.lower())
+                value_lower = value.lower()
                 
-                if match:
-                    after_search = value[match.end():].strip()
+                attr_positions = []
+                for term in terms_lower:
+                    for match in re.finditer(re.escape(term), value_lower):
+                        attr_positions.append((match.start(), match.end()))
+                
+                if attr_positions:
+                    attr_positions.sort(key=lambda x: x[1], reverse=True)
+                    last_end = attr_positions[0][1]
+                    after_search = value[last_end:].strip()
                     next_word_match = re.match(r'^(\S+)', after_search)
                     if next_word_match:
                         next_word = next_word_match.group(1)
-                        attribute_words[next_word] += 1
-
-        # Объединяем счетчики, отдавая приоритет словам из названий
-        for word, count in attribute_words.items():
-            if word not in word_counter:
-                word_counter[word] = count
+                        word_counter[next_word] += 1
 
         # Возвращаем топ-5 слов
         return [

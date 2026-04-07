@@ -298,3 +298,122 @@ async def test_search_suggestions_from_attributes(authorized_client, client):
 
     # Товар должен быть найден
     assert data["total"] >= 1
+
+
+# =========================================================
+# Поиск по отдельным словам (AND логика)
+# =========================================================
+
+@pytest.mark.asyncio
+async def test_search_by_individual_words(authorized_client, client):
+    """Поиск 'iPhone Pro Max' должен найти 'iPhone 17 Pro Max'"""
+    await authorized_client.post("/product", data={"name": "iPhone 17 Pro Max", "price": "1199.00"})
+    await authorized_client.post("/product", data={"name": "iPhone 17", "price": "899.00"})
+    await authorized_client.post("/product", data={"name": "Samsung Galaxy Pro", "price": "999.00"})
+
+    # Ищем по отдельным словам (не точное вхождение)
+    response = await client.get("/product/search?query=iPhone Pro Max")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+
+    # Должен найти только iPhone 17 Pro Max (содержит все три слова)
+    assert data["total"] == 1
+    assert data["items"][0]["name"] == "iPhone 17 Pro Max"
+
+
+@pytest.mark.asyncio
+async def test_search_by_non_sequential_words(authorized_client, client):
+    """Поиск 'iPhone 256' должен найти 'iPhone 17 Pro Max 256GB'"""
+    await authorized_client.post("/product", data={"name": "iPhone 17 Pro Max 256GB", "price": "1199.00"})
+    await authorized_client.post("/product", data={"name": "iPhone 17 128GB", "price": "899.00"})
+    await authorized_client.post("/product", data={"name": "iPhone 16 256GB", "price": "999.00"})
+
+    # Ищем слова, которые не идут подряд
+    response = await client.get("/product/search?query=iPhone 256")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+
+    # Найдутся товары, содержащие оба слова
+    names = [item["name"] for item in data["items"]]
+    assert "iPhone 17 Pro Max 256GB" in names
+    assert "iPhone 16 256GB" in names
+    assert "iPhone 17 128GB" not in names  # Нет "256"
+
+
+@pytest.mark.asyncio
+async def test_search_single_word_still_works(authorized_client, client):
+    """Поиск по одному слову должен работать как раньше"""
+    await authorized_client.post("/product", data={"name": "iPhone 15 Pro", "price": "999.00"})
+    await authorized_client.post("/product", data={"name": "iPhone 15", "price": "899.00"})
+    await authorized_client.post("/product", data={"name": "Samsung Galaxy", "price": "799.00"})
+
+    response = await client.get("/product/search?query=iPhone")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+
+    assert data["total"] == 2
+    names = [item["name"] for item in data["items"]]
+    assert "iPhone 15 Pro" in names
+    assert "iPhone 15" in names
+    assert "Samsung Galaxy" not in names
+
+
+@pytest.mark.asyncio
+async def test_search_no_match_when_missing_word(authorized_client, client):
+    """Если хотя бы одного слова нет — товар не найден"""
+    await authorized_client.post("/product", data={"name": "iPhone 17 Pro", "price": "1199.00"})
+    await authorized_client.post("/product", data={"name": "Samsung Pro Max", "price": "999.00"})
+
+    # Ищем "iPhone Max" — нет товара с обоими словами
+    response = await client.get("/product/search?query=iPhone Max")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+
+    assert data["total"] == 0
+    assert data["items"] == []
+
+
+@pytest.mark.asyncio
+async def test_search_case_insensitive_multi_word(authorized_client, client):
+    """Регистронезависимый поиск по нескольким словам"""
+    await authorized_client.post("/product", data={"name": "MacBook Pro 16", "price": "2499.00"})
+
+    # Разный регистр
+    response = await client.get("/product/search?query=MACBOOK 16")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+
+    assert data["total"] == 1
+    assert data["items"][0]["name"] == "MacBook Pro 16"
+
+
+@pytest.mark.asyncio
+async def test_search_suggestions_after_multi_word(authorized_client, client):
+    """Подсказки должны работать после поиска по нескольким словам"""
+    await authorized_client.post("/product", data={"name": "iPhone 15 Pro Max", "price": "1199.00"})
+    await authorized_client.post("/product", data={"name": "iPhone 15 Pro", "price": "999.00"})
+    await authorized_client.post("/product", data={"name": "iPhone 15 Air", "price": "899.00"})
+
+    response = await client.get("/product/search?query=iPhone 15")
+    assert response.status_code == 200
+
+    body = response.json()
+    data = body["data"]
+
+    assert data["total"] == 3
+    # Подсказки должны содержать слова после "15"
+    if data["suggestions"]:
+        suggestion_words = [s["word"] for s in data["suggestions"]]
+        # "Pro" должен быть в подсказках
+        assert "Pro" in suggestion_words
+

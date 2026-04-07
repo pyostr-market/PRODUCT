@@ -1,1 +1,3 @@
 Группировки: qwen --resume dd56db49-6968-4de8-8d45-8ba091b612e9
+
+Поле поиска: qwen --resume db719d63-3a14-4b7a-bf2c-81a18f2a30e4
