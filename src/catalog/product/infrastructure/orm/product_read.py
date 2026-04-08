@@ -498,9 +498,48 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
 
     async def export_full_catalog(self):
         sql = text("""
+            WITH RECURSIVE category_ancestors AS (
+                -- Начальная категория товара
+                SELECT
+                    c.id AS root_id,
+                    c.id AS ancestor_id,
+                    c.name AS ancestor_name,
+                    0 AS depth
+                FROM categories c
+
+                UNION ALL
+
+                -- Рекурсивно поднимаемся к родителям
+                SELECT
+                    ca.root_id,
+                    p.id AS ancestor_id,
+                    p.name AS ancestor_name,
+                    ca.depth + 1
+                FROM category_ancestors ca
+                JOIN categories p ON p.id = (
+                    SELECT c2.parent_id FROM categories c2 WHERE c2.id = ca.ancestor_id
+                )
+            ),
+            parent_categories_agg AS (
+                SELECT
+                    root_id AS category_id,
+                    COALESCE(
+                        jsonb_agg(
+                            jsonb_build_object(
+                                'id', ancestor_id,
+                                'name', ancestor_name
+                            )
+                            ORDER BY depth
+                        ) FILTER (WHERE depth > 0),
+                        '[]'
+                    ) AS parent_categories
+                FROM category_ancestors
+                GROUP BY root_id
+            )
             SELECT
                 p.id,
                 p.name,
+                p.description,
                 p.price,
                 p.category_id,
                 c.name as category_name,
@@ -509,7 +548,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 s.name as supplier_name,
                 COALESCE(
                     jsonb_agg(
-                        jsonb_build_object(
+                        DISTINCT jsonb_build_object(
                             'id', pa.id,
                             'name', pa.name,
                             'value', pav.value,
@@ -520,7 +559,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 ) as attributes,
                 COALESCE(
                     jsonb_agg(
-                        jsonb_build_object(
+                        DISTINCT jsonb_build_object(
                             'tag_id', t.id,
                             'name', t.name,
                             'description', t.description,
@@ -528,7 +567,8 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                         )
                     ) FILTER (WHERE t.id IS NOT NULL),
                     '[]'
-                ) as tags
+                ) as tags,
+                COALESCE(pca.parent_categories, '[]') as parent_categories
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN suppliers s ON s.id = p.supplier_id
@@ -536,11 +576,13 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             LEFT JOIN product_attributes pa ON pa.id = pav.attribute_id
             LEFT JOIN product_tags pt ON pt.product_id = p.id
             LEFT JOIN tags t ON t.id = pt.tag_id
+            LEFT JOIN parent_categories_agg pca ON pca.category_id = p.category_id
             GROUP BY
                 p.id,
                 c.name,
                 c.device_type_id,
-                s.name
+                s.name,
+                pca.parent_categories
             ORDER BY p.id
         """)
 

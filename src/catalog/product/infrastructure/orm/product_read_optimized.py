@@ -21,6 +21,7 @@ from src.catalog.product.application.dto.product import (
 from src.catalog.product.domain.repository.product_read import (
     ProductReadRepositoryInterface,
 )
+from src.catalog.review.infrastructure.models.review import Review
 from src.core.services.images.storage import S3ImageStorageService
 
 
@@ -521,14 +522,56 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
     async def export_full_catalog(self):
         """Экспорт всего каталога — используется raw SQL для производительности."""
         query = text("""
+            WITH RECURSIVE category_ancestors AS (
+                SELECT
+                    c.id AS root_id,
+                    c.id AS ancestor_id,
+                    c.name AS ancestor_name,
+                    0 AS depth
+                FROM categories c
+
+                UNION ALL
+
+                SELECT
+                    ca.root_id,
+                    p.id AS ancestor_id,
+                    p.name AS ancestor_name,
+                    ca.depth + 1
+                FROM category_ancestors ca
+                JOIN categories p ON p.id = (
+                    SELECT c2.parent_id FROM categories c2 WHERE c2.id = ca.ancestor_id
+                )
+            ),
+            parent_categories_agg AS (
+                SELECT
+                    root_id AS category_id,
+                    COALESCE(
+                        jsonb_agg(
+                            jsonb_build_object(
+                                'id', ancestor_id,
+                                'name', ancestor_name
+                            )
+                            ORDER BY depth
+                        ) FILTER (WHERE depth > 0),
+                        '[]'
+                    ) AS parent_categories
+                FROM category_ancestors
+                GROUP BY root_id
+            )
             SELECT
                 p.id,
                 p.name,
                 p.description,
                 p.price,
                 p.category_id,
-                p.supplier_id
+                c.name as category_name,
+                p.supplier_id,
+                s.name as supplier_name,
+                COALESCE(pca.parent_categories, '[]') as parent_categories
             FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN suppliers s ON s.id = p.supplier_id
+            LEFT JOIN parent_categories_agg pca ON pca.category_id = p.category_id
             ORDER BY p.id
         """)
 
@@ -542,7 +585,11 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 "description": row.description,
                 "price": float(row.price),
                 "category_id": row.category_id,
+                "category_name": row.category_name,
                 "supplier_id": row.supplier_id,
+                "supplier_name": row.supplier_name,
+                "parent_categories": row.parent_categories,
+                "attributes": [],
             }
             for row in rows
         ]

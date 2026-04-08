@@ -10,6 +10,7 @@ from src.catalog.product.api.schemas.audit import (
 from src.catalog.product.api.schemas.export import (
     ExportCatalogResponse,
     ExportCategorySchema,
+    ExportParentCategorySchema,
     ExportProductSchema,
     ExportSupplierSchema,
 )
@@ -185,6 +186,16 @@ async def export_catalog(
     items = []
 
     for r in rows:
+        parent_cats = []
+        if r.get("parent_categories"):
+            for pc in r["parent_categories"]:
+                parent_cats.append(
+                    ExportParentCategorySchema(
+                        id=pc["id"],
+                        name=pc["name"],
+                    )
+                )
+
         items.append(
             ExportProductSchema(
                 id=r["id"],
@@ -194,6 +205,7 @@ async def export_catalog(
                 category=ExportCategorySchema(
                     id=r["category_id"],
                     name=r["category_name"],
+                    parent_categories=parent_cats,
                 ) if r["category_id"] else None,
                 supplier=ExportSupplierSchema(
                     id=r["supplier_id"],

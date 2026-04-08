@@ -12,9 +12,15 @@ class ExportAttributeSchema(BaseModel):
     is_groupable: bool = False
 
 
+class ExportParentCategorySchema(BaseModel):
+    id: int
+    name: str
+
+
 class ExportCategorySchema(BaseModel):
     id: int
     name: str
+    parent_categories: List[ExportParentCategorySchema] = []
 
 
 class ExportSupplierSchema(BaseModel):
