@@ -16,6 +16,7 @@ from src.catalog.product.domain.value_objects import Money, ProductName
 if TYPE_CHECKING:
     from src.catalog.category.domain.aggregates.category import CategoryAggregate
     from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+    from src.regions.domain.aggregates.region import RegionAggregate
 
 
 class ProductImageOperation:
@@ -110,11 +111,13 @@ class ProductAggregate:
         description: Optional[str] = None,
         category_id: Optional[int] = None,
         supplier_id: Optional[int] = None,
+        region_id: Optional[int] = None,
         images: Optional[list[ProductImageAggregate]] = None,
         attributes: Optional[list[ProductAttributeAggregate]] = None,
         product_id: Optional[int] = None,
         category: Optional['CategoryAggregate'] = None,
         supplier: Optional['SupplierAggregate'] = None,
+        region: Optional['RegionAggregate'] = None,
     ):
         # Используем Value Objects для name и price
         self._name_obj = name if isinstance(name, ProductName) else ProductName(name)
@@ -124,10 +127,12 @@ class ProductAggregate:
         self._description = description
         self._category_id = category_id
         self._supplier_id = supplier_id
+        self._region_id = region_id
         self._images = images or []
         self._attributes = attributes or []
         self._category = category
         self._supplier = supplier
+        self._region = region
         self._events: list[DomainEvent] = []
         self._normalize_images_main_flag()
 
@@ -166,20 +171,8 @@ class ProductAggregate:
         return self._supplier_id
 
     @property
-    def images(self) -> list[ProductImageAggregate]:
-        return self._images
-
-    @property
-    def attributes(self) -> list[ProductAttributeAggregate]:
-        return self._attributes
-
-    @property
-    def category(self) -> Optional['CategoryAggregate']:
-        return self._category
-
-    @property
-    def supplier(self) -> Optional['SupplierAggregate']:
-        return self._supplier
+    def region_id(self) -> Optional[int]:
+        return self._region_id
 
     @property
     def images(self) -> list[ProductImageAggregate]:
@@ -196,6 +189,10 @@ class ProductAggregate:
     @property
     def supplier(self) -> Optional['SupplierAggregate']:
         return self._supplier
+
+    @property
+    def region(self) -> Optional['RegionAggregate']:
+        return self._region
 
     def get_events(self) -> list[DomainEvent]:
         """Вернуть все накопленные события и очистить очередь."""
@@ -241,6 +238,9 @@ class ProductAggregate:
 
     def change_supplier(self, supplier_id: Optional[int]):
         self._supplier_id = supplier_id
+
+    def change_region(self, region_id: Optional[int]):
+        self._region_id = region_id
 
     def add_image(self, image: ProductImageAggregate):
         """Добавить изображение к продукту."""
@@ -360,6 +360,7 @@ class ProductAggregate:
         price: Optional[Decimal],
         category_id: Optional[int],
         supplier_id: Optional[int],
+        region_id: Optional[int],
     ):
         if name is not None:
             self.rename(name)
@@ -375,6 +376,9 @@ class ProductAggregate:
 
         if supplier_id is not None:
             self.change_supplier(supplier_id)
+
+        if region_id is not None:
+            self.change_region(region_id)
 
     def _set_id(self, product_id: int):
         self._id = product_id

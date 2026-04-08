@@ -13,6 +13,9 @@ import src.catalog.product.infrastructure.models
 # Supplier
 import src.catalog.suppliers.infrastructure.models
 
+# Regions
+import src.regions.infrastructure.models
+
 # CMS
 import src.cms.infrastructure.models
 

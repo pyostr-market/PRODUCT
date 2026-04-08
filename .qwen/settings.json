@@ -9,7 +9,8 @@
       "Bash(poetry *)",
       "Bash(mkdir *)",
       "Bash(find *)",
-      "Bash(alembic *)"
+      "Bash(alembic *)",
+      "Bash(rm *)"
     ]
   },
   "$version": 3

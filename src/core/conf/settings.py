@@ -23,6 +23,7 @@ class Settings(BaseSettings):
         "src.catalog.product.api_module:ProductApiModule",
         "src.catalog.review.api_module:ReviewApiModule",
         "src.cms.api_module:CmsApiModule",
+        "src.regions.api_module:RegionApiModule",
     ]
     # ===============================
     # POSTGRES

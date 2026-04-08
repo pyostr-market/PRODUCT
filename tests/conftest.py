@@ -36,6 +36,11 @@ def authorized_user():
         'supplier:update',
         'supplier:delete',
         'supplier:view',
+        'region:audit',
+        'region:create',
+        'region:update',
+        'region:delete',
+        'region:view',
         'category:audit',
         'category:create',
         'category:update',
@@ -234,6 +239,8 @@ async def cleanup_test_data(engine, image_storage_mock):
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM manufacturers CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM suppliers CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_types CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM region_audit_logs CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM regions CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM review_audit_logs CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM review_images CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM reviews CASCADE"))

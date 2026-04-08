@@ -1,0 +1,14 @@
+import uuid
+from abc import ABC
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+
+
+@dataclass
+class DomainEvent(ABC):
+    """Базовый класс доменного события."""
+
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    metadata: Optional[Dict[str, Any]] = field(default=None)
