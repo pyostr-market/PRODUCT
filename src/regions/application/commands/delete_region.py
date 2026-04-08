@@ -38,8 +38,7 @@ class DeleteRegionCommand:
             # Записываем доменное событие перед удалением
             self._record_deleted_event(aggregate)
 
-            await self.repository.delete(region_id)
-
+            # Сначала записываем аудит-лог (пока регион ещё существует в БД)
             await self.audit_repository.log(
                 RegionAuditDTO(
                     region_id=region_id,
@@ -50,6 +49,9 @@ class DeleteRegionCommand:
                     fio=user.fio,
                 )
             )
+
+            # Затем удаляем регион
+            await self.repository.delete(region_id)
 
             # Получаем доменные события
             domain_events = aggregate.get_events()
