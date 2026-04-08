@@ -4,6 +4,7 @@ from src.catalog.product.application.dto.audit import ProductAuditDTO
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
+    ProductRatingDTO,
     ProductReadDTO,
 )
 from src.catalog.product.application.services.related_entity_loader import (
@@ -238,6 +239,7 @@ class CreateProductCommand:
             name=aggregate.name,
             description=aggregate.description,
             price=aggregate.price,
+            rating=ProductRatingDTO(value=None, count=0),
             images=[
                 ProductImageReadDTO(
                     image_key="",

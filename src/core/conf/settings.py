@@ -21,6 +21,7 @@ class Settings(BaseSettings):
         "src.catalog.suppliers.api_module:SupplierApiModule",
         "src.catalog.category.api_module:CategoryApiModule",
         "src.catalog.product.api_module:ProductApiModule",
+        "src.catalog.review.api_module:ReviewApiModule",
         "src.cms.api_module:CmsApiModule",
     ]
     # ===============================

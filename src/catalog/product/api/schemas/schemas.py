@@ -193,6 +193,14 @@ class ProductTagListResponse(BaseModel):
 
 # ==================== Product Read ====================
 
+class ProductRatingSchema(BaseModel):
+    """Схема рейтинга товара."""
+    model_config = ConfigDict(from_attributes=True)
+
+    value: Optional[float] = None
+    count: int = 0
+
+
 class ProductReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -200,6 +208,7 @@ class ProductReadSchema(BaseModel):
     name: str
     description: Optional[str]
     price: Decimal
+    rating: Optional[ProductRatingSchema] = None
     images: List[ProductImageReadSchema]
     attributes: List[ProductAttributeReadSchema]
     tags: List[TagReadSchema] = []

@@ -4,6 +4,7 @@ from src.catalog.product.application.dto.audit import ProductAuditDTO
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
+    ProductRatingDTO,
     ProductReadDTO,
 )
 from src.catalog.product.application.services.related_entity_loader import (
@@ -277,6 +278,10 @@ class UpdateProductCommand:
             name=aggregate.name,
             description=aggregate.description,
             price=aggregate.price,
+            rating=ProductRatingDTO(
+                value=float(aggregate.rating) if hasattr(aggregate, 'rating') and aggregate.rating else None,
+                count=0,  # count будет установлен в query-слое
+            ),
             images=[
                 ProductImageReadDTO(
                     image_key="",

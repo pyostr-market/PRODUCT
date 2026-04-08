@@ -1,5 +1,3 @@
-"""Command endpoints для тегов (запись, с проверкой прав)."""
-
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession

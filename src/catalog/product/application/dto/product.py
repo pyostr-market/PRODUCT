@@ -124,13 +124,21 @@ class CatalogFiltersDTO:
 
 
 @dataclass
+class ProductRatingDTO:
+    """DTO для рейтинга товара."""
+    value: Optional[float] = None
+    count: int = 0
+
+
+@dataclass
 class ProductReadDTO:
     id: int
     name: str
     description: Optional[str]
     price: Decimal
-    images: list[ProductImageReadDTO]
-    attributes: list[ProductAttributeReadDTO]
+    images: list[ProductImageReadDTO] = field(default_factory=list)
+    attributes: list[ProductAttributeReadDTO] = field(default_factory=list)
+    rating: Optional[ProductRatingDTO] = None
     tags: list[TagReadDTO] = field(default_factory=list)
     category: Optional['CategoryAggregate'] = None
     supplier: Optional['SupplierAggregate'] = None

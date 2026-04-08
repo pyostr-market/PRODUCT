@@ -6,7 +6,10 @@
       "Bash(fi)",
       "Bash(which *)",
       "Bash(ruff *)",
-      "Bash(poetry *)"
+      "Bash(poetry *)",
+      "Bash(mkdir *)",
+      "Bash(find *)",
+      "Bash(alembic *)"
     ]
   },
   "$version": 3

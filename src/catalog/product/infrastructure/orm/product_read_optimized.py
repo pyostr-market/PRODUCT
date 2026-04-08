@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
+    ProductRatingDTO,
     ProductReadDTO,
     CatalogFiltersDTO,
     FilterDTO,
@@ -202,6 +203,14 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
                 self._load_attributes(row.id),
             )
             products.append(self._row_to_dto(row, images, attributes_data))
+
+        # Заполняем количество отзывов
+        if products:
+            product_ids = [p.id for p in products]
+            counts = await self.get_review_counts_by_product_ids(product_ids)
+            for p in products:
+                if p.rating:
+                    p.rating.count = counts.get(p.id, 0)
 
         return products, total
 
@@ -394,6 +403,10 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             name=row.name,
             description=row.description,
             price=row.price,
+            rating=ProductRatingDTO(
+                value=float(row.rating) if hasattr(row, 'rating') and row.rating else None,
+                count=0,  # будет заполнено после
+            ),
             images=images,
             attributes=attributes,
             category=category_dto,
@@ -533,3 +546,22 @@ class OptimizedProductReadRepository(ProductReadRepositoryInterface):
             }
             for row in rows
         ]
+
+    async def get_review_counts_by_product_ids(
+        self,
+        product_ids: list[int],
+    ) -> dict[int, int]:
+        """Получить количество отзывов для списка товаров."""
+        if not product_ids:
+            return {}
+
+        from sqlalchemy import func, select
+        stmt = (
+            select(Review.product_id, func.count(Review.id))
+            .where(Review.product_id.in_(product_ids))
+            .group_by(Review.product_id)
+        )
+        result = await self.db.execute(stmt)
+        rows = result.all()
+
+        return {row.product_id: row[1] for row in rows}

@@ -25,6 +25,9 @@ class Product(TimestampMixin, Base):
     description = Column(Text, nullable=True)
     price = Column(Numeric(12, 2), nullable=False)
 
+    # Рейтинг товара (среднее значение всех отзывов, 0-5)
+    rating = Column(Numeric(2, 1), nullable=True, default=None)
+
     # 📂 Категория
     category_id = Column(
         BigInteger,
@@ -75,4 +78,10 @@ class Product(TimestampMixin, Base):
         "ProductTag",
         back_populates="product",
         cascade="all, delete-orphan",
+    )
+
+    # Отзывы товаров
+    reviews = relationship(
+        "Review",
+        back_populates="product",
     )

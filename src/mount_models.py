@@ -18,3 +18,7 @@ import src.cms.infrastructure.models
 
 # Uploads
 import src.uploads.infrastructure.models
+
+
+# Uploads
+import src.catalog.review.infrastructure.models

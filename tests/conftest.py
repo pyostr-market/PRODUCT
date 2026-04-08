@@ -62,6 +62,7 @@ def authorized_user():
         'cms:update',
         'cms:view',
         'cms:audit',
+        'review:audit',
     ]
     permissions = []
     for ids, name  in enumerate(permissions_names):
@@ -233,6 +234,9 @@ async def cleanup_test_data(engine, image_storage_mock):
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM manufacturers CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM suppliers CASCADE"))
         await conn.execute(__import__('sqlalchemy').text("DELETE FROM product_types CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM review_audit_logs CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM review_images CASCADE"))
+        await conn.execute(__import__('sqlalchemy').text("DELETE FROM reviews CASCADE"))
 
     yield
     # Очищаем данные ПОСЛЕ каждого теста (для безопасности)

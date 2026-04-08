@@ -48,13 +48,25 @@ class ProductReadRepositoryInterface(ABC):
     ) -> ProductSearchDTO:
         """
         Полнотекстовый поиск товаров с подсказками следующих слов.
-        
+
         Args:
             query: Поисковый запрос
             limit: Количество товаров в ответе (по умолчанию 10)
             offset: Смещение для пагинации
-            
+
         Returns:
             ProductSearchDTO с товарами и подсказками
+        """
+        raise NotImplementedError
+
+    async def get_review_counts_by_product_ids(
+        self,
+        product_ids: list[int],
+    ) -> dict[int, int]:
+        """
+        Получить количество отзывов для списка товаров.
+
+        Returns:
+            dict: {product_id: review_count}
         """
         raise NotImplementedError

@@ -8,6 +8,7 @@ from src.catalog.category.domain.aggregates.category import CategoryAggregate
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
+    ProductRatingDTO,
     ProductReadDTO,
     CatalogFiltersDTO,
     FilterDTO,
@@ -26,6 +27,7 @@ from src.catalog.product.infrastructure.models.product_attribute_value import (
 )
 from src.catalog.product.infrastructure.models.product_image import ProductImage
 from src.catalog.product.infrastructure.models.product_tag import ProductTag
+from src.catalog.review.infrastructure.models.review import Review
 from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
 from src.core.conf.settings import get_settings
 from src.core.services.images.storage import S3ImageStorageService
@@ -91,6 +93,10 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             name=model.name,
             description=model.description,
             price=model.price,
+            rating=ProductRatingDTO(
+                value=float(model.rating) if model.rating else None,
+                count=0,  # будет заполнено после
+            ),
             images=[
                 ProductImageReadDTO(
                     image_key=image.upload.file_path,
@@ -142,7 +148,12 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         if not model:
             return None
 
-        return self._to_read_dto(model)
+        dto = self._to_read_dto(model)
+        # Получаем количество отзывов
+        counts = await self.get_review_counts_by_product_ids([model.id])
+        if dto.rating:
+            dto.rating.count = counts.get(model.id, 0)
+        return dto
 
     async def get_by_name(self, name: str) -> Optional[ProductReadDTO]:
         stmt = (
@@ -163,7 +174,11 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         if not model:
             return None
 
-        return self._to_read_dto(model)
+        dto = self._to_read_dto(model)
+        counts = await self.get_review_counts_by_product_ids([model.id])
+        if dto.rating:
+            dto.rating.count = counts.get(model.id, 0)
+        return dto
 
     async def filter(
         self,
@@ -321,6 +336,14 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
 
         items = [self._to_read_dto(model) for model in result.scalars().all()]
         total = count_result.scalar() or 0
+
+        # Заполняем количество отзывов
+        if items:
+            product_ids = [item.id for item in items]
+            counts = await self.get_review_counts_by_product_ids(product_ids)
+            for item in items:
+                if item.rating:
+                    item.rating.count = counts.get(item.id, 0)
 
         return items, total
 
@@ -666,3 +689,21 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             SearchSuggestionDTO(word=word, count=count)
             for word, count in word_counter.most_common(5)
         ]
+
+    async def get_review_counts_by_product_ids(
+        self,
+        product_ids: list[int],
+    ) -> dict[int, int]:
+        """Получить количество отзывов для списка товаров."""
+        if not product_ids:
+            return {}
+
+        stmt = (
+            select(Review.product_id, func.count(Review.id))
+            .where(Review.product_id.in_(product_ids))
+            .group_by(Review.product_id)
+        )
+        result = await self.db.execute(stmt)
+        rows = result.all()
+
+        return {row.product_id: row[1] for row in rows}
