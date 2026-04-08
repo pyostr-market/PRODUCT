@@ -52,6 +52,13 @@ class SupplierNestedSchema(BaseModel):
     phone: Optional[str] = None
 
 
+class RegionNestedSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    parent_id: Optional[int] = None
+
+
 class ProductImageReadSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -123,6 +130,7 @@ class ProductCreateSchema(BaseModel):
     price: Decimal
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
+    region_id: Optional[int] = None
     images: Optional[List[ProductImageReferenceSchema]] = None
     attributes: List[ProductAttributeSchema] = Field(default_factory=list)
 
@@ -133,6 +141,7 @@ class ProductUpdateSchema(BaseModel):
     price: Optional[Decimal] = None
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
+    region_id: Optional[int] = None
     images: Optional[List[ProductImageActionSchema]] = None
     attributes: Optional[List[ProductAttributeSchema]] = None
 
@@ -214,6 +223,7 @@ class ProductReadSchema(BaseModel):
     tags: List[TagReadSchema] = []
     category: Optional[CategoryNestedSchema] = None
     supplier: Optional[SupplierNestedSchema] = None
+    region: Optional[RegionNestedSchema] = None
 
 
 class ProductListResponse(BaseModel):

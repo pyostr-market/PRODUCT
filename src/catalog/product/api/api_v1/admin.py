@@ -12,6 +12,7 @@ from src.catalog.product.api.schemas.export import (
     ExportCategorySchema,
     ExportParentCategorySchema,
     ExportProductSchema,
+    ExportRegionSchema,
     ExportSupplierSchema,
 )
 from src.catalog.product.api.schemas.product_type import (
@@ -211,6 +212,10 @@ async def export_catalog(
                     id=r["supplier_id"],
                     name=r["supplier_name"],
                 ) if r["supplier_id"] else None,
+                region=ExportRegionSchema(
+                    id=r["region_id"],
+                    name=r["region_name"],
+                ) if r["region_id"] and r.get("region_name") else None,
                 attributes=r["attributes"],
             )
         )

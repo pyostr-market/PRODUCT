@@ -399,6 +399,7 @@ async def filter_products(
     name: str | None = Query(None),
     category_id: int | None = Query(None),
     product_type_id: int | None = Query(None),
+    region_id: int | None = Query(None, description="ID региона для фильтрации товаров"),
     product_ids: List[int] | None = Query(None, description="Список ID товаров для фильтрации"),
     attributes: str | None = Query(
         None,
@@ -426,6 +427,7 @@ async def filter_products(
         name=name,
         category_id=category_id,
         product_type_id=product_type_id,
+        region_id=region_id,
         product_ids=product_ids,
         limit=limit,
         offset=offset,

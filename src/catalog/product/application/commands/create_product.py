@@ -90,6 +90,7 @@ class CreateProductCommand:
                 price=dto.price,
                 category_id=dto.category_id,
                 supplier_id=dto.supplier_id,
+                region_id=dto.region_id,
                 images=mapped_images,
                 attributes=mapped_attributes,
             )
@@ -139,6 +140,7 @@ class CreateProductCommand:
             "price": str(aggregate.price),
             "category_id": aggregate.category_id,
             "supplier_id": aggregate.supplier_id,
+            "region_id": aggregate.region_id,
             "images": [
                 {"upload_id": image.upload_id, "is_main": image.is_main}
                 for image in aggregate.images
@@ -261,4 +263,5 @@ class CreateProductCommand:
             ],
             category=category_dto,
             supplier=supplier_dto,
+            region=None,
         )

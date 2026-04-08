@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.catalog.category.domain.aggregates.category import CategoryAggregate
+from src.regions.domain.aggregates.region import RegionAggregate
 from src.catalog.product.application.dto.product import (
     ProductAttributeReadDTO,
     ProductImageReadDTO,
@@ -88,6 +89,14 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 phone=model.supplier.phone,
             )
 
+        region_dto = None
+        if model.region:
+            region_dto = RegionAggregate(
+                name=model.region.name,
+                parent_id=model.region.parent_id,
+                region_id=model.region.id,
+            )
+
         return ProductReadDTO(
             id=model.id,
             name=model.name,
@@ -128,6 +137,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             ],
             category=category_dto,
             supplier=supplier_dto,
+            region=region_dto,
         )
 
     async def get_by_id(self, product_id: int) -> Optional[ProductReadDTO]:
@@ -139,6 +149,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
+                selectinload(Product.region),
             )
             .where(Product.id == product_id)
         )
@@ -164,6 +175,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
+                selectinload(Product.region),
             )
             .where(Product.name == name)
         )
@@ -190,6 +202,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         attributes: Optional[dict[str, str]] = None,
         sort_type: str = "default",
         product_ids: Optional[List[int]] = None,
+        region_id: Optional[int] = None,
     ) -> Tuple[List[ProductReadDTO], int]:
         stmt = (
             select(Product)
@@ -199,6 +212,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
+                selectinload(Product.region),
             )
         )
         count_stmt = select(func.count()).select_from(Product)
@@ -294,6 +308,11 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
         if product_ids:
             stmt = stmt.where(Product.id.in_(product_ids))
             count_stmt = count_stmt.where(Product.id.in_(product_ids))
+
+        # Фильтрация по региону
+        if region_id is not None:
+            stmt = stmt.where(Product.region_id == region_id)
+            count_stmt = count_stmt.where(Product.region_id == region_id)
 
         # Фильтрация по атрибутам
         if attributes:
@@ -546,6 +565,8 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 c.device_type_id as category_device_type_id,
                 p.supplier_id,
                 s.name as supplier_name,
+                p.region_id,
+                r.name as region_name,
                 COALESCE(
                     jsonb_agg(
                         DISTINCT jsonb_build_object(
@@ -572,6 +593,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN suppliers s ON s.id = p.supplier_id
+            LEFT JOIN regions r ON r.id = p.region_id
             LEFT JOIN product_attribute_values pav ON pav.product_id = p.id
             LEFT JOIN product_attributes pa ON pa.id = pav.attribute_id
             LEFT JOIN product_tags pt ON pt.product_id = p.id
@@ -582,6 +604,8 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 c.name,
                 c.device_type_id,
                 s.name,
+                p.region_id,
+                r.name,
                 pca.parent_categories
             ORDER BY p.id
         """)
@@ -633,6 +657,7 @@ class SqlAlchemyProductReadRepository(ProductReadRepositoryInterface):
                 selectinload(Product.product_tags).selectinload(ProductTag.tag),
                 selectinload(Product.category),
                 selectinload(Product.supplier),
+                selectinload(Product.region),
             )
             .where(and_(*word_conditions))
         )

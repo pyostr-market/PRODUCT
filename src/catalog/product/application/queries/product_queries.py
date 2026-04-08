@@ -45,6 +45,7 @@ class ProductQueries:
         attributes: Optional[dict[str, list[str]]] = None,
         sort_type: str = "default",
         product_ids: Optional[List[int]] = None,
+        region_id: Optional[int] = None,
     ):
         items, total = await self.read_repository.filter(
             name=name,
@@ -55,6 +56,7 @@ class ProductQueries:
             attributes=attributes,
             sort_type=sort_type,
             product_ids=product_ids,
+            region_id=region_id,
         )
         return [self._attach_image_url(item) for item in items], total
 

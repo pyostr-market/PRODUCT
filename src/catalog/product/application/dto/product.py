@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Literal, Optional
 if TYPE_CHECKING:
     from src.catalog.category.domain.aggregates.category import CategoryAggregate
     from src.catalog.suppliers.domain.aggregates.supplier import SupplierAggregate
+    from src.regions.domain.aggregates.region import RegionAggregate
 
 
 @dataclass
@@ -142,6 +143,7 @@ class ProductReadDTO:
     tags: list[TagReadDTO] = field(default_factory=list)
     category: Optional['CategoryAggregate'] = None
     supplier: Optional['SupplierAggregate'] = None
+    region: Optional['RegionAggregate'] = None
 
 
 @dataclass
@@ -151,6 +153,7 @@ class ProductCreateDTO:
     price: Decimal
     category_id: Optional[int]
     supplier_id: Optional[int]
+    region_id: Optional[int]
     images: list[ProductImageInputDTO]
     attributes: list[ProductAttributeInputDTO]
 
@@ -162,6 +165,7 @@ class ProductUpdateDTO:
     price: Optional[Decimal] = None
     category_id: Optional[int] = None
     supplier_id: Optional[int] = None
+    region_id: Optional[int] = None
     images: Optional[list[ProductImageOperationDTO]] = None
     attributes: Optional[list[ProductAttributeInputDTO]] = None
 

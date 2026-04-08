@@ -28,6 +28,11 @@ class ExportSupplierSchema(BaseModel):
     name: str
 
 
+class ExportRegionSchema(BaseModel):
+    id: int
+    name: str
+
+
 class ExportProductSchema(BaseModel):
     id: int
     name: str
@@ -35,6 +40,7 @@ class ExportProductSchema(BaseModel):
     description: Optional[str] = None
     category: Optional[ExportCategorySchema]
     supplier: Optional[ExportSupplierSchema]
+    region: Optional[ExportRegionSchema] = None
     attributes: List[ExportAttributeSchema]
 
 
